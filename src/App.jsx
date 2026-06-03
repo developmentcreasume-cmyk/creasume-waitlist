@@ -1,8 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { motion, MotionConfig, useReducedMotion } from 'framer-motion'
+import { fadeUp, staggerParent, popUp, outlineDraw } from './motion-variants.js'
+import { CountUp, Typewriter } from './anim.jsx'
 import './App.css'
 
 function App() {
   const [activeTab, setActiveTab] = useState('home')
+  const reduceMotion = useReducedMotion()
+
+  // Founding Creator perk cards: start stacked, fan out to the grid after
+  // ~1.5s (or earlier on hover/click). See the Founding Creator section below.
+  const [perksReleased, setPerksReleased] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setPerksReleased(true), 1500)
+    return () => clearTimeout(t)
+  }, [])
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -29,6 +41,7 @@ function App() {
   }
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="relative min-h-screen overflow-hidden bg-black text-white">
       {/* Starfield */}
       <div className="starfield" />
@@ -88,7 +101,7 @@ function App() {
                 key={tab.id}
                 href={tab.href}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center justify-center h-[42px] rounded-full font-medium transition ${
+                className={`flex items-center justify-center h-[42px] rounded-full font-medium transition-colors duration-150 ease-in-out ${
                   isActive ? 'text-white px-6' : 'text-[#9EA5E2] hover:text-white px-3'
                 }`}
                 style={{
@@ -108,13 +121,16 @@ function App() {
       <section className="relative z-10 px-6 md:px-16 lg:px-24 pt-12 pb-24">
         {/* Two separate badge pills */}
         <div className="flex flex-wrap items-center gap-9 mb-10">
-          <div
+          <motion.div
             className="inline-flex items-center justify-center rounded-full border backdrop-blur-sm px-6"
             style={{
               height: '40px',
               backgroundColor: 'rgba(125, 113, 201, 0.09)',
               borderColor: 'rgba(255, 255, 255, 0.43)',
             }}
+            variants={outlineDraw}
+            initial="hidden"
+            animate="show"
           >
             <span
               style={{
@@ -128,11 +144,14 @@ function App() {
             >
               VERIFIED CREATOR IDENTITY PLATFORM
             </span>
-          </div>
+          </motion.div>
 
-          <div
+          <motion.div
             className="inline-flex items-center justify-center gap-3 rounded-full bg-white"
             style={{ width: '244.95px', height: '35.46px' }}
+            variants={outlineDraw}
+            initial="hidden"
+            animate="show"
           >
             <img
               src="/Group%201707480613.png"
@@ -145,13 +164,18 @@ function App() {
               alt="Meta"
               style={{ width: '74.67px', height: '21px', objectFit: 'contain' }}
             />
-          </div>
+          </motion.div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-          <div>
-            <h1
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.12 } } }}
+          >
+            <motion.h1
               className="mb-6"
+              variants={fadeUp}
               style={{
                 fontFamily: "'Outfit', sans-serif",
                 fontStyle: 'normal',
@@ -163,17 +187,19 @@ function App() {
               }}
             >
               Your Influence<br />
-              <span className="gradient-text">Structured &</span><br />
-              <span className="gradient-text">Verified.</span>
-            </h1>
-            <p className="text-[#9EA5E2] text-base md:text-lg max-w-md mb-10 leading-relaxed">
+              <span className="gradient-text">Structured</span><br />
+              <span className="gradient-text">& Verified.</span>
+            </motion.h1>
+            <motion.p variants={fadeUp} className="text-[#9EA5E2] text-base md:text-lg max-w-md mb-10 leading-relaxed">
               Turn your social presence into a professional creator identity that brands trust and opportunities find.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <button
-                className="gradient-btn rounded-full text-white transition-all hover:scale-105 flex items-center justify-center"
+            </motion.p>
+            <motion.div variants={fadeUp} className="flex flex-nowrap gap-4">
+              <motion.button
+                className="gradient-btn rounded-full text-white flex items-center justify-center shrink-0 whitespace-nowrap"
+                whileHover={{ scale: 1.05, boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.5)' }}
+                transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{
-                  width: '417px',
+                  width: '360px',
                   height: '59px',
                   fontWeight: 600,
                   fontSize: '22px',
@@ -181,27 +207,33 @@ function App() {
                 }}
               >
                 Become A Founding Creator
-              </button>
-              <button
-                className="rounded-full border border-[#36377A] bg-[#0B0B27]/40 hover:bg-[#10133C] transition text-white flex items-center justify-center px-7"
+              </motion.button>
+              <motion.button
+                className="rounded-full border border-[#36377A] text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap"
+                whileHover={{ backgroundColor: '#FFFFFF', color: '#000000' }}
+                transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{
                   height: '59px',
                   fontWeight: 600,
                   fontSize: '22px',
                   fontFamily: "'Gelion', 'Outfit', sans-serif",
+                  backgroundColor: 'rgba(11, 11, 39, 0.4)',
                 }}
               >
                 Explore Vision
-              </button>
-            </div>
-          </div>
+              </motion.button>
+            </motion.div>
+          </motion.div>
 
-          {/* Sample Creator card */}
-          <div className="relative flex justify-center lg:justify-end lg:pr-56">
-            <img
+          {/* Sample Creator card — continuous slow float */}
+          <div className="relative flex justify-center lg:justify-end lg:pr-12">
+            <motion.img
               src="/image/blurimage.png"
               alt="Sample Creator Profile"
-              className="w-full max-w-md rounded-2xl shadow-2xl shadow-[#2116B9]/30"
+              className="w-full"
+              style={{ maxWidth: '360px' }}
+              animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
+              transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
             />
           </div>
         </div>
@@ -241,19 +273,24 @@ function App() {
                   lineHeight: '97.6%',
                 }}
               >
-                {stat.title}
+                {stat.title === '$250 Billion' ? (
+                  <CountUp value={250} prefix="$" suffix=" Billion" />
+                ) : (
+                  <Typewriter text={stat.title} startDelay={idx * 0.2} />
+                )}
               </div>
-              <div
-                className="text-[10px] tracking-[0.2em] font-medium"
-                style={{
+              <Typewriter
+                text={stat.sub}
+                perChar={0.035}
+                startDelay={idx * 0.2 + 0.1}
+                className="block text-[10px] tracking-[0.2em] font-medium"
+                charStyle={{
                   background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
                 }}
-              >
-                {stat.sub}
-              </div>
+              />
             </div>
           ))}
         </div>
@@ -263,7 +300,13 @@ function App() {
       <section className="relative z-10 px-6 md:px-16 lg:px-24 py-24">
         <div className="glow-orb" style={{ width: 400, height: 400, top: 100, right: -100, background: '#2116B9', opacity: 0.15 }} />
 
-        <div className="text-center mb-16">
+        <motion.div
+          className="text-center mb-16"
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-80px' }}
+        >
           <h2 className="text-4xl md:text-5xl font-bold mb-8" style={{ fontFamily: "'Gelion', 'Outfit', sans-serif" }}>
             Built for{' '}
             <span
@@ -300,7 +343,7 @@ function App() {
             </span>{' '}
             without needing agencies or management teams.
           </p>
-        </div>
+        </motion.div>
 
         <div
           className="rounded-2xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
@@ -335,43 +378,67 @@ function App() {
               desc: 'Get discovered. Stand out in front of brands actively looking for creators like you.',
             },
           ].map((card, idx) => (
-            <div
+            <motion.div
               key={idx}
-              className="relative p-8 flex flex-col"
-              style={idx !== 0 ? { borderLeft: '1px solid rgba(54, 55, 122, 0.4)' } : {}}
+              className="relative p-8 flex flex-col rounded-2xl"
+              style={{
+                ...(idx !== 0 ? { borderLeft: '1px solid rgba(54, 55, 122, 0.4)' } : {}),
+                transformOrigin: 'center',
+              }}
+              initial="rest"
+              whileHover="hover"
+              animate="rest"
+              variants={{ rest: {}, hover: {} }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
             >
-              <div className="mb-8">{card.icon}</div>
-              <div
-                className="mb-8 rounded-full"
-                style={{
-                  width: '32px',
-                  height: '2px',
-                  background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)',
-                }}
+              {/* Brighten overlay that fills in on hover (card opening out) */}
+              <motion.div
+                aria-hidden="true"
+                className="absolute inset-0 rounded-2xl pointer-events-none"
+                style={{ background: 'linear-gradient(180deg, rgba(33,22,185,0.22) 0%, rgba(13,8,115,0.10) 100%)' }}
+                variants={{ rest: { opacity: 0 }, hover: { opacity: 1 } }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
               />
-              <h3
-                className="mb-6 text-white leading-tight"
-                style={{
-                  width: '165.46px',
-                  height: '52.95px',
-                  fontWeight: 500,
-                  fontSize: '24.27px',
-                }}
+              <motion.div
+                className="relative z-10 flex flex-col h-full"
+                variants={{ rest: { scale: 1, y: 0 }, hover: { scale: 1.04, y: -6 } }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
               >
-                {card.title}
-              </h3>
-              <p
-                className="text-[#9EA5E2]"
-                style={{
-                  fontWeight: 400,
-                  fontSize: '14.34px',
-                  fontFamily: "'Gelion', 'Outfit', sans-serif",
-                  lineHeight: '120%',
-                }}
-              >
-                {card.desc}
-              </p>
-            </div>
+                <div className="mb-8">{card.icon}</div>
+                <div
+                  className="mb-8 rounded-full"
+                  style={{
+                    width: '32px',
+                    height: '2px',
+                    background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)',
+                  }}
+                />
+                <h3
+                  className="mb-6 text-white leading-tight"
+                  style={{
+                    width: '165.46px',
+                    height: '52.95px',
+                    fontWeight: 500,
+                    fontSize: '24.27px',
+                  }}
+                >
+                  {card.title}
+                </h3>
+                <motion.p
+                  className="text-[#9EA5E2]"
+                  style={{
+                    fontWeight: 400,
+                    fontSize: '14.34px',
+                    fontFamily: "'Gelion', 'Outfit', sans-serif",
+                    lineHeight: '120%',
+                  }}
+                  variants={{ rest: { opacity: 0.7 }, hover: { opacity: 1 } }}
+                  transition={{ duration: 0.35, ease: 'easeOut' }}
+                >
+                  {card.desc}
+                </motion.p>
+              </motion.div>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -407,7 +474,13 @@ function App() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto"
+          variants={staggerParent}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-80px' }}
+        >
           {[
             {
               icon: (
@@ -474,9 +547,11 @@ function App() {
               desc: 'Share creasume.com/you instead of multiple files. Works flawlessly in brand emails, DMs, and LinkedIn.',
             },
           ].map((card, idx) => (
-            <div
+            <motion.div
               key={idx}
-              className="rounded-2xl p-8 transition-all"
+              className="rounded-2xl p-8"
+              variants={popUp}
+              whileHover={{ scale: 1.03 }}
               style={{
                 background:
                   'linear-gradient(180deg, rgba(16, 31, 70, 0.84) 0%, rgba(0, 9, 32, 0.72) 100%)',
@@ -507,9 +582,9 @@ function App() {
               >
                 {card.desc}
               </p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </section>
 
       {/* ============ THREE STEPS ============ */}
@@ -537,9 +612,24 @@ function App() {
         </div>
 
         <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-6 relative">
-            {/* Horizontal connecting line */}
-            <div className="hidden md:block absolute top-7 left-[16.66%] right-[16.66%] step-line" />
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-6 relative"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, margin: '-80px' }}
+          >
+            {/* Connecting line segment 1: step 1 → step 2 (draws left → right) */}
+            <motion.div
+              className="hidden md:block absolute top-7 left-[16.66%] right-[50%] step-line"
+              style={{ transformOrigin: 'left center' }}
+              variants={{ hidden: { scaleX: 0 }, show: { scaleX: 1, transition: { duration: 0.4, ease: 'easeInOut', delay: 0.35 } } }}
+            />
+            {/* Connecting line segment 2: step 2 → step 3 (draws left → right) */}
+            <motion.div
+              className="hidden md:block absolute top-7 left-[50%] right-[16.66%] step-line"
+              style={{ transformOrigin: 'left center' }}
+              variants={{ hidden: { scaleX: 0 }, show: { scaleX: 1, transition: { duration: 0.4, ease: 'easeInOut', delay: 1.1 } } }}
+            />
 
             {[
               {
@@ -575,26 +665,39 @@ function App() {
                 desc: 'Send your verifiable link to close deals faster and look professional.',
               },
             ].map((step, idx) => (
-              <div key={idx} className="text-center relative">
+              <motion.div
+                key={idx}
+                className="text-center relative"
+                variants={{
+                  hidden: { opacity: 0, y: 24 },
+                  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut', delay: [0, 0.75, 1.5][idx] } },
+                }}
+              >
                 <div className="w-14 h-14 rounded-full bg-[#0B0B27] border border-[#36377A] flex items-center justify-center mx-auto mb-5 relative z-10">
                   {step.icon}
                 </div>
                 <h3 className="text-sm font-semibold mb-2">{step.title}</h3>
                 <p className="text-xs text-[#9EA5E2] leading-relaxed max-w-[200px] mx-auto">{step.desc}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
           <div className="mt-16 text-center">
             <p className="text-lg text-white mb-4">
               <span className="inline-block w-3 h-3 rounded-full border border-[#5D65DC] mr-2 align-middle" />
               Your consent matters to us
             </p>
-            <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white mb-5">
+            <motion.div
+              className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white mb-5"
+              variants={outlineDraw}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: '-60px' }}
+            >
               <img src="/Group%201707480613.png" alt="Creasume" style={{ height: '20px', width: 'auto', objectFit: 'contain' }} />
               <span className="text-[#9EA5E2] text-sm">×</span>
               <img src="/image/image%204.png" alt="Instagram" style={{ height: '20px', width: 'auto', objectFit: 'contain' }} />
-            </div>
+            </motion.div>
             <p className="text-lg text-white max-w-2xl mx-auto">
               We fetch your verified statistics with your consent directly through Instagram permissions.
             </p>
@@ -627,7 +730,11 @@ function App() {
           </p>
         </div>
 
-        <div className="max-w-5xl mx-auto">
+        <div
+          className="max-w-5xl mx-auto"
+          onMouseEnter={() => setPerksReleased(true)}
+          onClick={() => setPerksReleased(true)}
+        >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {[
               {
@@ -674,14 +781,23 @@ function App() {
                 title: 'Lifetime Access to Premium Version',
               },
             ].map((perk, idx) => (
-              <div
+              <motion.div
                 key={idx}
                 className="rounded-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
                 style={{
                   minHeight: '240px',
                   backgroundColor: '#000000',
                   border: '1px solid rgba(54, 55, 122, 0.35)',
+                  zIndex: 3 - idx,
                 }}
+                initial={reduceMotion ? 'grid' : 'stacked'}
+                animate={perksReleased || reduceMotion ? 'grid' : 'stacked'}
+                variants={{
+                  // Top row stacks toward the centre card (idx 1); approximate overlap.
+                  stacked: { x: ['110%', '0%', '-110%'][idx], y: 0, scale: 0.92 },
+                  grid: { x: '0%', y: '0%', scale: 1 },
+                }}
+                transition={{ duration: 0.55, ease: 'easeOut', delay: idx * 0.08 }}
               >
                 <img
                   src="/image/shape.png"
@@ -701,7 +817,7 @@ function App() {
                 >
                   {perk.title}
                 </h3>
-              </div>
+              </motion.div>
             ))}
           </div>
 
@@ -738,14 +854,23 @@ function App() {
                 title: 'Chance to work with us as a partner and get paid',
               },
             ].map((perk, idx) => (
-              <div
+              <motion.div
                 key={idx}
                 className="rounded-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
                 style={{
                   minHeight: '240px',
                   backgroundColor: '#000000',
                   border: '1px solid rgba(54, 55, 122, 0.35)',
+                  zIndex: idx === 0 ? 2 : 1,
                 }}
+                initial={reduceMotion ? 'grid' : 'stacked'}
+                animate={perksReleased || reduceMotion ? 'grid' : 'stacked'}
+                variants={{
+                  // Bottom row stacks up onto the top row and toward centre; approximate.
+                  stacked: { x: idx === 0 ? '55%' : '-55%', y: '-110%', scale: 0.92 },
+                  grid: { x: '0%', y: '0%', scale: 1 },
+                }}
+                transition={{ duration: 0.55, ease: 'easeOut', delay: (3 + idx) * 0.08 }}
               >
                 <img
                   src="/image/shape.png"
@@ -765,7 +890,7 @@ function App() {
                 >
                   {perk.title}
                 </h3>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -1030,6 +1155,7 @@ function App() {
         </div>
       </footer>
     </div>
+    </MotionConfig>
   )
 }
 
