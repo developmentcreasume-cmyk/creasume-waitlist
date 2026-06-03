@@ -6,6 +6,7 @@ import './App.css'
 
 function App() {
   const [activeTab, setActiveTab] = useState('home')
+  const [menuOpen, setMenuOpen] = useState(false)
   const reduceMotion = useReducedMotion()
 
   // Founding Creator perk cards: start stacked, fan out to the grid after
@@ -46,10 +47,7 @@ function App() {
       {/* Starfield */}
       <div className="starfield" />
 
-      {/* Top wide lavender halo (from-above glow) */}
-      <div className="top-halo" />
-
-      {/* Hero decorative orb image */}
+      {/* Hero decorative background texture */}
       <img
         src="/image/Group%201707480435.png"
         alt=""
@@ -115,10 +113,58 @@ function App() {
             )
           })}
         </div>
+
+        {/* Mobile hamburger button */}
+        <button
+          type="button"
+          aria-label="Toggle menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((o) => !o)}
+          className="md:hidden flex items-center justify-center w-11 h-11 rounded-full bg-[#020423] text-white"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            {menuOpen ? (
+              <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            ) : (
+              <path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            )}
+          </svg>
+        </button>
+
+        {/* Mobile dropdown menu */}
+        {menuOpen && (
+          <div className="md:hidden absolute left-6 right-6 top-full mt-2 rounded-2xl bg-[#020423] border border-[#36377A]/50 p-2 z-50 flex flex-col">
+            {[
+              { id: 'home', label: 'Home', href: '#home' },
+              { id: 'waitlist', label: 'Waitlist', href: '#waitlist' },
+              { id: 'signout', label: 'Sign Out', href: '#signout' },
+            ].map((tab) => (
+              <a
+                key={tab.id}
+                href={tab.href}
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  setMenuOpen(false)
+                }}
+                className={`px-4 py-3 rounded-xl font-medium transition-colors duration-150 ${
+                  activeTab === tab.id ? 'text-white bg-[rgba(34,39,114,0.53)]' : 'text-[#9EA5E2] hover:text-white'
+                }`}
+                style={{ fontSize: '18px', fontWeight: 500 }}
+              >
+                {tab.label}
+              </a>
+            ))}
+          </div>
+        )}
       </nav>
 
+      {/* Divider line below the header */}
+      <div className="relative z-10">
+        <div className="border-t-2 border-white/20" />
+      </div>
+
       {/* ============ HERO SECTION ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 pt-12 pb-24">
+      <section className="relative z-10 px-6 md:px-16 lg:px-24 pt-8 pb-12 md:pt-12 md:pb-24">
         {/* Two separate badge pills */}
         <div className="flex flex-wrap items-center gap-9 mb-10">
           <motion.div
@@ -167,20 +213,21 @@ function App() {
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1fr] gap-10 lg:gap-16 items-center">
           <motion.div
+            className="relative"
             initial="hidden"
             animate="show"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.12 } } }}
           >
             <motion.h1
-              className="mb-6"
+              className="mb-6 relative z-10 whitespace-normal md:whitespace-nowrap"
               variants={fadeUp}
               style={{
                 fontFamily: "'Outfit', sans-serif",
                 fontStyle: 'normal',
                 fontWeight: 600,
-                fontSize: '102.329px',
+                fontSize: 'clamp(40px, 9vw, 102.329px)',
                 lineHeight: '97.63%',
                 width: '747px',
                 maxWidth: '100%',
@@ -188,18 +235,34 @@ function App() {
             >
               Your Influence<br />
               <span className="gradient-text">Structured</span><br />
-              <span className="gradient-text">& Verified.</span>
+              <span className="relative inline-block">
+                <img
+                  src="/Rounded%20rectangle%20(2).png"
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute pointer-events-none select-none"
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -72%)',
+                    height: 'clamp(80px, 18vw, 180px)',
+                    width: 'auto',
+                    opacity: 0.5,
+                    zIndex: 0,
+                  }}
+                />
+                <span className="gradient-text relative z-10">& Verified.</span>
+              </span>
             </motion.h1>
-            <motion.p variants={fadeUp} className="text-[#9EA5E2] text-base md:text-lg max-w-md mb-10 leading-relaxed">
+            <motion.p variants={fadeUp} className="text-white text-base md:text-lg max-w-md mb-10 leading-relaxed relative z-10">
               Turn your social presence into a professional creator identity that brands trust and opportunities find.
             </motion.p>
-            <motion.div variants={fadeUp} className="flex flex-nowrap gap-4">
+            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:flex-nowrap gap-4 relative z-10">
               <motion.button
-                className="gradient-btn rounded-full text-white flex items-center justify-center shrink-0 whitespace-nowrap"
+                className="gradient-btn rounded-full text-white flex items-center justify-center shrink-0 whitespace-nowrap w-full sm:w-[360px]"
                 whileHover={{ scale: 1.05, boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.5)' }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{
-                  width: '360px',
                   height: '59px',
                   fontWeight: 600,
                   fontSize: '22px',
@@ -209,7 +272,7 @@ function App() {
                 Become A Founding Creator
               </motion.button>
               <motion.button
-                className="rounded-full border border-[#36377A] text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap"
+                className="rounded-full border border-[#36377A] text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap w-full sm:w-auto"
                 whileHover={{ backgroundColor: '#FFFFFF', color: '#000000' }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{
@@ -240,13 +303,13 @@ function App() {
       </section>
 
       {/* ============ STATS BAR ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 pb-24 flex justify-center">
+      <section className="relative z-10 px-6 md:px-16 lg:px-24 pb-12 md:pb-24 flex justify-center">
         <div
-          className="rounded-2xl px-8 grid grid-cols-2 md:grid-cols-4 gap-6 items-center"
+          className="rounded-2xl px-6 md:px-8 py-6 md:py-0 grid grid-cols-2 md:grid-cols-4 gap-6 items-center"
           style={{
             width: '1070.05px',
             maxWidth: '100%',
-            height: '129.24px',
+            minHeight: '129.24px',
             backgroundColor: 'rgba(16, 31, 70, 0.59)',
           }}
         >
@@ -269,7 +332,7 @@ function App() {
                   color: '#FFFFFF',
                   fontFamily: "'Outfit', sans-serif",
                   fontWeight: 600,
-                  fontSize: '33.26px',
+                  fontSize: 'clamp(20px, 5vw, 33.26px)',
                   lineHeight: '97.6%',
                 }}
               >
@@ -297,11 +360,28 @@ function App() {
       </section>
 
       {/* ============ BUILT FOR EMERGING CREATORS ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-24">
+      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
         <div className="glow-orb" style={{ width: 400, height: 400, top: 100, right: -100, background: '#2116B9', opacity: 0.15 }} />
 
+        {/* Soft ellipse glow on the left edge */}
+        <img
+          src="/Ellipse%20883.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute pointer-events-none select-none"
+          style={{
+            left: '-60px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            height: '700px',
+            width: 'auto',
+            opacity: 0.8,
+            zIndex: 0,
+          }}
+        />
+
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-10 md:mb-16"
           variants={fadeUp}
           initial="hidden"
           whileInView="show"
@@ -346,11 +426,10 @@ function App() {
         </motion.div>
 
         <div
-          className="rounded-2xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+          className="rounded-2xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 lg:h-[428px]"
           style={{
             width: '858.21px',
             maxWidth: '100%',
-            height: '428px',
             background:
               'linear-gradient(90deg, rgba(16, 31, 70, 0.84) 0%, rgba(0, 9, 32, 0.72) 100%)',
             border: '1px solid rgba(54, 55, 122, 0.4)',
@@ -380,11 +459,10 @@ function App() {
           ].map((card, idx) => (
             <motion.div
               key={idx}
-              className="relative p-8 flex flex-col rounded-2xl"
-              style={{
-                ...(idx !== 0 ? { borderLeft: '1px solid rgba(54, 55, 122, 0.4)' } : {}),
-                transformOrigin: 'center',
-              }}
+              className={`relative p-8 flex flex-col rounded-2xl ${
+                idx !== 0 ? 'border-t md:border-t-0 lg:border-l border-[#36377A]/40' : ''
+              }`}
+              style={{ transformOrigin: 'center' }}
               initial="rest"
               whileHover="hover"
               animate="rest"
@@ -425,7 +503,7 @@ function App() {
                   {card.title}
                 </h3>
                 <motion.p
-                  className="text-[#9EA5E2]"
+                  className="text-white"
                   style={{
                     fontWeight: 400,
                     fontSize: '14.34px',
@@ -444,14 +522,14 @@ function App() {
       </section>
 
       {/* ============ MADE FOR NEXT GENERATION ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-24">
-        <div className="text-center mb-16">
+      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24">
+        <div className="text-center mb-10 md:mb-16">
           <h2
             className="font-bold mb-6"
             style={{
               fontFamily: "'Gelion', 'Outfit', sans-serif",
               fontWeight: 600,
-              fontSize: '48px',
+              fontSize: 'clamp(30px, 7vw, 48px)',
               lineHeight: '110%',
               color: '#FFFFFF',
             }}
@@ -561,10 +639,10 @@ function App() {
             >
               <div className="mb-8">{card.icon}</div>
               <h3
-                className="mb-4 text-white"
+                className="mb-4 text-[#9EA5E2]"
                 style={{
                   fontFamily: "'Gelion', 'Outfit', sans-serif",
-                  fontWeight: 500,
+                  fontWeight: 400,
                   fontSize: '20px',
                   lineHeight: '110%',
                 }}
@@ -588,7 +666,7 @@ function App() {
       </section>
 
       {/* ============ THREE STEPS ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-24 overflow-hidden">
+      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
         <img
           src="/image/Group%2039850.png"
           alt=""
@@ -604,7 +682,7 @@ function App() {
           }}
         />
 
-        <div className="text-center mb-20">
+        <div className="text-center mb-12 md:mb-20">
           <h2 className="text-4xl md:text-5xl font-bold" style={{ color: '#FFFFFF' }}>
             Three steps to your<br />
             <span className="gradient-text">verified creator identity</span>
@@ -684,7 +762,13 @@ function App() {
 
           <div className="mt-16 text-center">
             <p className="text-lg text-white mb-4">
-              <span className="inline-block w-3 h-3 rounded-full border border-[#5D65DC] mr-2 align-middle" />
+              <img
+                src="/Vector%20(5).png"
+                alt=""
+                aria-hidden="true"
+                className="inline-block mr-2 align-middle"
+                style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+              />
               Your consent matters to us
             </p>
             <motion.div
@@ -706,13 +790,13 @@ function App() {
       </section>
 
       {/* ============ FOUNDING CREATOR PERKS ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-24">
-        <div className="text-center mb-16">
+      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24">
+        <div className="text-center mb-10 md:mb-16">
           <h2
             className="font-bold mb-6"
             style={{
               fontFamily: "'Gelion', 'Outfit', sans-serif",
-              fontSize: '48px',
+              fontSize: 'clamp(30px, 7vw, 48px)',
               lineHeight: '110%',
             }}
           >
@@ -720,13 +804,13 @@ function App() {
             <span className="gradient-text" style={{ fontStyle: 'italic' }}>Founding Creator</span>
           </h2>
           <p
-            className="text-[#9EA5E2]"
+            className="text-white"
             style={{
               fontFamily: "'Gelion', 'Outfit', sans-serif",
               fontSize: '20px',
             }}
           >
-            Unlock the following perks and benifits
+            Unlock the following perks and benefits
           </p>
         </div>
 
@@ -821,7 +905,7 @@ function App() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[calc(66.666%+12px)] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:max-w-[calc(66.666%+12px)] md:mx-auto">
             {[
               {
                 icon: (
@@ -897,7 +981,24 @@ function App() {
       </section>
 
       {/* ============ RESERVE YOUR IDENTITY ============ */}
-      <section id="waitlist" className="relative z-10 px-6 md:px-16 lg:px-24 py-24">
+      <section id="waitlist" className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
+
+        {/* Soft ellipse glow on the left edge */}
+        <img
+          src="/Ellipse%20883.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute pointer-events-none select-none"
+          style={{
+            left: '-60px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            height: '700px',
+            width: 'auto',
+            opacity: 0.8,
+            zIndex: 0,
+          }}
+        />
 
         <div className="text-center mb-12 relative z-10">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -911,62 +1012,36 @@ function App() {
         </div>
 
         <div className="relative mx-auto z-10" style={{ width: '697.37px', maxWidth: '100%' }}>
-          {/* Four blue corner orbs around the form */}
-          <div
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              width: '260px',
-              height: '260px',
-              top: '-90px',
-              left: '-90px',
-              background: 'radial-gradient(circle at 50% 50%, #2628A8 0%, #1B1FA1 55%, rgba(27, 31, 161, 0) 80%)',
-              filter: 'blur(10px)',
-              zIndex: -1,
-            }}
-          />
-          <div
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              width: '260px',
-              height: '260px',
-              top: '-90px',
-              right: '-90px',
-              background: 'radial-gradient(circle at 50% 50%, #2628A8 0%, #1B1FA1 55%, rgba(27, 31, 161, 0) 80%)',
-              filter: 'blur(10px)',
-              zIndex: -1,
-            }}
-          />
-          <div
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              width: '260px',
-              height: '260px',
-              bottom: '-90px',
-              left: '-90px',
-              background: 'radial-gradient(circle at 50% 50%, #2628A8 0%, #1B1FA1 55%, rgba(27, 31, 161, 0) 80%)',
-              filter: 'blur(10px)',
-              zIndex: -1,
-            }}
-          />
-          <div
-            className="absolute rounded-full pointer-events-none"
-            style={{
-              width: '260px',
-              height: '260px',
-              bottom: '-90px',
-              right: '-90px',
-              background: 'radial-gradient(circle at 50% 50%, #2628A8 0%, #1B1FA1 55%, rgba(27, 31, 161, 0) 80%)',
-              filter: 'blur(10px)',
-              zIndex: -1,
-            }}
-          />
+          {/* Four blue corner orbs around the form — sharp circular edge,
+              blur contained inside via an overflow-hidden clip. */}
+          {[
+            { top: '-90px', left: '-90px' },
+            { top: '-90px', right: '-90px' },
+            { bottom: '-90px', left: '-90px' },
+            { bottom: '-90px', right: '-90px' },
+          ].map((pos, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full overflow-hidden pointer-events-none"
+              style={{ width: '260px', height: '260px', zIndex: -1, ...pos }}
+            >
+              <div
+                className="w-full h-full"
+                style={{
+                  background: 'radial-gradient(circle at 50% 50%, #2F32C4 0%, #1B1FA1 60%, #141887 100%)',
+                  filter: 'blur(18px)',
+                  transform: 'scale(1.25)',
+                }}
+              />
+            </div>
+          ))}
 
           <form
             onSubmit={handleSubmit}
             className="rounded-[30.64px] mx-auto relative"
             style={{
-              height: '520px',
-              padding: '60px',
+              minHeight: '520px',
+              padding: 'clamp(28px, 6vw, 60px)',
               background:
                 'linear-gradient(135deg, rgba(46, 46, 46, 0.75) 0%, rgba(21, 21, 21, 0.82) 45%, rgba(16, 16, 16, 0.88) 75%, rgba(38, 50, 168, 0.35) 100%)',
               backdropFilter: 'blur(24px)',
@@ -1061,7 +1136,7 @@ function App() {
           </form>
         </div>
 
-        <div className="text-center mt-48 relative z-10">
+        <div className="text-center mt-24 md:mt-48 relative z-10">
           <p
             className="mb-7"
             style={{
@@ -1077,7 +1152,7 @@ function App() {
           </p>
           <div
             className="inline-flex items-center justify-center gap-4 rounded-full bg-white mb-10"
-            style={{ width: '340px', height: '50px' }}
+            style={{ width: '340px', maxWidth: '100%', height: '50px' }}
           >
             <img
               src="/Group%201707480613.png"
@@ -1110,8 +1185,8 @@ function App() {
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer className="relative z-10 px-6 md:px-16 lg:px-24 pt-16 pb-8 border-t border-[#36377A]/20">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-16">
+      <footer className="relative z-10 px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-8 border-t-2 border-white/20">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-16">
           <div>
             <h4 className="font-semibold text-2xl mb-6">Creasume</h4>
             <ul className="space-y-4 text-lg text-[#9EA5E2]">
@@ -1131,17 +1206,20 @@ function App() {
           </div>
           <div>
             <h4 className="font-semibold text-2xl mb-6">Contact Us</h4>
-            <ul className="space-y-4 text-lg text-[#9EA5E2]">
-              <li><a href="mailto:support@creasume.com" className="hover:text-white transition">support@creasume.com</a></li>
+            <ul className="space-y-4 text-sm md:text-lg text-[#9EA5E2]">
+              <li><a href="mailto:support@creasume.com" className="hover:text-white transition break-words">support@creasume.com</a></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold text-2xl mb-6">Work with Us</h4>
-            <ul className="space-y-4 text-lg text-[#9EA5E2]">
-              <li><a href="mailto:partnerships@creasume.com" className="hover:text-white transition">partnerships@creasume.com</a></li>
+            <ul className="space-y-4 text-sm md:text-lg text-[#9EA5E2]">
+              <li><a href="mailto:partnerships@creasume.com" className="hover:text-white transition break-words">partnerships@creasume.com</a></li>
             </ul>
           </div>
         </div>
+
+        {/* Full-width divider line below the footer links */}
+        <div className="border-t-2 border-white/20 -mx-6 md:-mx-16 lg:-mx-24 mb-8" />
 
         <div className="text-right text-base text-[#9EA5E2]/60 mb-8">
           © 2026 Creasume. All rights reserved.

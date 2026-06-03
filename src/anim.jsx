@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { motion, useInView, useMotionValue, animate, useReducedMotion } from 'framer-motion'
 
 /* ============================================================
@@ -42,11 +42,12 @@ export function CountUp({ value, prefix = '', suffix = '', duration = 1.4, class
    ============================================================ */
 // `charStyle` is applied to each character span — pass a gradient + background-clip
 // here (not on the parent) since clipped text doesn't paint through child spans.
+// Each word is kept in a `nowrap` group so the title only ever breaks between words,
+// never mid-word (otherwise per-char inline-blocks let the line break anywhere).
 export function Typewriter({ text, perChar = 0.035, startDelay = 0, className, style, charStyle }) {
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-40px' })
   const reduce = useReducedMotion()
-  const chars = String(text).split('')
 
   if (reduce) {
     return (
@@ -56,29 +57,36 @@ export function Typewriter({ text, perChar = 0.035, startDelay = 0, className, s
     )
   }
 
+  const words = String(text).split(' ')
+
   return (
-    <motion.span
-      ref={ref}
-      className={className}
-      style={style}
-      aria-label={text}
-      initial="hidden"
-      animate={inView ? 'show' : 'hidden'}
-      variants={{
-        hidden: {},
-        show: { transition: { staggerChildren: perChar, delayChildren: startDelay } },
-      }}
-    >
-      {chars.map((ch, i) => (
-        <motion.span
-          key={i}
-          aria-hidden="true"
-          style={{ display: 'inline-block', whiteSpace: 'pre', ...charStyle }}
-          variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.01 } } }}
-        >
-          {ch}
-        </motion.span>
-      ))}
-    </motion.span>
+    <span ref={ref} className={className} style={style} aria-label={text}>
+      {words.map((word, wi) => {
+        // global char offset for this word = total chars in preceding words
+        const offset = words.slice(0, wi).reduce((sum, w) => sum + w.length, 0)
+        return (
+          <Fragment key={wi}>
+            {wi > 0 && ' '}
+            <span style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
+              {word.split('').map((ch, ci) => {
+                const delay = startDelay + (offset + ci) * perChar
+                return (
+                  <motion.span
+                    key={ci}
+                    aria-hidden="true"
+                    style={{ display: 'inline-block', ...charStyle }}
+                    initial={{ opacity: 0 }}
+                    animate={inView ? { opacity: 1 } : { opacity: 0 }}
+                    transition={{ duration: 0.01, delay }}
+                  >
+                    {ch}
+                  </motion.span>
+                )
+              })}
+            </span>
+          </Fragment>
+        )
+      })}
+    </span>
   )
 }
