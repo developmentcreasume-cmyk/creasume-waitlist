@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion, MotionConfig, useReducedMotion } from 'framer-motion'
-import { fadeUp, staggerParent, popUp, outlineDraw } from './motion-variants.js'
+import { fadeUp, outlineDraw } from './motion-variants.js'
 import { CountUp, Typewriter } from './anim.jsx'
+import SensesSection from './SensesSection.jsx'
 import './App.css'
 
 function App() {
@@ -43,7 +44,7 @@ function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-    <div className="relative min-h-screen overflow-hidden bg-black text-white">
+    <div className="relative min-h-screen overflow-x-clip bg-black text-white">
       {/* Starfield */}
       <div className="starfield" />
 
@@ -80,25 +81,32 @@ function App() {
 
 
       {/* ============ NAVIGATION ============ */}
-      <nav className="relative z-50 flex items-center justify-between px-6 md:px-16 lg:px-24 py-6">
+      <nav id="home" className="relative z-50 flex items-center justify-between px-6 md:px-16 lg:px-24 py-6">
         <div className="flex items-center gap-2">
           <img src="/creasumelogo.png" alt="Creasume" className="h-12 md:h-14 w-auto" />
         </div>
         <div
-          className="hidden md:flex items-center justify-between px-1 rounded-full bg-[#020423] backdrop-blur-sm ml-auto"
-          style={{ width: '324px', height: '52px' }}
+          className="hidden md:flex items-center justify-between gap-1 px-2 rounded-full bg-[#020423] backdrop-blur-sm ml-auto"
+          style={{ height: '52px' }}
         >
           {[
             { id: 'home', label: 'Home', href: '#home' },
-            { id: 'waitlist', label: 'Waitlist', href: '#waitlist' },
-            { id: 'signout', label: 'Sign Out', href: '#signout' },
+            { id: 'vision', label: 'Vision', href: '#vision' },
+            { id: 'how-it-works', label: 'How it Works', href: '#how-it-works' },
+            { id: 'waitlist', label: 'Join the Waitlist', href: '#waitlist' },
           ].map((tab) => {
             const isActive = activeTab === tab.id
             return (
               <a
                 key={tab.id}
                 href={tab.href}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={(e) => {
+                  setActiveTab(tab.id)
+                  if (tab.id === 'home') {
+                    e.preventDefault()
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }
+                }}
                 className={`flex items-center justify-center h-[42px] rounded-full font-medium transition-colors duration-150 ease-in-out ${
                   isActive ? 'text-white px-6' : 'text-[#9EA5E2] hover:text-white px-3'
                 }`}
@@ -136,15 +144,20 @@ function App() {
           <div className="md:hidden absolute left-6 right-6 top-full mt-2 rounded-2xl bg-[#020423] border border-[#36377A]/50 p-2 z-50 flex flex-col">
             {[
               { id: 'home', label: 'Home', href: '#home' },
-              { id: 'waitlist', label: 'Waitlist', href: '#waitlist' },
-              { id: 'signout', label: 'Sign Out', href: '#signout' },
+              { id: 'vision', label: 'Vision', href: '#vision' },
+              { id: 'how-it-works', label: 'How it Works', href: '#how-it-works' },
+              { id: 'waitlist', label: 'Join the Waitlist', href: '#waitlist' },
             ].map((tab) => (
               <a
                 key={tab.id}
                 href={tab.href}
-                onClick={() => {
+                onClick={(e) => {
                   setActiveTab(tab.id)
                   setMenuOpen(false)
+                  if (tab.id === 'home') {
+                    e.preventDefault()
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }
                 }}
                 className={`px-4 py-3 rounded-xl font-medium transition-colors duration-150 ${
                   activeTab === tab.id ? 'text-white bg-[rgba(34,39,114,0.53)]' : 'text-[#9EA5E2] hover:text-white'
@@ -358,7 +371,7 @@ function App() {
       </section>
 
       {/* ============ BUILT FOR EMERGING CREATORS ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
+      <section id="vision" className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
         <div className="glow-orb" style={{ width: 400, height: 400, top: 100, right: -100, background: '#2116B9', opacity: 0.15 }} />
 
         {/* Soft ellipse glow on the left edge */}
@@ -519,152 +532,11 @@ function App() {
         </div>
       </section>
 
-      {/* ============ MADE FOR NEXT GENERATION ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24">
-        <div className="text-center mb-10 md:mb-16">
-          <h2
-            className="font-bold mb-6"
-            style={{
-              fontFamily: "'Gelion', 'Outfit', sans-serif",
-              fontWeight: 600,
-              fontSize: 'clamp(30px, 7vw, 48px)',
-              lineHeight: '110%',
-              color: '#FFFFFF',
-            }}
-          >
-            Made for the{' '}
-            <span
-              style={{
-                background: 'linear-gradient(90deg, #5D65DC 0%, #9CA2E1 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              next generation<br />of creators.
-            </span>
-          </h2>
-          <p className="text-white/75 max-w-2xl mx-auto text-lg md:text-2xl leading-relaxed">
-            Everything you need to present your influence professionally<br />
-            and get discovered by the right brands.
-          </p>
-        </div>
-
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto"
-          variants={staggerParent}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-80px' }}
-        >
-          {[
-            {
-              icon: (
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                  <defs>
-                    <linearGradient id="iconGrad1" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#5D65DC" />
-                      <stop offset="100%" stopColor="#9CA2E1" />
-                    </linearGradient>
-                  </defs>
-                  <rect x="3" y="13" width="4" height="8" stroke="url(#iconGrad1)" strokeWidth="1.5" />
-                  <rect x="10" y="8" width="4" height="13" stroke="url(#iconGrad1)" strokeWidth="1.5" />
-                  <rect x="17" y="3" width="4" height="18" stroke="url(#iconGrad1)" strokeWidth="1.5" />
-                </svg>
-              ),
-              title: 'Data-Driven Credibility',
-              desc: 'Your follower count, engagement rate, and reach update automatically. No more manual screenshots.',
-            },
-            {
-              icon: (
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                  <defs>
-                    <linearGradient id="iconGrad2" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#5D65DC" />
-                      <stop offset="100%" stopColor="#9CA2E1" />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d="M12 3a9 9 0 109 9h-9V3z"
-                    stroke="url(#iconGrad2)"
-                    strokeWidth="1.5"
-                    strokeLinejoin="round"
-                  />
-                  <path d="M14 3a7 7 0 017 7h-7V3z" stroke="url(#iconGrad2)" strokeWidth="1.5" strokeLinejoin="round" />
-                </svg>
-              ),
-              title: 'Creator Wrapped & Portfolios',
-              desc: 'Beautiful animated stat cards and structured brand collaboration histories that make brands stop scrolling.',
-            },
-            {
-              icon: (
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                  <defs>
-                    <linearGradient id="iconGrad3" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#5D65DC" />
-                      <stop offset="100%" stopColor="#9CA2E1" />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
-                    stroke="url(#iconGrad3)"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
-                    stroke="url(#iconGrad3)"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              ),
-              title: 'One Professional Link',
-              desc: 'Share creasume.com/you instead of multiple files. Works flawlessly in brand emails, DMs, and LinkedIn.',
-            },
-          ].map((card, idx) => (
-            <motion.div
-              key={idx}
-              className="rounded-2xl p-8"
-              variants={popUp}
-              whileHover={{ scale: 1.03 }}
-              style={{
-                background:
-                  'linear-gradient(180deg, rgba(16, 31, 70, 0.84) 0%, rgba(0, 9, 32, 0.72) 100%)',
-                border: '1px solid rgba(54, 55, 122, 0.4)',
-                minHeight: '280px',
-              }}
-            >
-              <div className="mb-8">{card.icon}</div>
-              <h3
-                className="mb-4 text-white/80"
-                style={{
-                  fontFamily: "'Gelion', 'Outfit', sans-serif",
-                  fontWeight: 400,
-                  fontSize: '20px',
-                  lineHeight: '110%',
-                }}
-              >
-                {card.title}
-              </h3>
-              <p
-                className="text-white/80"
-                style={{
-                  fontFamily: "'Gelion', 'Outfit', sans-serif",
-                  fontWeight: 400,
-                  fontSize: '14.34px',
-                  lineHeight: '120%',
-                }}
-              >
-                {card.desc}
-              </p>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
+      {/* ============ MADE FOR NEXT GENERATION (marquee + rotating card) ============ */}
+      <SensesSection />
 
       {/* ============ THREE STEPS ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
+      <section id="how-it-works" className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
         <img
           src="/image/Group%2039850.png"
           alt=""
@@ -1194,10 +1066,21 @@ function App() {
           <div>
             <h4 className="font-semibold text-2xl mb-6">Creasume</h4>
             <ul className="space-y-4 text-lg text-white/75">
-              <li><a href="#" className="hover:text-white/70 transition">Home</a></li>
-              <li><a href="#" className="hover:text-white/70 transition">Vision</a></li>
-              <li><a href="#" className="hover:text-white/70 transition">How it Works</a></li>
-              <li><a href="#" className="hover:text-white/70 transition">Join the Waitlist</a></li>
+              <li>
+                <a
+                  href="#home"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }}
+                  className="hover:text-white/70 transition"
+                >
+                  Home
+                </a>
+              </li>
+              <li><a href="#vision" className="hover:text-white/70 transition">Vision</a></li>
+              <li><a href="#how-it-works" className="hover:text-white/70 transition">How it Works</a></li>
+              <li><a href="#waitlist" className="hover:text-white/70 transition">Join the Waitlist</a></li>
             </ul>
           </div>
           <div>

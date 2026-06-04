@@ -23,7 +23,7 @@ html, body, #root {
 }
 
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .gradient-text {
@@ -185,6 +185,60 @@ body {
   border: 1px solid rgba(93, 101, 220, 0.3);
   backdrop-filter: blur(10px);
 }
+
+/* ===== SensesSection: scrolling background marquee ===== */
+.marquee-row {
+  display: flex;
+  white-space: nowrap;
+  width: max-content;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: clamp(64px, 13vw, 190px);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.09);
+  text-transform: uppercase;
+}
+
+/* COLLABORATE / ENGAGEMENT — large, brighter "dark white". */
+.marquee-row--bright {
+  color: rgba(255, 255, 255, 0.16);
+}
+.marquee-row--bright .marquee-dot {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* INFLUENCE — smaller, and hollow (clean merged outline via text-shadow so
+   the font's overlapping internal contours don't show as box lines). */
+.marquee-row--sm {
+  font-size: clamp(34px, 7vw, 110px);
+  color: #000000;
+  -webkit-text-fill-color: #000000;
+  text-shadow:
+    1px 0 0 rgba(255, 255, 255, 0.08),
+    -1px 0 0 rgba(255, 255, 255, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.08),
+    0 -1px 0 rgba(255, 255, 255, 0.08),
+    1px 1px 0 rgba(255, 255, 255, 0.08),
+    -1px -1px 0 rgba(255, 255, 255, 0.08),
+    1px -1px 0 rgba(255, 255, 255, 0.08),
+    -1px 1px 0 rgba(255, 255, 255, 0.08);
+}
+.marquee-row--sm .marquee-dot {
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.08);
+  text-shadow: none;
+}
+
+.marquee-word {
+  padding: 0 0.12em;
+}
+
+.marquee-dot {
+  padding: 0 0.18em;
+  color: rgba(255, 255, 255, 0.08);
+}
+
 
 .giant-text {
   font-family: 'Outfit', sans-serif;
