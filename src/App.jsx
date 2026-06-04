@@ -158,13 +158,8 @@ function App() {
         )}
       </nav>
 
-      {/* Divider line below the header */}
-      <div className="relative z-10">
-        <div className="border-t-2 border-white/20" />
-      </div>
-
       {/* ============ HERO SECTION ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 pt-8 pb-12 md:pt-12 md:pb-24">
+      <section className="relative z-10 px-6 md:px-16 lg:px-24 pt-16 pb-12 md:pt-28 md:pb-20">
         {/* Two separate badge pills */}
         <div className="flex flex-wrap items-center gap-9 mb-10">
           <motion.div
@@ -254,12 +249,12 @@ function App() {
                 <span className="gradient-text relative z-10">& Verified.</span>
               </span>
             </motion.h1>
-            <motion.p variants={fadeUp} className="text-white text-base md:text-lg max-w-md mb-10 leading-relaxed relative z-10">
+            <motion.p variants={fadeUp} className="text-white/75 text-base md:text-lg max-w-md mb-10 leading-relaxed relative z-10">
               Turn your social presence into a professional creator identity that brands trust and opportunities find.
             </motion.p>
-            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:flex-nowrap gap-4 relative z-10">
+            <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:flex-nowrap gap-10 relative z-10">
               <motion.button
-                className="gradient-btn rounded-full text-white flex items-center justify-center shrink-0 whitespace-nowrap w-full sm:w-[360px]"
+                className="rounded-full flex items-center justify-center shrink-0 whitespace-nowrap w-full sm:w-[360px]"
                 whileHover={{ scale: 1.05, boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.5)' }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{
@@ -267,6 +262,8 @@ function App() {
                   fontWeight: 600,
                   fontSize: '22px',
                   fontFamily: "'Gelion', 'Outfit', sans-serif",
+                  backgroundColor: '#7B7CE0',
+                  color: '#0B0B27',
                 }}
               >
                 Become A Founding Creator
@@ -303,14 +300,15 @@ function App() {
       </section>
 
       {/* ============ STATS BAR ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 pb-12 md:pb-24 flex justify-center">
+      <section className="relative z-10 px-6 md:px-16 lg:px-24 pt-12 md:pt-24 pb-12 md:pb-24 flex justify-center">
         <div
-          className="rounded-2xl px-6 md:px-8 py-6 md:py-0 grid grid-cols-2 md:grid-cols-4 gap-6 items-center"
+          className="rounded-2xl px-6 md:px-8 py-6 md:py-0 grid grid-cols-2 md:grid-cols-4 gap-6 items-stretch"
           style={{
             width: '1070.05px',
             maxWidth: '100%',
             minHeight: '129.24px',
             backgroundColor: 'rgba(16, 31, 70, 0.59)',
+            border: '1px solid rgba(255, 255, 255, 0.18)',
           }}
         >
           {[
@@ -319,11 +317,11 @@ function App() {
             { title: 'Early Access', sub: 'FOUNDING CREATORS' },
             { title: 'Verified', sub: 'CREATOR PROFILES' },
           ].map((stat, idx) => (
-            <div key={idx} className="text-center relative">
+            <div key={idx} className="text-center relative flex flex-col items-center justify-center">
               {idx !== 0 && (
                 <span
                   className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2"
-                  style={{ width: '1px', height: '100%', backgroundColor: 'rgba(54, 55, 122, 0.5)' }}
+                  style={{ width: '1px', height: '100%', backgroundColor: 'rgba(255, 255, 255, 0.25)' }}
                 />
               )}
               <div
@@ -387,7 +385,7 @@ function App() {
           whileInView="show"
           viewport={{ once: true, margin: '-80px' }}
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-8" style={{ fontFamily: "'Gelion', 'Outfit', sans-serif" }}>
+          <h2 className="text-5xl md:text-7xl font-medium mb-8" style={{ fontFamily: "'Gelion', 'Outfit', sans-serif" }}>
             Built for{' '}
             <span
               style={{
@@ -400,14 +398,14 @@ function App() {
               Emerging Creators.
             </span>
           </h2>
-          <p className="text-white max-w-2xl mx-auto text-sm md:text-base leading-relaxed mb-8">
+          <p className="text-white/80 max-w-2xl mx-auto text-base md:text-lg leading-relaxed mb-8">
             Content creators have become one of the most powerful marketing channels for modern brands.
             But most emerging creators still lack the professional identity needed to position themselves effectively.
           </p>
-          <p className="text-white font-semibold max-w-2xl mx-auto text-sm md:text-base leading-relaxed mb-6">
+          <p className="text-white font-semibold max-w-2xl mx-auto text-base md:text-lg leading-relaxed mb-6">
             No media kit. No credibility layer. No way to show brands why they matter.
           </p>
-          <p className="text-white max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
+          <p className="text-white max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
             Creasume changes that.<br />
             Build credibility, improve discoverability, and become<br />
             <span
@@ -546,7 +544,7 @@ function App() {
               next generation<br />of creators.
             </span>
           </h2>
-          <p className="text-white max-w-xl mx-auto text-sm md:text-base leading-relaxed">
+          <p className="text-white/75 max-w-2xl mx-auto text-lg md:text-2xl leading-relaxed">
             Everything you need to present your influence professionally<br />
             and get discovered by the right brands.
           </p>
@@ -639,7 +637,7 @@ function App() {
             >
               <div className="mb-8">{card.icon}</div>
               <h3
-                className="mb-4 text-[#9EA5E2]"
+                className="mb-4 text-white/80"
                 style={{
                   fontFamily: "'Gelion', 'Outfit', sans-serif",
                   fontWeight: 400,
@@ -650,7 +648,7 @@ function App() {
                 {card.title}
               </h3>
               <p
-                className="text-[#9EA5E2]"
+                className="text-white/80"
                 style={{
                   fontFamily: "'Gelion', 'Outfit', sans-serif",
                   fontWeight: 400,
@@ -682,8 +680,8 @@ function App() {
           }}
         />
 
-        <div className="text-center mb-12 md:mb-20">
-          <h2 className="text-4xl md:text-5xl font-bold" style={{ color: '#FFFFFF' }}>
+        <div className="text-center mb-12 md:mb-20 relative z-10">
+          <h2 className="text-4xl md:text-5xl font-medium" style={{ color: '#FFFFFF' }}>
             Three steps to your<br />
             <span className="gradient-text">verified creator identity</span>
           </h2>
@@ -713,9 +711,9 @@ function App() {
               {
                 icon: (
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="3" width="18" height="18" rx="5" stroke="#9CA2E1" strokeWidth="1.5" />
-                    <circle cx="12" cy="12" r="4" stroke="#9CA2E1" strokeWidth="1.5" />
-                    <circle cx="17.5" cy="6.5" r="1" fill="#9CA2E1" />
+                    <rect x="3" y="3" width="18" height="18" rx="5" stroke="#FFFFFF" strokeWidth="1.5" />
+                    <circle cx="12" cy="12" r="4" stroke="#FFFFFF" strokeWidth="1.5" />
+                    <circle cx="17.5" cy="6.5" r="1" fill="#FFFFFF" />
                   </svg>
                 ),
                 title: 'Connect Instagram',
@@ -724,9 +722,9 @@ function App() {
               {
                 icon: (
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#9CA2E1" strokeWidth="1.5" strokeLinejoin="round" />
-                    <path d="M2 17L12 22L22 17" stroke="#9CA2E1" strokeWidth="1.5" strokeLinejoin="round" />
-                    <path d="M2 12L12 17L22 12" stroke="#9CA2E1" strokeWidth="1.5" strokeLinejoin="round" />
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#FFFFFF" strokeWidth="1.5" strokeLinejoin="round" />
+                    <path d="M2 17L12 22L22 17" stroke="#FFFFFF" strokeWidth="1.5" strokeLinejoin="round" />
+                    <path d="M2 12L12 17L22 12" stroke="#FFFFFF" strokeWidth="1.5" strokeLinejoin="round" />
                   </svg>
                 ),
                 title: 'Auto-Generate Identity',
@@ -735,8 +733,8 @@ function App() {
               {
                 icon: (
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#9CA2E1" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#9CA2E1" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
                 ),
                 title: 'Share With Brands',
@@ -755,19 +753,19 @@ function App() {
                   {step.icon}
                 </div>
                 <h3 className="text-sm font-semibold mb-2">{step.title}</h3>
-                <p className="text-xs text-[#9EA5E2] leading-relaxed max-w-[200px] mx-auto">{step.desc}</p>
+                <p className="text-xs text-white/75 leading-relaxed max-w-[200px] mx-auto">{step.desc}</p>
               </motion.div>
             ))}
           </motion.div>
 
-          <div className="mt-16 text-center">
-            <p className="text-lg text-white mb-4">
+          <div className="mt-28 md:mt-40 text-center">
+            <p className="text-xl md:text-2xl font-bold text-white mb-4">
               <img
                 src="/Vector%20(5).png"
                 alt=""
                 aria-hidden="true"
                 className="inline-block mr-2 align-middle"
-                style={{ width: '20px', height: '20px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+                style={{ width: '24px', height: '24px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
               />
               Your consent matters to us
             </p>
@@ -782,7 +780,7 @@ function App() {
               <span className="text-[#9EA5E2] text-sm">×</span>
               <img src="/image/image%204.png" alt="Instagram" style={{ height: '20px', width: 'auto', objectFit: 'contain' }} />
             </motion.div>
-            <p className="text-lg text-white max-w-2xl mx-auto">
+            <p className="text-base md:text-xl text-white/70 mx-auto md:whitespace-nowrap">
               We fetch your verified statistics with your consent directly through Instagram permissions.
             </p>
           </div>
@@ -793,7 +791,7 @@ function App() {
       <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24">
         <div className="text-center mb-10 md:mb-16">
           <h2
-            className="font-bold mb-6"
+            className="font-medium mb-6"
             style={{
               fontFamily: "'Gelion', 'Outfit', sans-serif",
               fontSize: 'clamp(30px, 7vw, 48px)',
@@ -801,10 +799,10 @@ function App() {
             }}
           >
             Become a<br />
-            <span className="gradient-text" style={{ fontStyle: 'italic' }}>Founding Creator</span>
+            <span className="gradient-text">Founding Creator</span>
           </h2>
           <p
-            className="text-white"
+            className="text-white/75"
             style={{
               fontFamily: "'Gelion', 'Outfit', sans-serif",
               fontSize: '20px',
@@ -981,7 +979,7 @@ function App() {
       </section>
 
       {/* ============ RESERVE YOUR IDENTITY ============ */}
-      <section id="waitlist" className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
+      <section id="waitlist" className="relative z-10 px-6 md:px-16 lg:px-24 pt-24 md:pt-44 pb-12 md:pb-24 overflow-hidden">
 
         {/* Soft ellipse glow on the left edge */}
         <img
@@ -1000,12 +998,12 @@ function App() {
           }}
         />
 
-        <div className="text-center mb-12 relative z-10">
+        <div className="text-center mb-32 md:mb-44 relative z-10">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Reserve your<br />
             <span className="gradient-text">creator identity</span>
           </h2>
-          <p className="text-[#9EA5E2] text-sm md:text-base">
+          <p className="text-white/75 text-sm md:text-base">
             Be among the first creators to own a verified professional identity.<br />
             Limited spots in our founding cohort.
           </p>
@@ -1056,7 +1054,7 @@ function App() {
                 placeholder="Your full name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="rounded-2xl outline-none mx-auto block"
+                className="rounded-xl outline-none mx-auto block"
                 style={{
                   backgroundColor: '#000000',
                   width: '501.2px',
@@ -1066,7 +1064,7 @@ function App() {
                   fontFamily: "'Outfit', sans-serif",
                   fontSize: '20px',
                   color: '#FFFFFF',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  border: 'none',
                 }}
               />
               <input
@@ -1074,7 +1072,7 @@ function App() {
                 placeholder="Email address"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="rounded-2xl outline-none mx-auto block"
+                className="rounded-xl outline-none mx-auto block"
                 style={{
                   backgroundColor: '#000000',
                   width: '501.2px',
@@ -1084,7 +1082,7 @@ function App() {
                   fontFamily: "'Outfit', sans-serif",
                   fontSize: '20px',
                   color: '#FFFFFF',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  border: 'none',
                 }}
               />
               <input
@@ -1092,7 +1090,7 @@ function App() {
                 placeholder="Instagram username (e.g. @yourhandle)"
                 value={formData.handle}
                 onChange={(e) => setFormData({ ...formData, handle: e.target.value })}
-                className="rounded-2xl outline-none mx-auto block"
+                className="rounded-xl outline-none mx-auto block"
                 style={{
                   backgroundColor: '#000000',
                   width: '501.2px',
@@ -1102,13 +1100,13 @@ function App() {
                   fontFamily: "'Outfit', sans-serif",
                   fontSize: '20px',
                   color: '#FFFFFF',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  border: 'none',
                 }}
               />
               <button
                 type="submit"
                 disabled={status === 'sending'}
-                className="gradient-btn rounded-full text-white transition-all hover:scale-[1.02] mx-auto block disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="gradient-btn rounded-xl text-white transition-all hover:scale-[1.02] mx-auto block disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                 style={{
                   width: '501.2px',
                   maxWidth: '100%',
@@ -1136,7 +1134,7 @@ function App() {
           </form>
         </div>
 
-        <div className="text-center mt-24 md:mt-48 relative z-10">
+        <div className="text-center mt-32 md:mt-64 mb-16 md:mb-28 relative z-10">
           <p
             className="mb-7"
             style={{
@@ -1174,7 +1172,7 @@ function App() {
               fontSize: '22px',
               width: '989px',
               maxWidth: '100%',
-              color: '#FFFFFF',
+              color: 'rgba(255, 255, 255, 0.75)',
               lineHeight: '97.6%',
             }}
           >
@@ -1185,35 +1183,41 @@ function App() {
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer className="relative z-10 px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-8 border-t-2 border-white/20">
+      <footer
+        className="relative z-10 px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-8"
+        style={{
+          background:
+            'radial-gradient(ellipse 75% 80% at 32% 0%, rgba(37, 49, 133, 0.55) 0%, rgba(23, 27, 95, 0.28) 38%, rgba(0, 0, 0, 0) 72%)',
+        }}
+      >
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-16">
           <div>
             <h4 className="font-semibold text-2xl mb-6">Creasume</h4>
-            <ul className="space-y-4 text-lg text-[#9EA5E2]">
-              <li><a href="#" className="hover:text-white transition">Home</a></li>
-              <li><a href="#" className="hover:text-white transition">Vision</a></li>
-              <li><a href="#" className="hover:text-white transition">How it Works</a></li>
-              <li><a href="#" className="hover:text-white transition">Join the Waitlist</a></li>
+            <ul className="space-y-4 text-lg text-white/75">
+              <li><a href="#" className="hover:text-white/70 transition">Home</a></li>
+              <li><a href="#" className="hover:text-white/70 transition">Vision</a></li>
+              <li><a href="#" className="hover:text-white/70 transition">How it Works</a></li>
+              <li><a href="#" className="hover:text-white/70 transition">Join the Waitlist</a></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold text-2xl mb-6">Follow us</h4>
-            <ul className="space-y-4 text-lg text-[#9EA5E2]">
-              <li><a href="#" className="hover:text-white transition">Instagram</a></li>
-              <li><a href="#" className="hover:text-white transition">LinkedIn</a></li>
-              <li><a href="#" className="hover:text-white transition">X</a></li>
+            <ul className="space-y-4 text-lg text-white/75">
+              <li><a href="#" className="hover:text-white/70 transition">Instagram</a></li>
+              <li><a href="#" className="hover:text-white/70 transition">LinkedIn</a></li>
+              <li><a href="#" className="hover:text-white/70 transition">X</a></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold text-2xl mb-6">Contact Us</h4>
-            <ul className="space-y-4 text-sm md:text-lg text-[#9EA5E2]">
-              <li><a href="mailto:support@creasume.com" className="hover:text-white transition break-words">support@creasume.com</a></li>
+            <ul className="space-y-4 text-sm md:text-lg text-white/75">
+              <li><a href="mailto:support@creasume.com" className="hover:text-white/70 transition wrap-break-word">support@creasume.com</a></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold text-2xl mb-6">Work with Us</h4>
-            <ul className="space-y-4 text-sm md:text-lg text-[#9EA5E2]">
-              <li><a href="mailto:partnerships@creasume.com" className="hover:text-white transition break-words">partnerships@creasume.com</a></li>
+            <ul className="space-y-4 text-sm md:text-lg text-white/75">
+              <li><a href="mailto:partnerships@creasume.com" className="hover:text-white/70 transition wrap-break-word">partnerships@creasume.com</a></li>
             </ul>
           </div>
         </div>
@@ -1221,12 +1225,12 @@ function App() {
         {/* Full-width divider line below the footer links */}
         <div className="border-t-2 border-white/20 -mx-6 md:-mx-16 lg:-mx-24 mb-8" />
 
-        <div className="text-right text-base text-[#9EA5E2]/60 mb-8">
+        <div className="text-right text-base text-white/75 mb-20 md:mb-28">
           © 2026 Creasume. All rights reserved.
         </div>
 
-        {/* Giant CREASUME text */}
-        <div className="overflow-hidden -mb-8">
+        {/* Giant CREASUME text — hollow outline of the real font */}
+        <div className="overflow-hidden -mb-8 -mx-6 md:-mx-16 lg:-mx-24">
           <h1 className="giant-text text-center select-none whitespace-nowrap">
             CREASUME
           </h1>
