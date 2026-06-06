@@ -56,11 +56,10 @@ function App() {
         className="pointer-events-none select-none"
         style={{
           position: 'absolute',
-          top: '-580px',
+          top: '-120px',
           right: '0px',
-          left: '0px',
-          width: '100%',
-          height: 'auto',
+          width: '85%',
+          height: '1800px',
           zIndex: 0,
           opacity: 0.85,
           clipPath: 'inset(25% 0 0 0)',
@@ -231,28 +230,11 @@ function App() {
               }}
             >
               Your Influence<br />
-              <span className="gradient-text">Structured</span><br />
-              <span className="relative inline-block">
-                <img
-                  src="/Rounded%20rectangle%20(2).png"
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute pointer-events-none select-none"
-                  style={{
-                    left: '50%',
-                    top: '50%',
-                    transform: 'translate(-50%, -72%)',
-                    height: 'clamp(80px, 18vw, 180px)',
-                    width: 'auto',
-                    opacity: 0.5,
-                    zIndex: 0,
-                  }}
-                />
-                <span className="gradient-text relative z-10">& Verified.</span>
-              </span>
+              <span style={{ color: '#6068DC' }}>Structured &</span><br />
+              <span className="gradient-text">Verified.</span>
             </motion.h1>
-            <motion.p variants={fadeUp} className="text-white/75 text-base md:text-lg max-w-md mb-10 leading-relaxed relative z-10">
-              Turn your social presence into a professional creator identity that brands trust and opportunities find.
+            <motion.p variants={fadeUp} className="text-white text-base md:text-lg max-w-xl mb-10 leading-snug relative z-10" style={{ fontFamily: "'Gelion', sans-serif" }}>
+              Create your dynamic media kit and turn your social presence into a professional creator identity that brands trust.
             </motion.p>
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:flex-nowrap gap-10 relative z-10">
               <motion.button
@@ -264,14 +246,14 @@ function App() {
                   fontWeight: 600,
                   fontSize: '22px',
                   fontFamily: "'Gelion', 'Outfit', sans-serif",
-                  backgroundColor: '#7B7CE0',
+                  background: 'linear-gradient(180deg, #5D65DC 0%, #9CA2E1 100%)',
                   color: '#0B0B27',
                 }}
               >
                 Become A Founding Creator
               </motion.button>
               <motion.button
-                className="rounded-full border border-[#36377A] text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap w-full sm:w-auto"
+                className="rounded-full border border-white text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap w-full sm:w-auto"
                 whileHover={{ backgroundColor: '#FFFFFF', color: '#000000' }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{
@@ -288,12 +270,12 @@ function App() {
           </motion.div>
 
           {/* Sample Creator card — continuous slow float */}
-          <div className="relative flex justify-center lg:justify-end lg:pr-12">
+          <div className="relative flex justify-center lg:justify-end lg:pr-12 lg:-translate-x-[200px] lg:-translate-y-[50px]">
             <motion.img
               src="/image/blurimage.png"
               alt="Sample Creator Profile"
               className="w-full"
-              style={{ maxWidth: '360px' }}
+              style={{ maxWidth: '440px' }}
               animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
               transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
             />
@@ -315,7 +297,7 @@ function App() {
         >
           {[
             { title: 'Dynamic', sub: 'PROFESSIONAL LINK' },
-            { title: '$250 Billion', sub: 'CREATOR ECONOMY' },
+            { title: '3 Min', sub: 'SETUP' },
             { title: 'Early Access', sub: 'FOUNDING CREATORS' },
             { title: 'Verified', sub: 'CREATOR PROFILES' },
           ].map((stat, idx) => (
@@ -397,7 +379,8 @@ function App() {
             But most emerging creators still lack the professional identity needed to position themselves effectively.
           </p>
           <p className="text-white font-semibold max-w-2xl mx-auto text-base md:text-lg leading-relaxed mb-6">
-            No media kit. No credibility layer. No way to show brands why they matter.
+            No media kit. No credibility layer.<br />
+            No way to show brands why they matter.
           </p>
           <p className="text-white max-w-2xl mx-auto text-sm md:text-base leading-snug">
             Creasume changes that.<br />
