@@ -31,7 +31,10 @@ function App() {
     try {
       await fetch(import.meta.env.VITE_SHEET_ENDPOINT, {
         method: 'POST',
-        // text/plain avoids the CORS preflight that Apps Script web apps don't answer.
+        // Apps Script web apps don't return CORS headers, so a normal `cors`
+        // fetch rejects even when the row is written. `no-cors` lets the POST
+        // go through (text/plain keeps it a simple request, no preflight).
+        mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(formData),
       })
