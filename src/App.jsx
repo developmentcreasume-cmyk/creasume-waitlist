@@ -770,7 +770,7 @@ function App() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-24 md:max-w-[calc(66.666%+48px)] md:mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-24 md:max-w-[565px] md:mx-auto">
             {[
               {
                 icon: (
