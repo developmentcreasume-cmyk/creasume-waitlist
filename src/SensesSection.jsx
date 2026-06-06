@@ -7,7 +7,7 @@ function LinkIcon() {
     <svg width="112" height="112" viewBox="0 0 24 24" fill="none">
       <defs>
         <linearGradient id="cardIconLink" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#7B7FE6" />
+          <stop offset="0%" stopColor="#363C98" />
           <stop offset="100%" stopColor="#9CA2E1" />
         </linearGradient>
       </defs>
@@ -182,9 +182,9 @@ export default function SensesSection() {
             className="relative rounded-[28px] overflow-hidden p-8 md:p-10 min-h-75 md:min-h-80"
             style={{
               background:
-                'linear-gradient(145deg, rgba(24, 24, 32, 0.96) 0%, rgba(10, 10, 16, 0.96) 100%)',
-              border: '1px solid rgba(255, 255, 255, 0.16)',
-              boxShadow: '0 0 70px rgba(37, 49, 133, 0.18), inset 0 1px 0 rgba(255,255,255,0.05)',
+                'radial-gradient(90% 150% at 100% 100%, rgba(126, 105, 255, 0.32) 0%, rgba(126, 105, 255, 0) 75%) padding-box, linear-gradient(150deg, #0C0C12 0%, #09090E 58%, #07070D 100%) padding-box, linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(152,255,206,0.25) 40%, rgba(55,113,200,0.3) 73%, rgba(126,105,255,0.45) 100%) border-box',
+              border: '1px solid transparent',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
             }}
           >
             <AnimatePresence mode="wait">

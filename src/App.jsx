@@ -270,7 +270,7 @@ function App() {
           </motion.div>
 
           {/* Sample Creator card — continuous slow float */}
-          <div className="relative flex justify-center lg:justify-end lg:pr-12 lg:-translate-x-[200px] lg:-translate-y-[50px]">
+          <div className="relative flex justify-center lg:justify-end lg:pr-12 lg:-translate-x-[140px] lg:-translate-y-[50px]">
             <motion.img
               src="/image/blurimage.png"
               alt="Sample Creator Profile"
@@ -374,16 +374,16 @@ function App() {
               Emerging Creators.
             </span>
           </h2>
-          <p className="text-white font-normal max-w-2xl mx-auto text-sm md:text-base leading-snug mb-8">
-            Content creators have become one of the most powerful marketing channels for modern brands.
+          <p className="text-white/70 font-normal max-w-4xl mx-auto text-sm md:text-base leading-snug mb-8" style={{ fontFamily: "'Gelion'" }}>
+            Content creation has become one of the most powerful marketing tool for modern brands.<br />
+            The creator economy is a $250+ billion industry with more than 80+ million emerging creators.<br />
             But most emerging creators still lack the professional identity needed to position themselves effectively.
           </p>
-          <p className="text-white font-semibold max-w-2xl mx-auto text-base md:text-lg leading-relaxed mb-6">
-            No media kit. No credibility layer.<br />
-            No way to show brands why they matter.
+          <p className="text-white font-semibold max-w-2xl mx-auto text-base md:text-lg leading-snug mb-6" style={{ fontFamily: "'Gelion', sans-serif" }}>
+            No media kit. No credibility layer. No way to show brands why they matter.<br />
+            <span className="font-normal">Creasume changes that.</span>
           </p>
-          <p className="text-white max-w-2xl mx-auto text-sm md:text-base leading-snug">
-            Creasume changes that.<br />
+          <p className="text-white max-w-2xl mx-auto text-sm md:text-base leading-snug" style={{ fontFamily: "'Gelion', sans-serif" }}>
             Build credibility, improve discoverability, and become<br />
             <span
               className="font-medium"
@@ -406,7 +406,7 @@ function App() {
             width: '858.21px',
             maxWidth: '100%',
             background:
-              'linear-gradient(90deg, rgba(16, 31, 70, 0.84) 0%, rgba(0, 9, 32, 0.72) 100%)',
+              'linear-gradient(180deg, rgba(16, 31, 70, 0.5) 0%, rgba(0, 9, 32, 0.72) 100%)',
             border: '1px solid rgba(54, 55, 122, 0.4)',
           }}
         >
@@ -434,9 +434,7 @@ function App() {
           ].map((card, idx) => (
             <motion.div
               key={idx}
-              className={`relative p-8 flex flex-col rounded-2xl ${
-                idx !== 0 ? 'border-t md:border-t-0 lg:border-l border-[#36377A]/40' : ''
-              }`}
+              className="relative px-8 pt-14 pb-8 flex flex-col rounded-2xl"
               style={{ transformOrigin: 'center' }}
               initial="rest"
               whileHover="hover"
@@ -444,6 +442,11 @@ function App() {
               variants={{ rest: {}, hover: {} }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
             >
+              {/* Straight white divider between cards */}
+              {idx !== 0 && (
+                <span className="hidden lg:block absolute left-0 top-0 bottom-0 w-px bg-white/40 pointer-events-none" />
+              )}
+
               {/* Brighten overlay that fills in on hover (card opening out) */}
               <motion.div
                 aria-hidden="true"
@@ -463,7 +466,7 @@ function App() {
                   style={{
                     width: '32px',
                     height: '2px',
-                    background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)',
+                    background: '#E432A5',
                   }}
                 />
                 <h3
@@ -602,7 +605,10 @@ function App() {
                   show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut', delay: [0, 0.75, 1.5][idx] } },
                 }}
               >
-                <div className="w-14 h-14 rounded-full bg-[#0B0B27] border border-[#36377A] flex items-center justify-center mx-auto mb-5 relative z-10">
+                <div
+                  className="w-14 h-14 rounded-full border border-[#36377A] flex items-center justify-center mx-auto mb-5 relative z-10"
+                  style={{ background: 'linear-gradient(135deg, #272969 0%, #10113A 100%)' }}
+                >
                   {step.icon}
                 </div>
                 <h3
@@ -660,22 +666,16 @@ function App() {
       </section>
 
       {/* ============ FOUNDING CREATOR PERKS ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24">
-        {/* Capsule outline peeking from the left edge */}
+      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
+        {/* Diagonal background texture (glow sits in the lower-right of the PNG) */}
         <img
-          src="/Rounded%20rectangle%20(2).png"
+          src="/image/Group%201707480435.png"
           alt=""
           aria-hidden="true"
           className="absolute pointer-events-none select-none"
-          style={{
-            left: '-30px',
-            top: '10%',
-            height: '220px',
-            width: 'auto',
-            opacity: 0.6,
-            zIndex: 0,
-          }}
+          style={{ right: '300px', top: '-300px', width: '1550px', height: '1400px', opacity: 0.8, zIndex: 0 }}
         />
+
 
         <div className="text-center mb-10 md:mb-16">
           <h2
@@ -701,52 +701,27 @@ function App() {
         </div>
 
         <div
-          className="max-w-5xl mx-auto"
+          className="max-w-4xl mx-auto"
           onMouseEnter={() => setPerksReleased(true)}
           onClick={() => setPerksReleased(true)}
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-24 mb-24">
             {[
               {
                 icon: (
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                    <defs>
-                      <linearGradient id="perkGrad1" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#5D65DC" />
-                        <stop offset="100%" stopColor="#9CA2E1" />
-                      </linearGradient>
-                    </defs>
-                    <circle cx="12" cy="12" r="9" stroke="url(#perkGrad1)" strokeWidth="1.5" />
-                    <path d="M9 12L11 14L15 10" stroke="url(#perkGrad1)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <img src="/image/Vector.png" alt="" aria-hidden="true" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
                 ),
                 title: 'Early Access to Creasume',
               },
               {
                 icon: (
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                    <defs>
-                      <linearGradient id="perkGrad2" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#5D65DC" />
-                        <stop offset="100%" stopColor="#9CA2E1" />
-                      </linearGradient>
-                    </defs>
-                    <path d="M12 2L15 8L21 9L17 14L18 21L12 18L6 21L7 14L3 9L9 8L12 2Z" stroke="url(#perkGrad2)" strokeWidth="1.5" strokeLinejoin="round" />
-                  </svg>
+                  <img src="/image/Vector%20(1).png" alt="" aria-hidden="true" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
                 ),
                 title: 'Exclusive Founding Creator Badge',
               },
               {
                 icon: (
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                    <defs>
-                      <linearGradient id="perkGrad3" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#5D65DC" />
-                        <stop offset="100%" stopColor="#9CA2E1" />
-                      </linearGradient>
-                    </defs>
-                    <path d="M7 11L12 6L17 11M7 17L12 12L17 17" stroke="url(#perkGrad3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <img src="/image/Vector%20(3).png" alt="" aria-hidden="true" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
                 ),
                 title: 'Lifetime Access to Premium Version',
               },
@@ -756,8 +731,9 @@ function App() {
                 className="rounded-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
                 style={{
                   minHeight: '240px',
-                  backgroundColor: '#000000',
-                  border: '1px solid rgba(54, 55, 122, 0.35)',
+                  background:
+                    'linear-gradient(#000000, #000000) padding-box, linear-gradient(0deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%) border-box',
+                  border: '1px solid transparent',
                   zIndex: 3 - idx,
                 }}
                 initial={reduceMotion ? 'grid' : 'stacked'}
@@ -791,35 +767,17 @@ function App() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:max-w-[calc(66.666%+12px)] md:mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-24 md:max-w-[calc(66.666%+48px)] md:mx-auto">
             {[
               {
                 icon: (
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                    <defs>
-                      <linearGradient id="perkGrad4" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#5D65DC" />
-                        <stop offset="100%" stopColor="#9CA2E1" />
-                      </linearGradient>
-                    </defs>
-                    <path d="M4 6H20M4 10H20M4 14H14" stroke="url(#perkGrad4)" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
+                  <img src="/image/Vector%20(4).png" alt="" aria-hidden="true" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
                 ),
                 title: 'Priority listing to brands',
               },
               {
                 icon: (
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                    <defs>
-                      <linearGradient id="perkGrad5" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#5D65DC" />
-                        <stop offset="100%" stopColor="#9CA2E1" />
-                      </linearGradient>
-                    </defs>
-                    <rect x="3" y="5" width="18" height="14" rx="2" stroke="url(#perkGrad5)" strokeWidth="1.5" />
-                    <rect x="7" y="9" width="4" height="3" stroke="url(#perkGrad5)" strokeWidth="1" />
-                    <path d="M14 10H17M14 12H16" stroke="url(#perkGrad5)" strokeWidth="1" strokeLinecap="round" />
-                  </svg>
+                  <img src="/image/Vector%20(2).png" alt="" aria-hidden="true" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
                 ),
                 title: 'Chance to work with us as a partner and get paid',
               },
@@ -829,8 +787,9 @@ function App() {
                 className="rounded-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
                 style={{
                   minHeight: '240px',
-                  backgroundColor: '#000000',
-                  border: '1px solid rgba(54, 55, 122, 0.35)',
+                  background:
+                    'linear-gradient(#000000, #000000) padding-box, linear-gradient(0deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%) border-box',
+                  border: '1px solid transparent',
                   zIndex: idx === 0 ? 2 : 1,
                 }}
                 initial={reduceMotion ? 'grid' : 'stacked'}
@@ -1068,6 +1027,25 @@ function App() {
                   Something went wrong. Please try again.
                 </p>
               )}
+
+              {/* Social proof — joined creators */}
+              <div className="flex items-center justify-center gap-3 mt-6 relative z-10">
+                <div className="flex -space-x-3">
+                  {['884', '885', '886', '887'].map((n) => (
+                    <img
+                      key={n}
+                      src={`/Ellipse%20${n}.png`}
+                      alt=""
+                      aria-hidden="true"
+                      className="w-9 h-9 rounded-full border-2 border-[#0B0B27] object-cover"
+                    />
+                  ))}
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-white pl-1 pr-4 py-1">
+                  <span className="flex items-center justify-center rounded-full bg-black text-white font-bold text-xs h-7 px-3">140</span>
+                  <span className="text-black text-sm font-medium">Joined already</span>
+                </div>
+              </div>
             </div>
           </form>
         </div>
