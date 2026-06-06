@@ -273,7 +273,7 @@ function App() {
           </motion.div>
 
           {/* Sample Creator card — continuous slow float */}
-          <div className="relative flex justify-center lg:justify-end lg:pr-12 lg:-translate-x-[140px] lg:-translate-y-[50px]">
+          <div className="relative flex justify-center lg:justify-end lg:pr-12 lg:-translate-x-[100px] lg:-translate-y-[50px]">
             <motion.img
               src="/image/blurimage.png"
               alt="Sample Creator Profile"
@@ -676,7 +676,7 @@ function App() {
           alt=""
           aria-hidden="true"
           className="absolute pointer-events-none select-none"
-          style={{ right: '300px', top: '-300px', width: '1550px', height: '1400px', opacity: 0.8, zIndex: 0 }}
+          style={{ right: '240px', top: '-300px', width: '1550px', height: '1400px', opacity: 0.8, zIndex: 0 }}
         />
 
 
@@ -1156,15 +1156,20 @@ function App() {
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold text-2xl mb-6">Contact Us</h4>
+            <h4 className="font-semibold text-2xl mb-6">Work with Us</h4>
+            <ul className="space-y-4 text-sm md:text-lg text-white">
+              <li><a href="mailto:partnerships@creasume.com" className="hover:text-white transition break-words">partnerships@creasume.com</a></li>
+            </ul>
+            <h4 className="font-semibold text-2xl mt-8 mb-6">Contact Us</h4>
             <ul className="space-y-4 text-sm md:text-lg text-white">
               <li><a href="mailto:support@creasume.com" className="hover:text-white transition break-words">support@creasume.com</a></li>
             </ul>
           </div>
           <div>
-            <h4 className="font-semibold text-2xl mb-6">Work with Us</h4>
-            <ul className="space-y-4 text-sm md:text-lg text-white">
-              <li><a href="mailto:partnerships@creasume.com" className="hover:text-white transition break-words">partnerships@creasume.com</a></li>
+            <h4 className="font-semibold text-2xl mb-6">Legal</h4>
+            <ul className="space-y-4 text-lg text-white">
+              <li><a href="#" className="hover:text-white transition">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-white transition">Terms and Conditions</a></li>
             </ul>
           </div>
         </div>
