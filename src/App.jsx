@@ -56,7 +56,7 @@ function App() {
         className="pointer-events-none select-none"
         style={{
           position: 'absolute',
-          top: '-500px',
+          top: '-580px',
           right: '0px',
           left: '0px',
           width: '100%',
@@ -67,17 +67,6 @@ function App() {
         }}
       />
 
-      {/* Global animated glow orbs — positioned to match the reference design */}
-      {/* Right side — around the Three Steps section */}
-      <div
-        className="glow-orb delay-2"
-        style={{ width: 500, height: 500, top: 3700, right: -200, background: '#253185', '--orb-opacity': 0.45 }}
-      />
-      {/* Right side — around the Founding Creator perks */}
-      <div
-        className="glow-orb delay-3"
-        style={{ width: 550, height: 550, top: 5000, right: -200, background: '#2116B9', '--orb-opacity': 0.4 }}
-      />
 
 
       {/* ============ NAVIGATION ============ */}
@@ -372,7 +361,6 @@ function App() {
 
       {/* ============ BUILT FOR EMERGING CREATORS ============ */}
       <section id="vision" className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
-        <div className="glow-orb" style={{ width: 400, height: 400, top: 100, right: -100, background: '#2116B9', opacity: 0.15 }} />
 
         {/* Soft ellipse glow on the left edge */}
         <img
@@ -381,11 +369,11 @@ function App() {
           aria-hidden="true"
           className="absolute pointer-events-none select-none"
           style={{
-            left: '-60px',
-            top: '50%',
+            left: '-10px',
+            top: '35%',
             transform: 'translateY(-50%)',
-            height: '700px',
-            width: 'auto',
+            height: '500px',
+            width: '230px',
             opacity: 0.8,
             zIndex: 0,
           }}
@@ -400,25 +388,18 @@ function App() {
         >
           <h2 className="text-5xl md:text-7xl font-medium mb-8" style={{ fontFamily: "'Gelion', 'Outfit', sans-serif" }}>
             Built for{' '}
-            <span
-              style={{
-                background: 'linear-gradient(90deg, #5D65DC 0%, #9CA2E1 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
+            <span style={{ color: '#9EA5E2' }}>
               Emerging Creators.
             </span>
           </h2>
-          <p className="text-white/80 max-w-2xl mx-auto text-base md:text-lg leading-relaxed mb-8">
+          <p className="text-white font-normal max-w-2xl mx-auto text-sm md:text-base leading-snug mb-8">
             Content creators have become one of the most powerful marketing channels for modern brands.
             But most emerging creators still lack the professional identity needed to position themselves effectively.
           </p>
           <p className="text-white font-semibold max-w-2xl mx-auto text-base md:text-lg leading-relaxed mb-6">
             No media kit. No credibility layer. No way to show brands why they matter.
           </p>
-          <p className="text-white max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
+          <p className="text-white max-w-2xl mx-auto text-sm md:text-base leading-snug">
             Creasume changes that.<br />
             Build credibility, improve discoverability, and become<br />
             <span
@@ -544,7 +525,7 @@ function App() {
           className="absolute pointer-events-none select-none left-1/2 -translate-x-1/2"
           style={{
             top: '-100px',
-            width: '120%',
+            width: '100%',
             maxWidth: 'none',
             height: 'auto',
             opacity: 0.7,
@@ -552,10 +533,27 @@ function App() {
           }}
         />
 
+        {/* Soft ellipse glow on the left edge */}
+        <img
+          src="/Ellipse%20883.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute pointer-events-none select-none"
+          style={{
+            left: '-10px',
+            top: '42%',
+            transform: 'translateY(-50%)',
+            height: 'auto',
+            width: 'auto',
+            opacity: 0.8,
+            zIndex: 0,
+          }}
+        />
+
         <div className="text-center mb-12 md:mb-20 relative z-10">
           <h2 className="text-4xl md:text-5xl font-medium" style={{ color: '#FFFFFF' }}>
             Three steps to your<br />
-            <span className="gradient-text">verified creator identity</span>
+            <span style={{ color: '#9EA5E2' }}>verified creator identity</span>
           </h2>
         </div>
 
@@ -624,8 +622,27 @@ function App() {
                 <div className="w-14 h-14 rounded-full bg-[#0B0B27] border border-[#36377A] flex items-center justify-center mx-auto mb-5 relative z-10">
                   {step.icon}
                 </div>
-                <h3 className="text-sm font-semibold mb-2">{step.title}</h3>
-                <p className="text-xs text-white/75 leading-relaxed max-w-[200px] mx-auto">{step.desc}</p>
+                <h3
+                  className="mb-2"
+                  style={{
+                    fontFamily: "'Outfit', sans-serif",
+                    fontWeight: 700,
+                    fontSize: '25px',
+                    color: '#FFFFFF',
+                  }}
+                >
+                  {step.title}
+                </h3>
+                <p
+                  className="leading-relaxed max-w-[260px] mx-auto"
+                  style={{
+                    fontFamily: "'Gelion', sans-serif",
+                    fontSize: '15px',
+                    color: '#FFFFFF',
+                  }}
+                >
+                  {step.desc}
+                </p>
               </motion.div>
             ))}
           </motion.div>
@@ -652,7 +669,7 @@ function App() {
               <span className="text-[#9EA5E2] text-sm">×</span>
               <img src="/image/image%204.png" alt="Instagram" style={{ height: '20px', width: 'auto', objectFit: 'contain' }} />
             </motion.div>
-            <p className="text-base md:text-xl text-white/70 mx-auto md:whitespace-nowrap">
+            <p className="text-lg text-white font-normal mx-auto whitespace-normal md:whitespace-nowrap">
               We fetch your verified statistics with your consent directly through Instagram permissions.
             </p>
           </div>
@@ -661,6 +678,22 @@ function App() {
 
       {/* ============ FOUNDING CREATOR PERKS ============ */}
       <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24">
+        {/* Capsule outline peeking from the left edge */}
+        <img
+          src="/Rounded%20rectangle%20(2).png"
+          alt=""
+          aria-hidden="true"
+          className="absolute pointer-events-none select-none"
+          style={{
+            left: '-30px',
+            top: '10%',
+            height: '220px',
+            width: 'auto',
+            opacity: 0.6,
+            zIndex: 0,
+          }}
+        />
+
         <div className="text-center mb-10 md:mb-16">
           <h2
             className="font-medium mb-6"
@@ -671,7 +704,7 @@ function App() {
             }}
           >
             Become a<br />
-            <span className="gradient-text">Founding Creator</span>
+            <span style={{ color: '#9EA5E2' }}>Founding Creator</span>
           </h2>
           <p
             className="text-white/75"
@@ -861,21 +894,71 @@ function App() {
           className="absolute pointer-events-none select-none"
           style={{
             left: '-60px',
-            top: '50%',
+            top: '75%',
             transform: 'translateY(-50%)',
-            height: '700px',
+            height: '850px',
+            width: '320px',
+            opacity: 0.8,
+            zIndex: 0,
+          }}
+        />
+
+        {/* Soft ellipse glow on the right edge */}
+        <img
+          src="/Ellipse%20879.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute pointer-events-none select-none"
+          style={{
+            right: '-60px',
+            top: '32%',
+            transform: 'translateY(-50%)',
+            height: 'auto',
             width: 'auto',
             opacity: 0.8,
             zIndex: 0,
           }}
         />
 
-        <div className="text-center mb-32 md:mb-44 relative z-10">
+        {/* Horizontal capsule outline peeking from the left edge */}
+        <img
+          src="/Rounded%20rectangle%20(1).png"
+          alt=""
+          aria-hidden="true"
+          className="absolute pointer-events-none select-none"
+          style={{
+            left: '0px',
+            top: '12%',
+            height: '90px',
+            width: 'auto',
+            opacity: 0.7,
+            zIndex: 0,
+          }}
+        />
+
+        <div className="text-center mb-12 relative z-10">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Reserve your<br />
-            <span className="gradient-text">creator identity</span>
+            <span
+              style={{
+                fontFamily: "'Outfit', sans-serif",
+                fontWeight: 400,
+                fontSize: '59px',
+                color: '#9EA5E2',
+              }}
+            >
+              creator identity
+            </span>
           </h2>
-          <p className="text-white/75 text-sm md:text-base">
+          <p
+            style={{
+              fontFamily: "'Gelion', 'Outfit', sans-serif",
+              color: '#FFFFFF',
+              fontWeight: 25,
+              fontSize: '25px',
+              lineHeight: '110%',
+            }}
+          >
             Be among the first creators to own a verified professional identity.<br />
             Limited spots in our founding cohort.
           </p>
@@ -885,20 +968,20 @@ function App() {
           {/* Four blue corner orbs around the form — sharp circular edge,
               blur contained inside via an overflow-hidden clip. */}
           {[
-            { top: '-90px', left: '-90px' },
-            { top: '-90px', right: '-90px' },
-            { bottom: '-90px', left: '-90px' },
-            { bottom: '-90px', right: '-90px' },
+            { top: '-60px', left: '-60px' },
+            { top: '-60px', right: '-60px' },
+            { bottom: '-60px', left: '-60px' },
+            { bottom: '-60px', right: '-60px' },
           ].map((pos, i) => (
             <div
               key={i}
               className="absolute rounded-full overflow-hidden pointer-events-none"
-              style={{ width: '260px', height: '260px', zIndex: -1, ...pos }}
+              style={{ width: '180px', height: '180px', zIndex: -1, ...pos }}
             >
               <div
                 className="w-full h-full"
                 style={{
-                  background: 'radial-gradient(circle at 50% 50%, #2F32C4 0%, #1B1FA1 60%, #141887 100%)',
+                  background: 'linear-gradient(135deg, #10155B 0%, #1B2280 41%, #2F39C7 56%, #3C48F7 100%)',
                   filter: 'blur(18px)',
                   transform: 'scale(1.25)',
                 }}
@@ -1055,17 +1138,34 @@ function App() {
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer
-        className="relative z-10 px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-8"
-        style={{
-          background:
-            'radial-gradient(ellipse 75% 80% at 32% 0%, rgba(37, 49, 133, 0.55) 0%, rgba(23, 27, 95, 0.28) 38%, rgba(0, 0, 0, 0) 72%)',
-        }}
-      >
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-16">
+      <footer className="relative z-10 px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-8 border-t-2 border-white/20 overflow-hidden">
+        {/* Ambient glow band behind the footer columns (top region) */}
+        <img
+          src="/Ellipse%2025%20(1).png"
+          alt=""
+          aria-hidden="true"
+          className="absolute pointer-events-none select-none left-1/2 -translate-x-1/2 top-0"
+          style={{ width: '42%', height: '220px', opacity: 0.7, zIndex: 0 }}
+        />
+        <img
+          src="/Ellipse%2024%20(2).png"
+          alt=""
+          aria-hidden="true"
+          className="absolute pointer-events-none select-none"
+          style={{ left: '-80px', top: '82px', width: '45%', height: '260px', opacity: 0.7, zIndex: 0 }}
+        />
+        <img
+          src="/Ellipse%2024%20(2).png"
+          alt=""
+          aria-hidden="true"
+          className="absolute pointer-events-none select-none"
+          style={{ right: '-80px', top: '82px', width: '45%', height: '260px', opacity: 0.7, zIndex: 0 }}
+        />
+
+        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-16">
           <div>
             <h4 className="font-semibold text-2xl mb-6">Creasume</h4>
-            <ul className="space-y-4 text-lg text-white/75">
+            <ul className="space-y-4 text-lg text-white font-normal">
               <li>
                 <a
                   href="#home"
@@ -1073,47 +1173,47 @@ function App() {
                     e.preventDefault()
                     window.scrollTo({ top: 0, behavior: 'smooth' })
                   }}
-                  className="hover:text-white/70 transition"
+                  className="hover:text-white transition"
                 >
                   Home
                 </a>
               </li>
-              <li><a href="#vision" className="hover:text-white/70 transition">Vision</a></li>
-              <li><a href="#how-it-works" className="hover:text-white/70 transition">How it Works</a></li>
-              <li><a href="#waitlist" className="hover:text-white/70 transition">Join the Waitlist</a></li>
+              <li><a href="#vision" className="hover:text-white transition">Vision</a></li>
+              <li><a href="#how-it-works" className="hover:text-white transition">How it Works</a></li>
+              <li><a href="#waitlist" className="hover:text-white transition">Join the Waitlist</a></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold text-2xl mb-6">Follow us</h4>
-            <ul className="space-y-4 text-lg text-white/75">
-              <li><a href="#" className="hover:text-white/70 transition">Instagram</a></li>
-              <li><a href="#" className="hover:text-white/70 transition">LinkedIn</a></li>
-              <li><a href="#" className="hover:text-white/70 transition">X</a></li>
+            <ul className="space-y-4 text-lg text-white">
+              <li><a href="#" className="hover:text-white transition">Instagram</a></li>
+              <li><a href="#" className="hover:text-white transition">LinkedIn</a></li>
+              <li><a href="#" className="hover:text-white transition">X</a></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold text-2xl mb-6">Contact Us</h4>
-            <ul className="space-y-4 text-sm md:text-lg text-white/75">
-              <li><a href="mailto:support@creasume.com" className="hover:text-white/70 transition wrap-break-word">support@creasume.com</a></li>
+            <ul className="space-y-4 text-sm md:text-lg text-white">
+              <li><a href="mailto:support@creasume.com" className="hover:text-white transition break-words">support@creasume.com</a></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold text-2xl mb-6">Work with Us</h4>
-            <ul className="space-y-4 text-sm md:text-lg text-white/75">
-              <li><a href="mailto:partnerships@creasume.com" className="hover:text-white/70 transition wrap-break-word">partnerships@creasume.com</a></li>
+            <ul className="space-y-4 text-sm md:text-lg text-white">
+              <li><a href="mailto:partnerships@creasume.com" className="hover:text-white transition break-words">partnerships@creasume.com</a></li>
             </ul>
           </div>
         </div>
 
         {/* Full-width divider line below the footer links */}
-        <div className="border-t-2 border-white/20 -mx-6 md:-mx-16 lg:-mx-24 mb-8" />
+        <div className="relative z-10 border-t-2 border-white/20 -mx-6 md:-mx-16 lg:-mx-24 mb-8" />
 
-        <div className="text-right text-base text-white/75 mb-20 md:mb-28">
+        <div className="relative z-10 text-right text-base text-white/75 mb-20 md:mb-28">
           © 2026 Creasume. All rights reserved.
         </div>
 
         {/* Giant CREASUME text — hollow outline of the real font */}
-        <div className="overflow-hidden -mb-8 -mx-6 md:-mx-16 lg:-mx-24">
+        <div className="relative z-10 overflow-hidden -mb-8 -mx-6 md:-mx-16 lg:-mx-24">
           <h1 className="giant-text text-center select-none whitespace-nowrap">
             CREASUME
           </h1>
