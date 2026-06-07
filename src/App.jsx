@@ -1046,7 +1046,7 @@ function App() {
                       src={`/Ellipse%20${n}.png`}
                       alt=""
                       aria-hidden="true"
-                      className="w-9 h-9 rounded-full border-2 border-[#15151a] object-cover"
+                      className="w-12 h-12 rounded-full border-2 border-[#15151a] object-cover"
                     />
                   ))}
                 </div>

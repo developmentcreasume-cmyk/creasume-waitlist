@@ -8,7 +8,7 @@ const MARQUEE_SPEED = 40
 // ---- Card icons (purple gradient on the dark card surface) ----
 function LinkIcon() {
   return (
-    <svg width="112" height="112" viewBox="0 0 24 24" fill="none">
+    <svg width="112" height="112" viewBox="0 0 24 24" fill="none" style={{ transform: 'translateY(14px)' }}>
       <defs>
         <linearGradient id="cardIconLink" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#363C98" />
@@ -37,33 +37,37 @@ function PortfolioIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
-      width="120"
-      height="120"
+      width="100"
+      height="100"
       fill="none"
       stroke="url(#cardIconContact)"
-      strokeWidth="1.4"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
       <defs>
-        <linearGradient id="cardIconContact" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id="cardIconContact" gradientUnits="userSpaceOnUse" x1="3" y1="3" x2="21" y2="21">
           <stop offset="0%" stopColor="#5D65DC" />
           <stop offset="100%" stopColor="#9CA2E1" />
         </linearGradient>
       </defs>
-      <rect x="3.5" y="3" width="17" height="18" rx="2" />
-      <path d="M16 3.2v17.6" />
-      <circle cx="9.6" cy="10" r="2.4" />
-      <path d="M6.1 16.2c0-1.9 1.57-3.1 3.5-3.1s3.5 1.2 3.5 3.1" />
+      {/* square book with a barely-there corner radius */}
+      <rect x="3.5" y="3" width="17" height="18" rx="0.6" strokeWidth="1.6" />
+      {/* spine column split off near the right */}
+      <path d="M16 3.2v17.6" strokeWidth="1.6" />
+      {/* two tab marks inside the spine */}
       <path d="M18 9.4h1.1" />
       <path d="M18 14.6h1.1" />
+      {/* person in the main left area */}
+      <circle cx="9.6" cy="10" r="2.4" />
+      <path d="M6.1 16.2c0-1.9 1.57-3.1 3.5-3.1s3.5 1.2 3.5 3.1" />
     </svg>
   )
 }
 
 function ChartIcon() {
   return (
-    <svg width="112" height="112" viewBox="0 0 46 46" fill="none">
+    <svg width="128" height="128" viewBox="0 0 46 46" fill="none" style={{ transform: 'translateY(12px)' }}>
       <defs>
         <linearGradient id="cardIconChart" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#5D65DC" />
@@ -263,7 +267,7 @@ export default function SensesSection() {
                 <p className="text-white/70 text-sm md:text-[15px] leading-relaxed max-w-[62%]">
                   {card.desc}
                 </p>
-                <div className="absolute -bottom-2 -right-2 md:-bottom-1 md:-right-1">{card.icon}</div>
+                <div className="absolute bottom-3 -right-2 md:bottom-4 md:-right-1">{card.icon}</div>
               </motion.div>
             </AnimatePresence>
 
