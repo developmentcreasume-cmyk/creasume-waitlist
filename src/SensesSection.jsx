@@ -1,5 +1,9 @@
-import { useState, useRef } from 'react'
-import { motion, AnimatePresence, useScroll, useTransform, useMotionValueEvent } from 'framer-motion'
+import { useState, useRef, useEffect } from 'react'
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion'
+
+// Marquee scroll speed in pixels/second — shared by every row so they all move
+// at the same visual pace regardless of word length or font size.
+const MARQUEE_SPEED = 40
 
 // ---- Card icons (purple gradient on the dark card surface) ----
 function LinkIcon() {
@@ -31,35 +35,49 @@ function LinkIcon() {
 
 function PortfolioIcon() {
   return (
-    <svg width="112" height="112" viewBox="0 0 64 64" fill="none">
+    <svg
+      viewBox="0 0 24 24"
+      width="120"
+      height="120"
+      fill="none"
+      stroke="url(#cardIconContact)"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <defs>
-        <linearGradient id="cardIcon1" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#7B7FE6" />
+        <linearGradient id="cardIconContact" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#5D65DC" />
           <stop offset="100%" stopColor="#9CA2E1" />
         </linearGradient>
       </defs>
-      <rect x="10" y="8" width="40" height="48" rx="6" fill="url(#cardIcon1)" />
-      <rect x="47" y="18" width="9" height="6" rx="3" fill="url(#cardIcon1)" />
-      <rect x="47" y="31" width="9" height="6" rx="3" fill="url(#cardIcon1)" />
-      <circle cx="29" cy="26" r="6" fill="#1a1a20" />
-      <path d="M18 45c0-6.5 5-11 11-11s11 4.5 11 11" fill="#1a1a20" />
+      <rect x="3.5" y="3" width="17" height="18" rx="2" />
+      <path d="M16 3.2v17.6" />
+      <circle cx="9.6" cy="10" r="2.4" />
+      <path d="M6.1 16.2c0-1.9 1.57-3.1 3.5-3.1s3.5 1.2 3.5 3.1" />
+      <path d="M18 9.4h1.1" />
+      <path d="M18 14.6h1.1" />
     </svg>
   )
 }
 
 function ChartIcon() {
   return (
-    <svg width="112" height="112" viewBox="0 0 64 64" fill="none">
+    <svg width="112" height="112" viewBox="0 0 46 46" fill="none">
       <defs>
-        <linearGradient id="cardIcon2" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#7B7FE6" />
+        <linearGradient id="cardIconChart" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#5D65DC" />
           <stop offset="100%" stopColor="#9CA2E1" />
         </linearGradient>
       </defs>
-      <rect x="9" y="40" width="9" height="14" rx="2" fill="url(#cardIcon2)" />
-      <rect x="23" y="30" width="9" height="24" rx="2" fill="url(#cardIcon2)" />
-      <rect x="37" y="21" width="9" height="33" rx="2" fill="url(#cardIcon2)" />
-      <rect x="51" y="11" width="9" height="43" rx="2" fill="url(#cardIcon2)" />
+      <g stroke="url(#cardIconChart)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+        {/* outlined bars with rounded tops, increasing in height, all touching each other and the baseline */}
+        <rect x="11" y="26" width="8" height="13" />
+        <rect x="19" y="18" width="8" height="21" />
+        <rect x="27" y="8" width="8" height="31" />
+        {/* baseline */}
+        <path d="M9 39h28" />
+      </g>
     </svg>
   )
 }
@@ -88,19 +106,50 @@ const CARDS = [
   },
 ]
 
-const repeated = () => Array.from({ length: 8 }, (_, i) => i)
-
-// One horizontal marquee row. `x` is a scroll-driven motion value.
-function MarqueeRow({ x, word, variant }) {
-  return (
-    <div className="flex justify-center">
-      <motion.div style={{ x }} className={`marquee-row ${variant}`}>
-        {repeated().map((i) => (
-          <span key={i} className="marquee-word">
-            {word}
+// One horizontal marquee row that auto-scrolls forever (independent of page
+// scroll). Two identical halves animated by 50% give a seamless loop.
+function MarqueeRow({ word, variant, direction = 1 }) {
+  // `word` can be a single string or a list of words to cycle through.
+  const words = Array.isArray(word) ? word : [word]
+  const half = (
+    <div className="flex shrink-0">
+      {Array.from({ length: 3 }).flatMap((_, rep) =>
+        words.map((w, i) => (
+          <span key={`${rep}-${i}`} className="marquee-word">
+            {w}
             <span className="marquee-dot">·</span>
           </span>
-        ))}
+        )),
+      )}
+    </div>
+  )
+
+  // Measure one half's width so the loop distance (and thus duration) tracks the
+  // real rendered size — keeps every row at the same pixels/second.
+  const trackRef = useRef(null)
+  const [halfWidth, setHalfWidth] = useState(0)
+  useEffect(() => {
+    const el = trackRef.current
+    if (!el) return
+    const measure = () => setHalfWidth(el.scrollWidth / 2)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const duration = halfWidth ? halfWidth / MARQUEE_SPEED : 30
+
+  return (
+    <div className="flex w-full overflow-hidden">
+      <motion.div
+        ref={trackRef}
+        className={`marquee-row ${variant}`}
+        animate={{ x: direction > 0 ? [-halfWidth, 0] : [0, -halfWidth] }}
+        transition={{ duration, ease: 'linear', repeat: Infinity }}
+      >
+        {half}
+        {half}
       </motion.div>
     </div>
   )
@@ -115,13 +164,6 @@ export default function SensesSection() {
     target: ref,
     offset: ['start start', 'end end'],
   })
-
-  // COLLABORATE (top) + ENGAGEMENT (bottom) drift right; the two middle
-  // INFLUENCE rows drift left (different ranges add parallax depth).
-  const collabX = useTransform(scrollYProgress, [0, 1], [-340, 340])
-  const infl1X = useTransform(scrollYProgress, [0, 1], [320, -320])
-  const infl2X = useTransform(scrollYProgress, [0, 1], [420, -420])
-  const engageX = useTransform(scrollYProgress, [0, 1], [-300, 300])
 
   // Card boundaries along the scroll. Card 1 ends sooner (it also shows while
   // the section scrolls in, so it would otherwise feel too long); card 2 gets a
@@ -141,13 +183,29 @@ export default function SensesSection() {
       <div className="sticky top-0 h-screen overflow-hidden flex items-center">
         {/* ===== Background scrolling marquee text ===== */}
         <div className="pointer-events-none absolute inset-0 flex flex-col justify-between select-none py-16 md:py-24">
-          <MarqueeRow x={collabX} word="COLLABORATE" variant="marquee-row--bright" />
+          <MarqueeRow
+            word={['COLLABORATE', 'COMMUNITY', 'CONNECT', 'CREATE', 'CONTENT']}
+            variant="marquee-row--bright"
+            direction={1}
+          />
           {/* two INFLUENCE rows grouped in the middle */}
           <div className="flex flex-col gap-1 md:gap-2">
-            <MarqueeRow x={infl1X} word="INFLUENCE" variant="marquee-row--sm" />
-            <MarqueeRow x={infl2X} word="INFLUENCE" variant="marquee-row--sm" />
+            <MarqueeRow
+              word={['INFLUENCE', 'EXPOSURE', 'BRAND READY']}
+              variant="marquee-row--sm"
+              direction={-1}
+            />
+            <MarqueeRow
+              word={['INFLUENCE', 'CREDIBILITY', 'REACH', 'INSIGHTS']}
+              variant="marquee-row--sm"
+              direction={1}
+            />
           </div>
-          <MarqueeRow x={engageX} word="ENGAGEMENT" variant="marquee-row--bright" />
+          <MarqueeRow
+            word={['ENGAGEMENT', 'BRAND DEALS', 'MEDIA KIT', 'OPPORTUNITIES', 'PARTNERSHIPS']}
+            variant="marquee-row--bright"
+            direction={1}
+          />
         </div>
 
         {/* ===== Foreground content ===== */}

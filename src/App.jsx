@@ -1,28 +1,94 @@
-import { useState, useEffect } from 'react'
-import { motion, MotionConfig, useReducedMotion } from 'framer-motion'
+import { useState, useRef, useEffect } from 'react'
+import { motion, AnimatePresence, MotionConfig, useReducedMotion, useScroll, useTransform } from 'framer-motion'
 import { fadeUp, outlineDraw } from './motion-variants.js'
 import { CountUp, Typewriter } from './anim.jsx'
 import SensesSection from './SensesSection.jsx'
+import Footer from './components/Footer.jsx'
 import './App.css'
+
+// Founding Creator perk cards (order = reveal order in the coverflow).
+const PERKS = [
+  { icon: <img src="/image/Vector.png" alt="" aria-hidden="true" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />, title: 'Early Access to Creasume' },
+  { icon: <img src="/image/Vector%20(1).png" alt="" aria-hidden="true" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />, title: 'Exclusive Founding Creator Badge' },
+  { icon: <img src="/image/Vector%20(3).png" alt="" aria-hidden="true" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />, title: 'Lifetime Access to Premium Version' },
+  { icon: <img src="/image/Vector%20(4).png" alt="" aria-hidden="true" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />, title: 'Priority listing to brands' },
+  { icon: <img src="/image/Vector%20(2).png" alt="" aria-hidden="true" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />, title: 'Chance to work with us as a partner and get paid' },
+]
+
+// A perk card that scrubs from its stacked position (stackedX/Y, in % of its own
+// size) to its grid position (0,0) based on the section's scroll progress, over
+// the window [start, start+0.16]. Because it's tied to scroll, it moves forward
+// as you scroll down and reverses as you scroll up.
+function ScrubCard({ progress, start, stackedX, stackedY, zIndex, perk, titleClass }) {
+  // Window width = how much scroll the unstack takes. start → end is when it
+  // animates; it's fully placed by `end` (tuned to finish as the heading exits).
+  const end = start + 0.30
+  const x = useTransform(progress, [start, end], [`${stackedX}%`, '0%'])
+  const y = useTransform(progress, [start, end], [`${stackedY}%`, '0%'])
+  const scale = useTransform(progress, [start, end], [0.92, 1])
+
+  return (
+    <motion.div
+      className="rounded-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
+      style={{
+        x,
+        y,
+        scale,
+        zIndex,
+        height: '260px',
+        background:
+          'linear-gradient(#000000, #000000) padding-box, linear-gradient(0deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%) border-box',
+        border: '1px solid transparent',
+      }}
+    >
+      <img
+        src="/image/shape.png"
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+        style={{ opacity: 0.5 }}
+      />
+      <div className="mb-6 relative z-10">{perk.icon}</div>
+      <h3
+        className={titleClass}
+        style={{ fontFamily: "'Gelion', 'Outfit', sans-serif", fontWeight: 500, fontSize: '20px' }}
+      >
+        {perk.title}
+      </h3>
+    </motion.div>
+  )
+}
 
 function App() {
   const [activeTab, setActiveTab] = useState('home')
   const [menuOpen, setMenuOpen] = useState(false)
+  // Which "Built for Emerging Creators" card is opened (tapped). null = none.
+  const [openCard, setOpenCard] = useState(null)
   const reduceMotion = useReducedMotion()
 
-  // Founding Creator perk cards: start stacked, fan out to the grid after
-  // ~1.5s (or earlier on hover/click). See the Founding Creator section below.
-  const [perksReleased, setPerksReleased] = useState(false)
-  useEffect(() => {
-    const t = setTimeout(() => setPerksReleased(true), 1500)
-    return () => clearTimeout(t)
-  }, [])
+  // Founding Creator perks: cards start stacked and unstack to their grid spots
+  // one-by-one, scrubbed by scroll progress (so it reverses when scrolling up).
+  const perksRef = useRef(null)
+  const { scrollYProgress: perksProgress } = useScroll({
+    target: perksRef,
+    offset: ['start end', 'end start'],
+  })
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     handle: '',
   })
   const [status, setStatus] = useState('idle') // 'idle' | 'sending' | 'success' | 'error'
+
+  // "Joined already" counter that ticks up slowly: 140 → 141 → 142 …
+  const [joinedCount, setJoinedCount] = useState(140)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setJoinedCount((n) => n + 1)
+    }, 4000) // one new join every 4s
+    return () => clearInterval(id)
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -164,18 +230,20 @@ function App() {
 
       {/* ============ HERO SECTION ============ */}
       <section className="relative z-10 px-6 md:px-16 lg:px-24 pt-16 pb-12 md:pt-28 md:pb-20">
-        {/* Two separate badge pills */}
-        <div className="flex flex-wrap items-center gap-9 mb-10">
+        {/* Two separate badge pills — outline draws in on load, one after the other */}
+        <motion.div
+          className="flex flex-wrap items-center gap-9 mb-10"
+          initial="hidden"
+          animate="show"
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.15 } } }}
+        >
           <motion.div
-            className="inline-flex items-center justify-center rounded-full border backdrop-blur-sm px-6"
+            variants={outlineDraw}
+            className="shine-border cursor-pointer inline-flex items-center justify-center rounded-full backdrop-blur-sm px-6"
             style={{
               height: '40px',
               backgroundColor: 'rgba(125, 113, 201, 0.09)',
-              borderColor: 'rgba(255, 255, 255, 0.43)',
             }}
-            variants={outlineDraw}
-            initial="hidden"
-            animate="show"
           >
             <span
               style={{
@@ -192,11 +260,9 @@ function App() {
           </motion.div>
 
           <motion.div
-            className="inline-flex items-center justify-center gap-3 rounded-full bg-white"
-            style={{ width: '244.95px', height: '35.46px' }}
             variants={outlineDraw}
-            initial="hidden"
-            animate="show"
+            className="shine-border shine-border--tint inline-flex items-center justify-center gap-3 rounded-full bg-white"
+            style={{ width: '244.95px', height: '35.46px' }}
           >
             <img
               src="/Group%201707480613.png"
@@ -210,7 +276,7 @@ function App() {
               style={{ width: '74.67px', height: '21px', objectFit: 'contain' }}
             />
           </motion.div>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1fr] gap-10 lg:gap-16 items-center">
           <motion.div
@@ -256,7 +322,7 @@ function App() {
                 Become A Founding Creator
               </motion.button>
               <motion.button
-                className="rounded-full border border-white text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap w-full sm:w-auto"
+                className="shine-border rounded-full text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap w-full sm:w-auto"
                 whileHover={{ backgroundColor: '#FFFFFF', color: '#000000' }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{
@@ -272,16 +338,22 @@ function App() {
             </motion.div>
           </motion.div>
 
-          {/* Sample Creator card — continuous slow float */}
+          {/* Sample Creator card — fades & rises in on load (staggered after the text), then floats continuously */}
           <div className="relative flex justify-center lg:justify-end lg:pr-12 lg:-translate-x-[100px] lg:-translate-y-[50px]">
-            <motion.img
-              src="/image/blurimage.png"
-              alt="Sample Creator Profile"
-              className="w-full"
-              style={{ maxWidth: '440px' }}
-              animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
-              transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
-            />
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: 'easeOut', delay: 0.45 }}
+            >
+              <motion.img
+                src="/image/blurimage.png"
+                alt="Sample Creator Profile"
+                className="w-full"
+                style={{ maxWidth: '440px' }}
+                animate={reduceMotion ? undefined : { y: [0, -14, 0] }}
+                transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </motion.div>
           </div>
         </div>
       </section>
@@ -300,7 +372,7 @@ function App() {
         >
           {[
             { title: 'Dynamic', sub: 'PROFESSIONAL LINK' },
-            { title: '3 Min', sub: 'SETUP' },
+            { title: '$250 Billion', sub: 'CREATOR ECONOMY' },
             { title: 'Early Access', sub: 'FOUNDING CREATORS' },
             { title: 'Verified', sub: 'CREATOR PROFILES' },
           ].map((stat, idx) => (
@@ -377,16 +449,16 @@ function App() {
               Emerging Creators.
             </span>
           </h2>
-          <p className="text-white/70 font-normal max-w-4xl mx-auto text-sm md:text-base leading-snug mb-8" style={{ fontFamily: "'Gelion'" }}>
+          <p className="text-white/80 font-normal max-w-5xl mx-auto text-lg md:text-xl leading-relaxed mb-8" style={{ fontFamily: "'Outfit', sans-serif" }}>
             Content creation has become one of the most powerful marketing tool for modern brands.<br />
             The creator economy is a $250+ billion industry with more than 80+ million emerging creators.<br />
             But most emerging creators still lack the professional identity needed to position themselves effectively.
           </p>
-          <p className="text-white font-semibold max-w-2xl mx-auto text-base md:text-lg leading-snug mb-6" style={{ fontFamily: "'Gelion', sans-serif" }}>
+          <p className="text-white font-semibold max-w-none mx-auto text-xl md:text-2xl leading-snug mb-6 md:whitespace-nowrap" style={{ fontFamily: "'Gelion', sans-serif" }}>
             No media kit. No credibility layer. No way to show brands why they matter.<br />
-            <span className="font-normal">Creasume changes that.</span>
+            Creasume changes that.
           </p>
-          <p className="text-white max-w-2xl mx-auto text-sm md:text-base leading-snug" style={{ fontFamily: "'Gelion', sans-serif" }}>
+          <p className="text-white max-w-none mx-auto text-xl md:text-2xl leading-snug" style={{ fontFamily: "'Gelion', sans-serif" }}>
             Build credibility, improve discoverability, and become<br />
             <span
               className="font-medium"
@@ -437,13 +509,14 @@ function App() {
           ].map((card, idx) => (
             <motion.div
               key={idx}
-              className="relative px-8 pt-14 pb-8 flex flex-col rounded-2xl"
+              className="relative px-8 pt-14 pb-8 flex flex-col rounded-2xl overflow-hidden cursor-pointer"
               style={{ transformOrigin: 'center' }}
               initial="rest"
               whileHover="hover"
               animate="rest"
               variants={{ rest: {}, hover: {} }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
+              onClick={() => setOpenCard(openCard === idx ? null : idx)}
             >
               {/* Straight white divider between cards */}
               {idx !== 0 && (
@@ -463,39 +536,65 @@ function App() {
                 variants={{ rest: { scale: 1, y: 0 }, hover: { scale: 1.04, y: -6 } }}
                 transition={{ duration: 0.35, ease: 'easeOut' }}
               >
-                <div className="mb-8">{card.icon}</div>
-                <div
-                  className="mb-8 rounded-full"
+                {/* Large faded index number at the top */}
+                <span
+                  className="font-bold leading-none select-none pointer-events-none"
                   style={{
-                    width: '32px',
-                    height: '2px',
-                    background: '#E432A5',
-                  }}
-                />
-                <h3
-                  className="mb-6 text-white leading-tight"
-                  style={{
-                    width: '165.46px',
-                    height: '52.95px',
-                    fontWeight: 500,
-                    fontSize: '24.27px',
+                    fontSize: '64px',
+                    color: 'rgba(255,255,255,0.06)',
+                    fontFamily: "'Outfit', sans-serif",
                   }}
                 >
-                  {card.title}
-                </h3>
-                <motion.p
-                  className="text-white"
-                  style={{
-                    fontWeight: 400,
-                    fontSize: '14.34px',
-                    fontFamily: "'Gelion', 'Outfit', sans-serif",
-                    lineHeight: '120%',
-                  }}
-                  variants={{ rest: { opacity: 0.7 }, hover: { opacity: 1 } }}
-                  transition={{ duration: 0.35, ease: 'easeOut' }}
-                >
-                  {card.desc}
-                </motion.p>
+                  {String(idx + 1).padStart(2, '0')}
+                </span>
+
+                {/* Accent line + icon + title anchored to the bottom */}
+                <div className="mt-auto">
+                  <div
+                    className="mb-6 rounded-full"
+                    style={{
+                      width: '40px',
+                      height: '3px',
+                      background: '#E432A5',
+                    }}
+                  />
+                  <div className="mb-6">{card.icon}</div>
+                  <h3
+                    className="text-white leading-tight"
+                    style={{
+                      width: '165.46px',
+                      fontWeight: 500,
+                      fontSize: '24.27px',
+                    }}
+                  >
+                    {card.title}
+                  </h3>
+
+                  {/* Description grows smoothly up from the bottom on tap */}
+                  <AnimatePresence initial={false}>
+                    {openCard === idx && (
+                      <motion.div
+                        key="desc"
+                        className="overflow-hidden"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <p
+                          className="text-white/75 pt-4"
+                          style={{
+                            fontSize: '14px',
+                            lineHeight: '140%',
+                            fontFamily: "'Gelion', 'Outfit', sans-serif",
+                          }}
+                        >
+                          {card.desc}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </motion.div>
             </motion.div>
           ))}
@@ -555,13 +654,13 @@ function App() {
           >
             {/* Connecting line segment 1: step 1 → step 2 (draws left → right) */}
             <motion.div
-              className="hidden md:block absolute top-7 left-[16.66%] right-[50%] step-line"
+              className="hidden md:block absolute top-10 left-[16.66%] right-[50%] step-line"
               style={{ transformOrigin: 'left center' }}
               variants={{ hidden: { scaleX: 0 }, show: { scaleX: 1, transition: { duration: 0.4, ease: 'easeInOut', delay: 0.35 } } }}
             />
             {/* Connecting line segment 2: step 2 → step 3 (draws left → right) */}
             <motion.div
-              className="hidden md:block absolute top-7 left-[50%] right-[16.66%] step-line"
+              className="hidden md:block absolute top-10 left-[50%] right-[16.66%] step-line"
               style={{ transformOrigin: 'left center' }}
               variants={{ hidden: { scaleX: 0 }, show: { scaleX: 1, transition: { duration: 0.4, ease: 'easeInOut', delay: 1.1 } } }}
             />
@@ -569,7 +668,7 @@ function App() {
             {[
               {
                 icon: (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                     <rect x="3" y="3" width="18" height="18" rx="5" stroke="#FFFFFF" strokeWidth="1.5" />
                     <circle cx="12" cy="12" r="4" stroke="#FFFFFF" strokeWidth="1.5" />
                     <circle cx="17.5" cy="6.5" r="1" fill="#FFFFFF" />
@@ -580,7 +679,7 @@ function App() {
               },
               {
                 icon: (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                     <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#FFFFFF" strokeWidth="1.5" strokeLinejoin="round" />
                     <path d="M2 17L12 22L22 17" stroke="#FFFFFF" strokeWidth="1.5" strokeLinejoin="round" />
                     <path d="M2 12L12 17L22 12" stroke="#FFFFFF" strokeWidth="1.5" strokeLinejoin="round" />
@@ -591,7 +690,7 @@ function App() {
               },
               {
                 icon: (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                     <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" />
                     <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
@@ -609,7 +708,7 @@ function App() {
                 }}
               >
                 <div
-                  className="w-14 h-14 rounded-full border border-[#36377A] flex items-center justify-center mx-auto mb-5 relative z-10"
+                  className="w-20 h-20 rounded-full border border-[#36377A] flex items-center justify-center mx-auto mb-5 relative z-10"
                   style={{ background: 'linear-gradient(135deg, #272969 0%, #10113A 100%)' }}
                 >
                   {step.icon}
@@ -640,28 +739,28 @@ function App() {
           </motion.div>
 
           <div className="mt-28 md:mt-40 text-center">
-            <p className="text-xl md:text-2xl font-bold text-white mb-4">
+            <p className="text-3xl md:text-4xl font-bold text-white mb-6">
               <img
                 src="/Vector%20(5).png"
                 alt=""
                 aria-hidden="true"
-                className="inline-block mr-2 align-middle"
-                style={{ width: '24px', height: '24px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+                className="inline-block mr-3 align-middle"
+                style={{ width: '34px', height: '34px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
               />
               Your consent matters to us
             </p>
             <motion.div
-              className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white mb-5"
+              className="inline-flex items-center gap-4 px-7 py-3 rounded-full bg-white mb-7"
               variants={outlineDraw}
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, margin: '-60px' }}
             >
-              <img src="/Group%201707480613.png" alt="Creasume" style={{ height: '20px', width: 'auto', objectFit: 'contain' }} />
-              <span className="text-[#9EA5E2] text-sm">×</span>
-              <img src="/image/image%204.png" alt="Instagram" style={{ height: '20px', width: 'auto', objectFit: 'contain' }} />
+              <img src="/Group%201707480613.png" alt="Creasume" style={{ height: '28px', width: 'auto', objectFit: 'contain' }} />
+              <span className="text-[#9EA5E2] text-lg">×</span>
+              <img src="/image/image%204.png" alt="Instagram" style={{ height: '28px', width: 'auto', objectFit: 'contain' }} />
             </motion.div>
-            <p className="text-lg text-white font-normal mx-auto whitespace-normal md:whitespace-nowrap">
+            <p className="text-xl md:text-2xl text-white font-normal mx-auto whitespace-normal md:whitespace-nowrap">
               We fetch your verified statistics with your consent directly through Instagram permissions.
             </p>
           </div>
@@ -669,7 +768,7 @@ function App() {
       </section>
 
       {/* ============ FOUNDING CREATOR PERKS ============ */}
-      <section className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
+      <section ref={perksRef} className="relative z-10 px-6 md:px-16 lg:px-24 py-12 md:py-24 overflow-hidden">
         {/* Diagonal background texture (glow sits in the lower-right of the PNG) */}
         <img
           src="/image/Group%201707480435.png"
@@ -679,8 +778,7 @@ function App() {
           style={{ right: '240px', top: '-300px', width: '1550px', height: '1400px', opacity: 0.8, zIndex: 0 }}
         />
 
-
-        <div className="text-center mb-10 md:mb-16">
+        <div className="text-center mb-10 md:mb-16 relative z-10">
           <h2
             className="font-medium mb-6"
             style={{
@@ -703,133 +801,26 @@ function App() {
           </p>
         </div>
 
-        <div
-          className="max-w-4xl mx-auto"
-          onMouseEnter={() => setPerksReleased(true)}
-          onClick={() => setPerksReleased(true)}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-24 mb-24">
-            {[
-              {
-                icon: (
-                  <img src="/image/Vector.png" alt="" aria-hidden="true" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-                ),
-                title: 'Early Access to Creasume',
-              },
-              {
-                icon: (
-                  <img src="/image/Vector%20(1).png" alt="" aria-hidden="true" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-                ),
-                title: 'Exclusive Founding Creator Badge',
-              },
-              {
-                icon: (
-                  <img src="/image/Vector%20(3).png" alt="" aria-hidden="true" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-                ),
-                title: 'Lifetime Access to Premium Version',
-              },
-            ].map((perk, idx) => (
-              <motion.div
-                key={idx}
-                className="rounded-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
-                style={{
-                  minHeight: '240px',
-                  background:
-                    'linear-gradient(#000000, #000000) padding-box, linear-gradient(0deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%) border-box',
-                  border: '1px solid transparent',
-                  zIndex: 3 - idx,
-                }}
-                initial={reduceMotion ? 'grid' : 'stacked'}
-                animate={perksReleased || reduceMotion ? 'grid' : 'stacked'}
-                variants={{
-                  // Top row stacks toward the centre card (idx 1); approximate overlap.
-                  stacked: { x: ['110%', '0%', '-110%'][idx], y: 0, scale: 0.92 },
-                  grid: { x: '0%', y: '0%', scale: 1 },
-                }}
-                transition={{ duration: 0.55, ease: 'easeOut', delay: idx * 0.08 }}
-              >
-                <img
-                  src="/image/shape.png"
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-                  style={{ opacity: 0.5 }}
-                />
-                <div className="mb-6 relative z-10">{perk.icon}</div>
-                <h3
-                  className="text-white leading-tight max-w-[180px] relative z-10"
-                  style={{
-                    fontFamily: "'Gelion', 'Outfit', sans-serif",
-                    fontWeight: 500,
-                    fontSize: '20px',
-                  }}
-                >
-                  {perk.title}
-                </h3>
-              </motion.div>
-            ))}
+        <div className="max-w-4xl mx-auto relative z-10">
+          {/* Top row of 3 — all unstack from the centre to their columns together,
+              so they arrive at their grid spots at the same scroll point. */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <ScrubCard progress={perksProgress} start={0.18} stackedX={110} stackedY={0} zIndex={5} perk={PERKS[0]} titleClass="text-white leading-tight max-w-50 relative z-10" />
+            <ScrubCard progress={perksProgress} start={0.18} stackedX={0} stackedY={0} zIndex={4} perk={PERKS[1]} titleClass="text-white leading-tight max-w-50 relative z-10" />
+            <ScrubCard progress={perksProgress} start={0.18} stackedX={-110} stackedY={0} zIndex={3} perk={PERKS[2]} titleClass="text-white leading-tight max-w-50 relative z-10" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-24 md:max-w-[565px] md:mx-auto">
-            {[
-              {
-                icon: (
-                  <img src="/image/Vector%20(4).png" alt="" aria-hidden="true" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-                ),
-                title: 'Priority listing to brands',
-              },
-              {
-                icon: (
-                  <img src="/image/Vector%20(2).png" alt="" aria-hidden="true" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
-                ),
-                title: 'Chance to work with us as a partner and get paid',
-              },
-            ].map((perk, idx) => (
-              <motion.div
-                key={idx}
-                className="rounded-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
-                style={{
-                  minHeight: '240px',
-                  background:
-                    'linear-gradient(#000000, #000000) padding-box, linear-gradient(0deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%) border-box',
-                  border: '1px solid transparent',
-                  zIndex: idx === 0 ? 2 : 1,
-                }}
-                initial={reduceMotion ? 'grid' : 'stacked'}
-                animate={perksReleased || reduceMotion ? 'grid' : 'stacked'}
-                variants={{
-                  // Bottom row stacks up onto the top row and toward centre; approximate.
-                  stacked: { x: idx === 0 ? '55%' : '-55%', y: '-110%', scale: 0.92 },
-                  grid: { x: '0%', y: '0%', scale: 1 },
-                }}
-                transition={{ duration: 0.55, ease: 'easeOut', delay: (3 + idx) * 0.08 }}
-              >
-                <img
-                  src="/image/shape.png"
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-                  style={{ opacity: 0.5 }}
-                />
-                <div className="mb-6 relative z-10">{perk.icon}</div>
-                <h3
-                  className="text-white leading-tight max-w-[220px] relative z-10"
-                  style={{
-                    fontFamily: "'Gelion', 'Outfit', sans-serif",
-                    fontWeight: 500,
-                    fontSize: '20px',
-                  }}
-                >
-                  {perk.title}
-                </h3>
-              </motion.div>
-            ))}
+          {/* Bottom row of 2 — slide apart together, in sync with the top row.
+              stackedY lifts them up into the top row so all 5 pile at one spot. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:max-w-146.5 md:mx-auto">
+            <ScrubCard progress={perksProgress} start={0.18} stackedX={55} stackedY={-113} zIndex={2} perk={PERKS[3]} titleClass="text-white leading-tight max-w-55 relative z-10" />
+            <ScrubCard progress={perksProgress} start={0.18} stackedX={-55} stackedY={-113} zIndex={1} perk={PERKS[4]} titleClass="text-white leading-tight max-w-55 relative z-10" />
           </div>
         </div>
       </section>
 
       {/* ============ RESERVE YOUR IDENTITY ============ */}
-      <section id="waitlist" className="relative z-10 px-6 md:px-16 lg:px-24 pt-24 md:pt-44 pb-12 md:pb-24 overflow-hidden">
+      <section id="waitlist" className="relative z-10 px-6 md:px-16 lg:px-24 pt-12 md:pt-20 pb-12 md:pb-24 overflow-hidden">
 
         {/* Soft ellipse glow on the left edge */}
         <img
@@ -881,7 +872,7 @@ function App() {
           }}
         />
 
-        <div className="text-center mb-12 relative z-10">
+        <div className="text-center mb-20 md:mb-36 relative z-10">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
             Reserve your<br />
             <span
@@ -910,61 +901,77 @@ function App() {
         </div>
 
         <div className="relative mx-auto z-10" style={{ width: '697.37px', maxWidth: '100%' }}>
-          {/* Four blue corner orbs around the form — sharp circular edge,
-              blur contained inside via an overflow-hidden clip. */}
+          {/* Four solid blue circles, one half-tucked behind each card corner.
+              The fill stays fully opaque out to 90% of the radius and fades only
+              in the last 10%, so the round edge is clean and defined; blur(3px)
+              keeps a crisp rim and the box-shadow is just a gentle outer glow. */}
           {[
-            { top: '-60px', left: '-60px' },
-            { top: '-60px', right: '-60px' },
-            { bottom: '-60px', left: '-60px' },
-            { bottom: '-60px', right: '-60px' },
-          ].map((pos, i) => (
+            {                                                 // top-left = smallest
+              size: 120,
+              top: '-45px',
+              left: '-45px',
+              background:
+                'radial-gradient(circle, #3C48F7 0%, #212997 55%, #000320 100%)',
+            },
+            {                                                 // top-right (dark navy on the outside)
+              width: 178,
+              height: 178,
+              top: '-55px',
+              right: '-55px',
+              background:
+                'radial-gradient(circle, #3C48F7 0%, #212997 55%, #000320 100%)',
+            },
+            { width: 157, height: 145, bottom: '-8px', left: '-58px' },   // bottom-left
+            { width: 173, height: 173, bottom: '-40px', right: '-40px' },  // bottom-right
+          ].map(({ size, width, height, background, ...pos }, i) => (
             <div
               key={i}
-              className="absolute rounded-full overflow-hidden pointer-events-none"
-              style={{ width: '180px', height: '180px', zIndex: -1, ...pos }}
-            >
-              <div
-                className="w-full h-full"
-                style={{
-                  background: 'linear-gradient(135deg, #10155B 0%, #1B2280 41%, #2F39C7 56%, #3C48F7 100%)',
-                  filter: 'blur(18px)',
-                  transform: 'scale(1.25)',
-                }}
-              />
-            </div>
+              className="absolute rounded-full pointer-events-none select-none"
+              style={{
+                width: `${width ?? size}px`,
+                height: `${height ?? size}px`,
+                zIndex: 0,
+                background:
+                  background ??
+                  'radial-gradient(circle, #4a66f5 0%, #2c3cc0 55%, #141a6e 85%, #0d1250 100%)',
+                filter: 'blur(0.5px)',
+                boxShadow: '0 0 40px rgba(70,100,255,0.28)',
+                ...pos,
+              }}
+            />
           ))}
 
           <form
             onSubmit={handleSubmit}
-            className="rounded-[30.64px] mx-auto relative"
+            className="rounded-[28px] mx-auto relative"
             style={{
               minHeight: '520px',
-              padding: 'clamp(28px, 6vw, 60px)',
-              background:
-                'linear-gradient(135deg, rgba(46, 46, 46, 0.75) 0%, rgba(21, 21, 21, 0.82) 45%, rgba(16, 16, 16, 0.88) 75%, rgba(38, 50, 168, 0.35) 100%)',
+              padding: 'clamp(28px, 6vw, 44px)',
+              zIndex: 1,
+              background: 'rgba(18, 18, 22, 0.55)',
               backdropFilter: 'blur(24px)',
               WebkitBackdropFilter: 'blur(24px)',
-              border: '2px solid rgba(255, 255, 255, 0.45)',
-              boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 30px 80px rgba(0, 0, 0, 0.4)',
+              border: '1px solid rgba(255, 255, 255, 0.18)',
+              boxShadow:
+                'inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 30px 90px rgba(0, 0, 0, 0.55)',
             }}
           >
-            <div className="space-y-8">
+            <div className="space-y-5">
               <input
                 type="text"
                 placeholder="Your full name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="rounded-xl outline-none mx-auto block"
+                className="rounded-[14px] outline-none mx-auto block w-full transition-colors focus:border-white/20 placeholder:text-white/45"
                 style={{
-                  backgroundColor: '#000000',
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
                   width: '501.2px',
                   maxWidth: '100%',
-                  height: '60px',
-                  padding: '0 22px',
+                  padding: '18px 22px',
                   fontFamily: "'Outfit', sans-serif",
-                  fontSize: '20px',
+                  fontSize: '18px',
                   color: '#FFFFFF',
-                  border: 'none',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
                 }}
               />
               <input
@@ -972,17 +979,16 @@ function App() {
                 placeholder="Email address"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="rounded-xl outline-none mx-auto block"
+                className="rounded-[14px] outline-none mx-auto block w-full transition-colors focus:border-white/20 placeholder:text-white/45"
                 style={{
-                  backgroundColor: '#000000',
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
                   width: '501.2px',
                   maxWidth: '100%',
-                  height: '60px',
-                  padding: '0 22px',
+                  padding: '18px 22px',
                   fontFamily: "'Outfit', sans-serif",
-                  fontSize: '20px',
+                  fontSize: '18px',
                   color: '#FFFFFF',
-                  border: 'none',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
                 }}
               />
               <input
@@ -990,31 +996,31 @@ function App() {
                 placeholder="Instagram username (e.g. @yourhandle)"
                 value={formData.handle}
                 onChange={(e) => setFormData({ ...formData, handle: e.target.value })}
-                className="rounded-xl outline-none mx-auto block"
+                className="rounded-[14px] outline-none mx-auto block w-full transition-colors focus:border-white/20 placeholder:text-white/45"
                 style={{
-                  backgroundColor: '#000000',
+                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
                   width: '501.2px',
                   maxWidth: '100%',
-                  height: '60px',
-                  padding: '0 22px',
+                  padding: '18px 22px',
                   fontFamily: "'Outfit', sans-serif",
-                  fontSize: '20px',
+                  fontSize: '18px',
                   color: '#FFFFFF',
-                  border: 'none',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
                 }}
               />
               <button
                 type="submit"
                 disabled={status === 'sending'}
-                className="gradient-btn rounded-xl text-white transition-all hover:scale-[1.02] mx-auto block disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="gradient-btn rounded-[14px] text-white transition-all hover:scale-[1.015] mx-auto block w-full disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
                 style={{
                   width: '501.2px',
                   maxWidth: '100%',
-                  height: '60px',
+                  padding: '19px 22px',
                   fontFamily: "'Gelion', 'Outfit', sans-serif",
-                  fontWeight: 600,
-                  fontSize: '24px',
-                  marginTop: '40px',
+                  fontWeight: 700,
+                  fontSize: '19px',
+                  marginTop: '28px',
+                  boxShadow: '0 12px 30px rgba(168, 85, 247, 0.35), 0 6px 18px rgba(236, 72, 153, 0.3)',
                 }}
               >
                 {status === 'sending' ? 'Joining…' : 'Join the Waitlist'}
@@ -1040,12 +1046,12 @@ function App() {
                       src={`/Ellipse%20${n}.png`}
                       alt=""
                       aria-hidden="true"
-                      className="w-9 h-9 rounded-full border-2 border-[#0B0B27] object-cover"
+                      className="w-9 h-9 rounded-full border-2 border-[#15151a] object-cover"
                     />
                   ))}
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-white pl-1 pr-4 py-1">
-                  <span className="flex items-center justify-center rounded-full bg-black text-white font-bold text-xs h-7 px-3">140</span>
+                  <span className="flex items-center justify-center rounded-full bg-black text-white font-bold text-sm h-9 px-3 tabular-nums">{joinedCount}</span>
                   <span className="text-black text-sm font-medium">Joined already</span>
                 </div>
               </div>
@@ -1084,110 +1090,24 @@ function App() {
             />
           </div>
           <p
-            className="mx-auto"
+            className="mx-auto md:whitespace-nowrap"
             style={{
               fontFamily: "'Gelion', 'Outfit', sans-serif",
               fontWeight: 300,
-              fontSize: '22px',
-              width: '989px',
+              fontSize: 'clamp(15px, 1.7vw, 26px)',
               maxWidth: '100%',
               color: 'rgba(255, 255, 255, 0.75)',
-              lineHeight: '97.6%',
+              lineHeight: '120%',
             }}
           >
-            Your data is secure and provided directly by Meta APIs. Creasume is a Meta-verified business with view-only
+            Your data is secure and provided directly by Meta APIs. Creasume is a Meta-verified business with view-only<br />
             access to your profile statistics. No third party or even us can access your personal data.
           </p>
         </div>
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer className="relative z-10 px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-8 border-t-2 border-white/20 overflow-hidden">
-        {/* Ambient glow band behind the footer columns (top region) */}
-        <img
-          src="/Ellipse%2025%20(1).png"
-          alt=""
-          aria-hidden="true"
-          className="absolute pointer-events-none select-none left-1/2 -translate-x-1/2 top-0"
-          style={{ width: '42%', height: '220px', opacity: 0.7, zIndex: 0 }}
-        />
-        <img
-          src="/Ellipse%2024%20(2).png"
-          alt=""
-          aria-hidden="true"
-          className="absolute pointer-events-none select-none"
-          style={{ left: '-80px', top: '82px', width: '45%', height: '260px', opacity: 0.7, zIndex: 0 }}
-        />
-        <img
-          src="/Ellipse%2024%20(2).png"
-          alt=""
-          aria-hidden="true"
-          className="absolute pointer-events-none select-none"
-          style={{ right: '-80px', top: '82px', width: '45%', height: '260px', opacity: 0.7, zIndex: 0 }}
-        />
-
-        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-16">
-          <div>
-            <h4 className="font-semibold text-2xl mb-6">Creasume</h4>
-            <ul className="space-y-4 text-lg text-white font-normal">
-              <li>
-                <a
-                  href="#home"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }}
-                  className="hover:text-white transition"
-                >
-                  Home
-                </a>
-              </li>
-              <li><a href="#vision" className="hover:text-white transition">Vision</a></li>
-              <li><a href="#how-it-works" className="hover:text-white transition">How it Works</a></li>
-              <li><a href="#waitlist" className="hover:text-white transition">Join the Waitlist</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold text-2xl mb-6">Follow us</h4>
-            <ul className="space-y-4 text-lg text-white">
-              <li><a href="#" className="hover:text-white transition">Instagram</a></li>
-              <li><a href="#" className="hover:text-white transition">LinkedIn</a></li>
-              <li><a href="#" className="hover:text-white transition">X</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold text-2xl mb-6">Work with Us</h4>
-            <ul className="space-y-4 text-sm md:text-lg text-white">
-              <li><a href="mailto:partnerships@creasume.com" className="hover:text-white transition break-words">partnerships@creasume.com</a></li>
-            </ul>
-            <h4 className="font-semibold text-2xl mt-8 mb-6">Contact Us</h4>
-            <ul className="space-y-4 text-sm md:text-lg text-white">
-              <li><a href="mailto:support@creasume.com" className="hover:text-white transition break-words">support@creasume.com</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold text-2xl mb-6">Legal</h4>
-            <ul className="space-y-4 text-lg text-white">
-              <li><a href="#" className="hover:text-white transition">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-white transition">Terms and Conditions</a></li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Full-width divider line below the footer links */}
-        <div className="relative z-10 border-t-2 border-white/20 -mx-6 md:-mx-16 lg:-mx-24 mb-8" />
-
-        <div className="relative z-10 text-right text-base text-white/75 mb-20 md:mb-28">
-          © 2026 Creasume. All rights reserved.
-        </div>
-
-        {/* Giant CREASUME text — hollow outline of the real font */}
-        <div className="relative z-10 overflow-hidden -mb-8 -mx-6 md:-mx-16 lg:-mx-24">
-          <h1 className="giant-text text-center select-none whitespace-nowrap">
-            CREASUME
-          </h1>
-        </div>
-      </footer>
+      <Footer />
     </div>
     </MotionConfig>
   )

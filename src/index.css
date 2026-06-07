@@ -34,11 +34,11 @@ body {
 }
 
 .gradient-btn {
-  background: linear-gradient(90deg, #9F5EE3 0%, #B058DD 28%, #F22997 95%);
+  background: linear-gradient(90deg, #a855f7 0%, #ec4899 100%);
 }
 
 .gradient-btn:hover {
-  background: linear-gradient(90deg, #F22997 0%, #B058DD 28%, #9F5EE3 95%);
+  background: linear-gradient(90deg, #b366ff 0%, #f6539f 100%);
 }
 
 .card-bg {
@@ -280,4 +280,66 @@ input::placeholder {
 .step-line {
   background: linear-gradient(90deg, transparent, #36377A, transparent);
   height: 1px;
+}
+
+/* ===== Revolving shine border (hero badge pills) =====
+   A faint static ring with a bright arc that continuously travels
+   around the perimeter. The arc is a conic-gradient whose start angle
+   is animated via a registered custom property. */
+@property --shine-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.shine-border {
+  position: relative;
+}
+
+.shine-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px; /* ring thickness */
+  background: conic-gradient(
+    from var(--shine-angle),
+    rgba(255, 255, 255, 0.18) 0deg,
+    rgba(255, 255, 255, 0.18) 280deg,
+    rgba(255, 255, 255, 0.95) 330deg,
+    rgba(255, 255, 255, 0.4) 352deg,
+    rgba(255, 255, 255, 0.18) 360deg
+  );
+  /* show only the padding ring, not the fill */
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: shine-spin 3.5s linear infinite;
+}
+
+/* Tinted variant — visible shine for light/white backgrounds. */
+.shine-border--tint::before {
+  background: conic-gradient(
+    from var(--shine-angle),
+    rgba(93, 101, 220, 0.15) 0deg,
+    rgba(93, 101, 220, 0.15) 280deg,
+    rgba(93, 101, 220, 0.95) 330deg,
+    rgba(156, 162, 225, 0.5) 352deg,
+    rgba(93, 101, 220, 0.15) 360deg
+  );
+}
+
+@keyframes shine-spin {
+  to {
+    --shine-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shine-border::before {
+    animation: none;
+  }
 }
