@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion'
+import { motion, AnimatePresence, useScroll, useMotionValueEvent, useTransform, wrap } from 'framer-motion'
 
-// Marquee scroll speed in pixels/second — shared by every row so they all move
-// at the same visual pace regardless of word length or font size.
-const MARQUEE_SPEED = 40
+// How many full half-widths each row travels over the section's whole scroll.
+// Higher = faster horizontal movement per unit of page scroll.
+const MARQUEE_LOOPS = 0.2
 
 // ---- Card icons (purple gradient on the dark card surface) ----
 function LinkIcon() {
@@ -37,8 +37,8 @@ function PortfolioIcon() {
   return (
     <svg
       viewBox="0 0 24 24"
-      width="100"
-      height="100"
+      width="104"
+      height="104"
       fill="none"
       stroke="url(#cardIconContact)"
       strokeWidth="2"
@@ -110,9 +110,9 @@ const CARDS = [
   },
 ]
 
-// One horizontal marquee row that auto-scrolls forever (independent of page
-// scroll). Two identical halves animated by 50% give a seamless loop.
-function MarqueeRow({ word, variant, direction = 1 }) {
+// One horizontal marquee row whose position is driven by the section's scroll
+// progress (not a timer). Two identical halves with a wrap keep it seamless.
+function MarqueeRow({ word, variant, direction = 1, progress }) {
   // `word` can be a single string or a list of words to cycle through.
   const words = Array.isArray(word) ? word : [word]
   const half = (
@@ -128,8 +128,7 @@ function MarqueeRow({ word, variant, direction = 1 }) {
     </div>
   )
 
-  // Measure one half's width so the loop distance (and thus duration) tracks the
-  // real rendered size — keeps every row at the same pixels/second.
+  // Measure one half's width so the wrap distance tracks the real rendered size.
   const trackRef = useRef(null)
   const [halfWidth, setHalfWidth] = useState(0)
   useEffect(() => {
@@ -142,16 +141,18 @@ function MarqueeRow({ word, variant, direction = 1 }) {
     return () => ro.disconnect()
   }, [])
 
-  const duration = halfWidth ? halfWidth / MARQUEE_SPEED : 30
+  // Map scroll progress (0→1) to a horizontal offset, wrapped into one half-width
+  // so it loops seamlessly. Direction flips which way it slides as you scroll.
+  const x = useTransform(progress, (p) => {
+    if (!halfWidth) return 0
+    const travel = p * halfWidth * MARQUEE_LOOPS
+    const signed = direction > 0 ? -travel : travel
+    return wrap(-halfWidth, 0, signed)
+  })
 
   return (
     <div className="flex w-full overflow-hidden">
-      <motion.div
-        ref={trackRef}
-        className={`marquee-row ${variant}`}
-        animate={{ x: direction > 0 ? [-halfWidth, 0] : [0, -halfWidth] }}
-        transition={{ duration, ease: 'linear', repeat: Infinity }}
-      >
+      <motion.div ref={trackRef} className={`marquee-row ${variant}`} style={{ x }}>
         {half}
         {half}
       </motion.div>
@@ -167,6 +168,14 @@ export default function SensesSection() {
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start start', 'end end'],
+  })
+
+  // Separate progress for the background marquee: starts the moment the section
+  // begins entering the viewport (start hits bottom) rather than when it pins at
+  // the top — so the text is already drifting as the section scrolls into view.
+  const { scrollYProgress: marqueeProgress } = useScroll({
+    target: ref,
+    offset: ['start end', 'end start'],
   })
 
   // Card boundaries along the scroll. Card 1 ends sooner (it also shows while
@@ -186,60 +195,96 @@ export default function SensesSection() {
     <section ref={ref} className="relative z-10" style={{ height: `${CARDS.length * 160}vh` }}>
       <div className="sticky top-0 h-screen overflow-hidden flex items-center">
         {/* ===== Background scrolling marquee text ===== */}
-        <div className="pointer-events-none absolute inset-0 flex flex-col justify-between select-none py-16 md:py-24">
-          <MarqueeRow
-            word={['COLLABORATE', 'COMMUNITY', 'CONNECT', 'CREATE', 'CONTENT']}
-            variant="marquee-row--bright"
-            direction={1}
-          />
-          {/* two INFLUENCE rows grouped in the middle */}
-          <div className="flex flex-col gap-1 md:gap-2">
+        <div className="pointer-events-none absolute inset-0 flex flex-col justify-between select-none py-0">
+          {/* TOP cluster — COLLABORATE always; on mobile the first INFLUENCE row
+              tucks directly beneath it so it sits in the clear band ABOVE the card
+              instead of peeking out from behind the centered card. */}
+          <div className="flex flex-col gap-2 md:pt-20">
+            <MarqueeRow
+              word={['COLLABORATE', 'COMMUNITY', 'CONNECT', 'CREATE', 'CONTENT']}
+              variant="marquee-row--bright"
+              direction={1}
+              progress={marqueeProgress}
+            />
+            {/* mt pushes this row down below the "…creators." heading on mobile
+                so the INFLUENCE text reads after the heading, not on top of it. */}
+            <div className="md:hidden mt-41">
+              <MarqueeRow
+                word={['INFLUENCE', 'EXPOSURE', 'BRAND READY']}
+                variant="marquee-row--sm"
+                direction={-1}
+                progress={marqueeProgress}
+              />
+            </div>
+          </div>
+
+          {/* MIDDLE — desktop only: both INFLUENCE rows stay grouped in the centre.
+              Hidden on mobile (display:none removes it from the justify-between flow),
+              so the card gets the whole middle band to itself. */}
+          <div className="hidden md:flex md:flex-col md:gap-2">
             <MarqueeRow
               word={['INFLUENCE', 'EXPOSURE', 'BRAND READY']}
               variant="marquee-row--sm"
               direction={-1}
+              progress={marqueeProgress}
             />
             <MarqueeRow
               word={['INFLUENCE', 'CREDIBILITY', 'REACH', 'INSIGHTS']}
               variant="marquee-row--sm"
               direction={1}
+              progress={marqueeProgress}
             />
           </div>
-          <MarqueeRow
-            word={['ENGAGEMENT', 'BRAND DEALS', 'MEDIA KIT', 'OPPORTUNITIES', 'PARTNERSHIPS']}
-            variant="marquee-row--bright"
-            direction={1}
-          />
+
+          {/* BOTTOM cluster — ENGAGEMENT stays pinned at the very bottom (pb-0).
+              On mobile, mb lifts the second INFLUENCE row UP so it sits ABOVE the
+              "…by the right brands." copy instead of below it. */}
+          <div className="flex flex-col gap-2 md:pb-20">
+            <div className="md:hidden mb-36">
+              <MarqueeRow
+                word={['INFLUENCE', 'CREDIBILITY', 'REACH', 'INSIGHTS']}
+                variant="marquee-row--sm"
+                direction={1}
+                progress={marqueeProgress}
+              />
+            </div>
+            <MarqueeRow
+              word={['ENGAGEMENT', 'BRAND DEALS', 'MEDIA KIT', 'OPPORTUNITIES', 'PARTNERSHIPS']}
+              variant="marquee-row--bright"
+              direction={1}
+              progress={marqueeProgress}
+            />
+          </div>
         </div>
 
         {/* ===== Foreground content ===== */}
-        <div className="relative z-10 w-full px-6 md:px-16 lg:px-24 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-        {/* Left: heading + copy */}
-        <div>
-          <h2
-            className="font-bold leading-[1.05] mb-6"
-            style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(40px, 6vw, 72px)' }}
+        <div className="relative z-10 w-full px-8 sm:px-12 md:px-20 lg:px-28 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        {/* Heading — top on mobile, left/top on desktop */}
+        <h2
+          className="order-1 lg:order-0 lg:col-start-1 lg:row-start-1 font-bold leading-[1.05] mb-0 lg:mb-0 text-center lg:text-left -translate-y-14 lg:translate-y-0"
+          style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(34px, 7vw, 72px)' }}
+        >
+          Made for the{' '}
+          <span
+            style={{
+              background: 'linear-gradient(90deg, #5D65DC 0%, #9CA2E1 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
           >
-            Made for the{' '}
-            <span
-              style={{
-                background: 'linear-gradient(90deg, #5D65DC 0%, #9CA2E1 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >
-              next generation of creators.
-            </span>
-          </h2>
-          <p className="text-white/75 max-w-md text-base md:text-lg leading-relaxed">
-            Everything you need to present your influence professionally and get discovered
-            by the right brands.
-          </p>
-        </div>
+            next generation of creators.
+          </span>
+        </h2>
 
-        {/* Right: rotating card with fade in/out */}
-        <div className="relative mx-auto w-full max-w-125">
+        {/* Copy — bottom on mobile, under heading on desktop */}
+        <p className="order-3 lg:order-0 lg:col-start-1 lg:row-start-2 text-white/75 max-w-xl mx-auto lg:mx-0 text-center lg:text-left text-lg md:text-2xl leading-relaxed translate-y-13.5 lg:translate-y-0 lg:-mt-10">
+          Everything you need to present your influence professionally and get discovered
+          by the right brands.
+        </p>
+
+        {/* Rotating card — centered between heading and copy on mobile, right side on desktop */}
+        <div className="order-2 lg:order-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-center relative mx-auto w-full max-w-125">
           <div
             className="relative rounded-[28px] overflow-hidden p-8 md:p-10 min-h-75 md:min-h-80"
             style={{

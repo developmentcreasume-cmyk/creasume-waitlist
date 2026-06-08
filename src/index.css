@@ -19,11 +19,29 @@ html, body, #root {
   background-color: #000000;
   color: #ffffff;
   font-family: 'Gelion', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  scroll-behavior: smooth;
 }
 
 body {
   overflow-x: clip;
+}
+
+/* Lenis smooth scroll — recommended base styles. Note: native CSS
+   `scroll-behavior: smooth` must be off so it doesn't fight Lenis. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
 }
 
 .gradient-text {
@@ -202,31 +220,32 @@ body {
 
 /* COLLABORATE / ENGAGEMENT — large, brighter "dark white". */
 .marquee-row--bright {
-  color: rgba(255, 255, 255, 0.16);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.42);
 }
 .marquee-row--bright .marquee-dot {
-  color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* INFLUENCE — smaller, and hollow (clean merged outline via text-shadow so
    the font's overlapping internal contours don't show as box lines). */
 .marquee-row--sm {
-  font-size: clamp(34px, 7vw, 110px);
+  font-size: clamp(46px, 9.5vw, 110px);
   color: #000000;
   -webkit-text-fill-color: #000000;
   text-shadow:
-    1px 0 0 rgba(255, 255, 255, 0.08),
-    -1px 0 0 rgba(255, 255, 255, 0.08),
-    0 1px 0 rgba(255, 255, 255, 0.08),
-    0 -1px 0 rgba(255, 255, 255, 0.08),
-    1px 1px 0 rgba(255, 255, 255, 0.08),
-    -1px -1px 0 rgba(255, 255, 255, 0.08),
-    1px -1px 0 rgba(255, 255, 255, 0.08),
-    -1px 1px 0 rgba(255, 255, 255, 0.08);
+    1px 0 0 rgba(255, 255, 255, 0.1),
+    -1px 0 0 rgba(255, 255, 255, 0.1),
+    0 1px 0 rgba(255, 255, 255, 0.1),
+    0 -1px 0 rgba(255, 255, 255, 0.1),
+    1px 1px 0 rgba(255, 255, 255, 0.1),
+    -1px -1px 0 rgba(255, 255, 255, 0.1),
+    1px -1px 0 rgba(255, 255, 255, 0.1),
+    -1px 1px 0 rgba(255, 255, 255, 0.1);
 }
 .marquee-row--sm .marquee-dot {
-  -webkit-text-fill-color: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.08);
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.3);
   text-shadow: none;
 }
 
@@ -242,7 +261,7 @@ body {
 
 .giant-text {
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(64px, 16vw, 280px);
+  font-size: clamp(40px, 16vw, 280px);
   font-weight: 600;
   letter-spacing: 0.05em;
   line-height: 0.78;
@@ -260,6 +279,18 @@ body {
     -1px -1px 0 rgba(255, 255, 255, 0.5),
     1px -1px 0 rgba(255, 255, 255, 0.5),
     -1px 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Mobile (below md): scale the wordmark so CREASUME spans the full width
+   without overflowing. At 22vw the 8-letter word was ~120% of the viewport
+   and the "ME" got clipped by the overflow-hidden wrapper, so we drop to a
+   size (plus tighter tracking) that fits edge-to-edge. Desktop keeps the
+   16vw / 280px clamp above. */
+@media (max-width: 767px) {
+  .giant-text {
+    font-size: 18vw;
+    letter-spacing: 0.02em;
+  }
 }
 
 input[type="text"],
@@ -317,18 +348,36 @@ input::placeholder {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+  /* Sit above positioned content (e.g. the live demo card body) so the ring
+     shows around the whole element, not just over non-positioned children. */
+  z-index: 2;
   animation: shine-spin 3.5s linear infinite;
 }
 
 /* Tinted variant — visible shine for light/white backgrounds. */
 .shine-border--tint::before {
+  padding: 2.5px; /* thicker, bolder ring than the default 1.5px */
   background: conic-gradient(
     from var(--shine-angle),
-    rgba(93, 101, 220, 0.15) 0deg,
-    rgba(93, 101, 220, 0.15) 280deg,
-    rgba(93, 101, 220, 0.95) 330deg,
-    rgba(156, 162, 225, 0.5) 352deg,
-    rgba(93, 101, 220, 0.15) 360deg
+    rgba(93, 101, 220, 0.4) 0deg,
+    rgba(93, 101, 220, 0.4) 280deg,
+    rgba(93, 101, 220, 1) 330deg,
+    rgba(156, 162, 225, 0.75) 352deg,
+    rgba(93, 101, 220, 0.4) 360deg
+  );
+}
+
+/* Instagram variant — full purple→pink→orange brand ring that rotates. */
+.shine-border--instagram::before {
+  padding: 2.5px; /* bold ring */
+  background: conic-gradient(
+    from var(--shine-angle),
+    #515bd4 0deg,
+    #8134af 80deg,
+    #dd2a7b 170deg,
+    #f58529 250deg,
+    #feda77 310deg,
+    #515bd4 360deg
   );
 }
 

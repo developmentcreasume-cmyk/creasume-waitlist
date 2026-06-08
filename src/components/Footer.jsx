@@ -6,7 +6,7 @@
 // `#/privacy-policy` and `#/terms` hash routes.
 function Footer() {
   return (
-    <footer className="relative z-10 px-6 md:px-16 lg:px-24 pt-12 md:pt-16 pb-8 border-t-2 border-white/20 overflow-hidden">
+    <footer className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-12 md:pt-16 pb-8 border-t-2 border-white/20 overflow-hidden">
       {/* Ambient glow band behind the footer columns (top region) */}
       <img
         src="/Ellipse%2025%20(1).png"
@@ -19,15 +19,15 @@ function Footer() {
         src="/Ellipse%2024%20(2).png"
         alt=""
         aria-hidden="true"
-        className="absolute pointer-events-none select-none"
-        style={{ left: '-80px', top: '82px', width: '45%', height: '260px', opacity: 0.7, zIndex: 0 }}
+        className="absolute pointer-events-none select-none h-[64%] lg:h-[45%]"
+        style={{ left: '-80px', top: '82px', width: '45%', opacity: 0.7, zIndex: 0 }}
       />
       <img
         src="/Ellipse%2024%20(2).png"
         alt=""
         aria-hidden="true"
-        className="absolute pointer-events-none select-none"
-        style={{ right: '-80px', top: '82px', width: '45%', height: '260px', opacity: 0.7, zIndex: 0 }}
+        className="absolute pointer-events-none select-none h-[64%] lg:h-[45%]"
+        style={{ right: '-80px', top: '82px', width: '45%', opacity: 0.7, zIndex: 0 }}
       />
 
       <div className="relative z-10 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-16">
@@ -40,7 +40,7 @@ function Footer() {
             <li><a href="#waitlist" className="hover:text-white transition">Join the Waitlist</a></li>
           </ul>
         </div>
-        <div>
+        <div className="text-right md:text-left">
           <h4 className="font-semibold text-2xl mb-6">Follow us</h4>
           <ul className="space-y-4 text-lg text-white">
             <li><a href="#" className="hover:text-white transition">Instagram</a></li>
@@ -58,7 +58,7 @@ function Footer() {
             <li><a href="mailto:support@creasume.com" className="hover:text-white transition break-words">support@creasume.com</a></li>
           </ul>
         </div>
-        <div>
+        <div className="text-right md:text-left">
           <h4 className="font-semibold text-2xl mb-6">Legal</h4>
           <ul className="space-y-4 text-lg text-white">
             <li><a href="#/privacy-policy" className="hover:text-white transition">Privacy Policy</a></li>
@@ -68,9 +68,9 @@ function Footer() {
       </div>
 
       {/* Full-width divider line below the footer links */}
-      <div className="relative z-10 border-t-2 border-white/20 -mx-6 md:-mx-16 lg:-mx-24 mb-8" />
+      <div className="relative z-10 border-t-2 border-white/20 -mx-8 sm:-mx-12 md:-mx-16 lg:-mx-24 mb-8" />
 
-      <div className="relative z-10 text-right text-base text-white/75 mb-20 md:mb-28">
+      <div className="relative z-10 text-left md:text-right text-base text-white/75 mb-20 md:mb-28 pl-8 md:pl-0 pr-4 md:pr-0">
         © 2026 Creasume. All rights reserved.
       </div>
 

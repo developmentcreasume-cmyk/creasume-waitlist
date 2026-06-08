@@ -30,7 +30,7 @@ function LegalPage({ title, intro, sections }) {
       <div className="starfield" />
 
       {/* ============ NAVIGATION ============ */}
-      <nav className="relative z-50 flex items-center justify-between px-6 md:px-16 lg:px-24 py-6">
+      <nav className="relative z-50 flex items-center justify-between px-8 sm:px-12 md:px-20 lg:px-28 py-6">
         <a href="#home" className="flex items-center gap-2">
           <img src="/creasumelogo.png" alt="Creasume" className="h-12 md:h-14 w-auto" />
         </a>
@@ -86,7 +86,7 @@ function LegalPage({ title, intro, sections }) {
       </nav>
 
       {/* ============ CONTENT ============ */}
-      <main className="relative z-10 px-6 md:px-16 lg:px-24 pt-8 md:pt-14 pb-20 md:pb-28 max-w-5xl mx-auto">
+      <main className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-8 md:pt-14 pb-20 md:pb-28 max-w-5xl mx-auto">
         <h1
           className="mb-7"
           style={{
