@@ -619,7 +619,7 @@ function App() {
               viewport={{ once: true, margin: '-80px' }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
               className="w-full"
-              style={{ maxWidth: '440px' }}
+              style={{ maxWidth: '480px' }}
             >
              <div className="shine-border shine-animate-mobile rounded-xl overflow-hidden">
               {/* Browser chrome bar above the card */}
@@ -678,7 +678,7 @@ function App() {
         >
           {[
             { title: 'Dynamic', sub: 'PROFESSIONAL LINK' },
-            { title: '$250 Billion', sub: 'CREATOR ECONOMY' },
+            { title: '3 Min', sub: 'SETUP' },
             { title: 'Early Access', sub: 'FOUNDING CREATORS' },
             { title: 'Verified', sub: 'CREATOR PROFILES' },
           ].map((stat, idx) => (
@@ -699,8 +699,8 @@ function App() {
                   lineHeight: '97.6%',
                 }}
               >
-                {stat.title === '$250 Billion' ? (
-                  <CountUp value={250} prefix="$" suffix=" Billion" />
+                {stat.title === '3 Min' ? (
+                  <CountUp value={3} suffix=" Min" />
                 ) : (
                   <Typewriter text={stat.title} startDelay={idx * 0.2} />
                 )}
@@ -755,7 +755,7 @@ function App() {
               Emerging Creators.
             </span>
           </motion.h2>
-          <motion.p variants={fadeUp} className="text-left md:text-center text-white/90 font-semibold md:font-normal max-w-6xl mx-auto text-xl md:text-xl leading-relaxed mb-10 md:mb-12 [word-spacing:normal] md:[word-spacing:0.28em]" style={{ fontFamily: "'Gelion', 'Outfit', sans-serif", letterSpacing: '0.01em' }}>
+          <motion.p variants={fadeUp} className="text-left md:text-center text-white/90 font-semibold md:font-normal max-w-6xl mx-auto text-xl md:text-xl leading-relaxed mb-10 md:mb-12 [word-spacing:normal]" style={{ fontFamily: "'Gelion', 'Outfit', sans-serif", letterSpacing: '0.01em' }}>
             Content creation has become one of the most powerful marketing tool for modern brands.<br className="hidden md:inline" />
             The creator economy is a $250+ billion industry with more than 80+ million emerging content creators.<br className="hidden md:inline" />
             But most emerging creators still lack the professional identity needed to position themselves effectively.
@@ -908,10 +908,10 @@ function App() {
                   {step.title}
                 </h3>
                 <p
-                  className="leading-relaxed max-w-[260px] mx-auto"
+                  className="leading-relaxed max-w-[280px] mx-auto"
                   style={{
                     fontFamily: "'Gelion', sans-serif",
-                    fontSize: '15px',
+                    fontSize: '17px',
                     color: '#FFFFFF',
                   }}
                 >
@@ -1056,7 +1056,7 @@ function App() {
         />
 
         <div className="text-center mb-20 md:mb-36 relative z-10">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold mb-8 md:mb-10">
             Reserve your<br />
             <span
               style={{

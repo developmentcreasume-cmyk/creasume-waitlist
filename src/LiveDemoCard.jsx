@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import SampleCreatorCard, { randomCreator } from './SampleCreatorCard.jsx'
 
 // Animated "live demo" that plays inside the hero browser chrome.
 // Flow: connect -> syncing -> profile -> share -> (Replay) -> connect.
@@ -81,73 +82,6 @@ function SyncingScreen() {
   )
 }
 
-// ---- Step 3: Profile / analytics card ----
-function StatBox({ value, label, color }) {
-  return (
-    <div
-      className="flex-1 rounded-xl px-4 py-3 text-center"
-      style={{ backgroundColor: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-    >
-      <div className="font-bold text-[20px]" style={{ color }}>{value}</div>
-      <div className="text-white/45 text-[12px]" style={{ fontFamily: MONO }}>{label}</div>
-    </div>
-  )
-}
-
-function AnalyticsBar({ value, label, tint }) {
-  return (
-    <div
-      className="rounded-xl px-5 py-4"
-      style={{ background: `linear-gradient(90deg, ${tint} 0%, rgba(255,255,255,0.02) 100%)`, border: '1px solid rgba(255,255,255,0.06)' }}
-    >
-      <div className="text-white font-bold text-[22px] leading-none mb-1">{value}</div>
-      <div className="text-white/45 text-[12px]" style={{ fontFamily: MONO }}>{label}</div>
-    </div>
-  )
-}
-
-function ProfileScreen() {
-  return (
-    <Screen>
-      <div className="w-full flex flex-col items-center">
-        <div
-          className="rounded-full mb-3"
-          style={{
-            width: 76,
-            height: 76,
-            padding: 3,
-            background: 'linear-gradient(135deg, #5D65DC, #9CA2E1, #6068DC)',
-          }}
-        >
-          <div
-            className="w-full h-full rounded-full"
-            style={{ background: 'radial-gradient(circle at 50% 35%, #9aa0a6 0%, #4a4d52 70%)' }}
-          />
-        </div>
-        <h3 className="text-white font-bold text-[24px] leading-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
-          Priya Sharma
-        </h3>
-        <p className="text-white/50 text-[13px] mb-5" style={{ fontFamily: MONO }}>
-          @priya.creates · Lifestyle
-        </p>
-
-        <div className="w-full flex gap-3 mb-5">
-          <StatBox value="125K" label="Followers" color="#9CA2E1" />
-          <StatBox value="4.2%" label="Engagement" color="#6068DC" />
-        </div>
-
-        <div className="w-full text-left text-[#3FD3A0] text-[12px] tracking-wide mb-2" style={{ fontFamily: MONO }}>
-          ✦ ANALYTICS
-        </div>
-        <div className="w-full flex flex-col gap-3">
-          <AnalyticsBar value="45.2K" label="Avg. Reach" tint="rgba(34,90,68,0.55)" />
-          <AnalyticsBar value="8.4M" label="Total Impressions" tint="rgba(90,46,46,0.55)" />
-        </div>
-      </div>
-    </Screen>
-  )
-}
-
 // ---- Step 4: Share & get paid ----
 function ShareScreen({ onReplay }) {
   return (
@@ -204,7 +138,15 @@ const STEPS = { CONNECT: 0, SYNCING: 1, PROFILE: 2, SHARE: 3 }
 
 export default function LiveDemoCard() {
   const [step, setStep] = useState(STEPS.CONNECT)
+  // A fresh random creator per demo run, so the dashboard shows different
+  // names/numbers each time the user (re)plays.
+  const [creator, setCreator] = useState(randomCreator)
   const reduceMotion = useReducedMotion()
+
+  const start = () => {
+    setCreator(randomCreator())
+    setStep(reduceMotion ? STEPS.PROFILE : STEPS.SYNCING)
+  }
 
   // Auto-advance through the timed steps; user drives connect & replay.
   useEffect(() => {
@@ -213,7 +155,7 @@ export default function LiveDemoCard() {
       return () => clearTimeout(t)
     }
     if (step === STEPS.PROFILE) {
-      const t = setTimeout(() => setStep(STEPS.SHARE), 3200)
+      const t = setTimeout(() => setStep(STEPS.SHARE), 4200)
       return () => clearTimeout(t)
     }
   }, [step])
@@ -222,16 +164,27 @@ export default function LiveDemoCard() {
     <div
       className="relative w-full rounded-b-xl overflow-hidden"
       style={{
-        height: 520,
+        height: 560,
         background: 'radial-gradient(120% 90% at 50% 0%, #141019 0%, #0A0A0E 60%, #08080B 100%)',
       }}
     >
       <AnimatePresence mode="wait">
         {step === STEPS.CONNECT && (
-          <ConnectScreen key="connect" onConnect={() => setStep(reduceMotion ? STEPS.PROFILE : STEPS.SYNCING)} />
+          <ConnectScreen key="connect" onConnect={start} />
         )}
         {step === STEPS.SYNCING && <SyncingScreen key="syncing" />}
-        {step === STEPS.PROFILE && <ProfileScreen key="profile" />}
+        {step === STEPS.PROFILE && (
+          <motion.div
+            key="profile"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: 'easeInOut' }}
+            className="absolute inset-0 overflow-y-auto"
+          >
+            <SampleCreatorCard data={creator} />
+          </motion.div>
+        )}
         {step === STEPS.SHARE && <ShareScreen key="share" onReplay={() => setStep(STEPS.CONNECT)} />}
       </AnimatePresence>
     </div>
