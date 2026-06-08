@@ -500,7 +500,8 @@ function App() {
       </nav>
 
       {/* ============ HERO SECTION ============ */}
-      <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-6 pb-12 md:pt-28 md:pb-20">
+      <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-6 pb-12 md:pt-20 md:pb-20">
+       <div className="w-full max-w-[1280px] mx-auto">
         {/* Two separate badge pills — outline draws in on load, one after the other */}
         <motion.div
           className="flex flex-nowrap items-center gap-1.5 sm:gap-9 mb-12 md:mb-10"
@@ -550,7 +551,7 @@ function App() {
           </motion.div>
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1fr] gap-10 lg:gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-10 lg:gap-10 items-center">
           <motion.div
             className="relative"
             initial="hidden"
@@ -660,6 +661,7 @@ function App() {
             </motion.div>
           </div>
         </div>
+       </div>
       </section>
 
       {/* ============ STATS BAR ============ */}

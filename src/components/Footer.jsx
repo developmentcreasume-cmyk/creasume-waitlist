@@ -6,7 +6,7 @@
 // `#/privacy-policy` and `#/terms` hash routes.
 function Footer() {
   return (
-    <footer className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-12 md:pt-16 pb-8 border-t-2 border-white/20 overflow-hidden">
+    <footer className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-12 md:pt-16 pb-15.99 md:pb-8 border-t-2 border-white/20 overflow-hidden">
       {/* Ambient glow band behind the footer columns (top region) */}
       <img
         src="/Ellipse%2025%20(1).png"
