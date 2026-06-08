@@ -644,7 +644,7 @@ function App() {
               className="relative px-8 pt-6 lg:pt-14 pb-8 flex flex-col rounded-2xl overflow-hidden cursor-pointer"
               style={{ transformOrigin: 'center' }}
               initial="rest"
-              whileHover="hover"
+              whileHover={isMobile ? undefined : 'hover'}
               animate="rest"
               variants={{ rest: {}, hover: {} }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -735,29 +735,30 @@ function App() {
                     </div>
                   </div>
 
-                  {/* Description grows smoothly up from the bottom on tap */}
-                  <AnimatePresence initial={false}>
-                    {openCard === idx && (
-                      <motion.div
-                        key="desc"
-                        className="overflow-hidden -translate-y-12 lg:translate-y-0"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  {/* Description grows smoothly up from the bottom on tap.
+                      Animated with a CSS grid-template-rows 0fr→1fr transition
+                      (browser-native, runs off the main thread) instead of a
+                      Framer height:auto animation — the latter re-measures and
+                      reflows every frame in JS, which janks badly on phones. */}
+                  <div
+                    className="grid -translate-y-12 lg:translate-y-0 transition-[grid-template-rows,opacity] duration-300 ease-out"
+                    style={{
+                      gridTemplateRows: openCard === idx ? '1fr' : '0fr',
+                      opacity: openCard === idx ? 1 : 0,
+                    }}
+                  >
+                    <div className="overflow-hidden">
+                      <p
+                        className="text-white/75 pt-4 text-lg md:text-xl"
+                        style={{
+                          lineHeight: '140%',
+                          fontFamily: "'Gelion', 'Outfit', sans-serif",
+                        }}
                       >
-                        <p
-                          className="text-white/75 pt-4 text-lg md:text-xl"
-                          style={{
-                            lineHeight: '140%',
-                            fontFamily: "'Gelion', 'Outfit', sans-serif",
-                          }}
-                        >
-                          {card.desc}
-                        </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        {card.desc}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
