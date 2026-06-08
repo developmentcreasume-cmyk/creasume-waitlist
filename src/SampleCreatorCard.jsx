@@ -5,7 +5,6 @@
 const MONO = "ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace"
 
 // ---- Random data helpers ----
-const NAMES = ['Aria Mehta', 'Zara Khan', 'Leo Martins', 'Maya Rao', 'Kai Anderson', 'Nina Costa', 'Ravi Sharma', 'Ella Fischer', 'Noah Bennett', 'Sofia Reyes']
 const NICHES = ['Lifestyle', 'Fashion', 'Fitness', 'Travel', 'Tech', 'Beauty', 'Food']
 const CITIES = ['Mumbai', 'New York', 'London', 'Dubai', 'Berlin', 'Toronto', 'Sydney']
 const BIOS = [
@@ -21,8 +20,8 @@ const commas = (n) => n.toLocaleString('en-US')
 
 // Build one random creator dataset.
 export function randomCreator() {
-  const name = pick(NAMES)
-  const handle = '@' + name.toLowerCase().replace(/\s+/g, '.')
+  const name = 'Sample Creator'
+  const handle = '@sample.creator'
   const niche = pick(NICHES)
   const followersK = rand(18, 480)
   const followers = followersK + 'K'
@@ -74,16 +73,21 @@ export default function SampleCreatorCard({ data = randomCreator() }) {
   return (
     <div
       className="w-full min-h-full px-5 py-5"
-      style={{ background: 'radial-gradient(120% 90% at 50% 0%, #1b2156 0%, #11132f 58%, #0c0e22 100%)' }}
+      style={{ background: '#0A0A0E' }}
     >
       {/* ===== Header: avatar + name ===== */}
       <div className="flex items-center gap-3.5 mb-4">
-        <img
-          src="/2.jpg"
-          alt={data.name}
-          className="shrink-0 rounded-full object-cover"
-          style={{ width: 56, height: 56, objectPosition: '50% 28%' }}
-        />
+        <div
+          className="shrink-0 rounded-full"
+          style={{ width: 60, height: 60, padding: 2.5, background: 'linear-gradient(135deg, #8B5CF6 0%, #C04DCC 50%, #EC4899 100%)' }}
+        >
+          <img
+            src="/2.jpg"
+            alt={data.name}
+            className="w-full h-full rounded-full object-cover"
+            style={{ objectPosition: '50% 28%' }}
+          />
+        </div>
         <div className="min-w-0">
           <h3 className="text-white font-bold leading-tight truncate" style={{ fontFamily: "'Outfit', sans-serif", fontSize: '23px' }}>
             {data.name}
