@@ -72,9 +72,11 @@ function HandshakeIcon() { return (<svg {...iconProps}><path d="m11 7-3 3a2 2 0 
 export default function SampleCreatorCard({ data = randomCreator() }) {
   return (
     <div
-      className="w-full min-h-full px-5 py-5"
-      style={{ background: '#0A0A0E' }}
+      className="relative w-full min-h-full px-5 py-5 overflow-hidden isolate"
+      style={{ background: '#020423' }}
     >
+
+      <div className="relative z-10">
       {/* ===== Header: avatar + name ===== */}
       <div className="flex items-center gap-3.5 mb-4">
         <div
@@ -143,11 +145,11 @@ export default function SampleCreatorCard({ data = randomCreator() }) {
       </div>
 
       {/* ===== Metrics grid ===== */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2.5">
         {data.tiles.map(({ value, label, Icon }) => (
           <div
             key={label}
-            className="relative rounded-xl px-2.5 py-2.5 flex flex-col justify-center"
+            className="relative rounded-xl px-2.5 py-4 flex flex-col justify-center"
             style={{ backgroundColor: 'rgba(40,46,112,0.30)', border: '1px solid rgba(255,255,255,0.08)' }}
           >
             <span className="absolute top-2 right-2 text-white/35"><Icon /></span>
@@ -159,6 +161,7 @@ export default function SampleCreatorCard({ data = randomCreator() }) {
             </div>
           </div>
         ))}
+      </div>
       </div>
     </div>
   )

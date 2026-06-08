@@ -17,14 +17,14 @@ function LinkIcon() {
       </defs>
       <path
         d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
-        stroke="url(#cardIconLink)"
+        stroke="#9CA2E1"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
-        stroke="url(#cardIconLink)"
+        stroke="#9CA2E1"
         strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -40,10 +40,11 @@ function PortfolioIcon() {
       width="104"
       height="104"
       fill="none"
-      stroke="url(#cardIconContact)"
+      stroke="#9CA2E1"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
+      style={{ transform: 'translateY(28px)' }}
     >
       <defs>
         <linearGradient id="cardIconContact" gradientUnits="userSpaceOnUse" x1="3" y1="3" x2="21" y2="21">
@@ -67,14 +68,14 @@ function PortfolioIcon() {
 
 function ChartIcon() {
   return (
-    <svg width="128" height="128" viewBox="0 0 46 46" fill="none" style={{ transform: 'translateY(12px)' }}>
+    <svg width="128" height="128" viewBox="0 0 46 46" fill="none" style={{ transform: 'translateY(28px)' }}>
       <defs>
         <linearGradient id="cardIconChart" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor="#5D65DC" />
           <stop offset="100%" stopColor="#9CA2E1" />
         </linearGradient>
       </defs>
-      <g stroke="url(#cardIconChart)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
+      <g stroke="#9CA2E1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
         {/* outlined bars with rounded tops, increasing in height, all touching each other and the baseline */}
         <rect x="11" y="26" width="8" height="13" />
         <rect x="19" y="18" width="8" height="21" />
@@ -218,10 +219,24 @@ export default function SensesSection() {
           >
             {card.title}
           </h3>
-          <p className="text-white/70 text-sm md:text-[15px] leading-relaxed max-w-[70%] md:max-w-[62%]">
+          <p className="text-white/70 text-sm md:text-[18px] leading-relaxed max-w-[70%] md:max-w-[62%]">
             {card.desc}
           </p>
-          <div className="absolute bottom-3 -right-2 md:bottom-4 md:-right-1 scale-[0.72] md:scale-100 origin-bottom-right">{card.icon}</div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Card icon, pinned to the card's own bottom-right corner (inside the
+          padding) so overflow-hidden can never clip it. Crossfades with the card. */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={active}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="pointer-events-none absolute bottom-24 right-5 md:bottom-36 md:right-8 scale-[0.72] md:scale-100 origin-bottom-right"
+        >
+          {card.icon}
         </motion.div>
       </AnimatePresence>
 

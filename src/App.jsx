@@ -280,7 +280,7 @@ function FeatureCards({ isMobile }) {
                 transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               >
                 <motion.p
-                  className="text-white/75 pt-4 text-lg md:text-xl"
+                  className="text-white/75 pt-4 text-lg md:text-base"
                   style={{
                     lineHeight: '140%',
                     fontFamily: "'Gelion', 'Outfit', sans-serif",

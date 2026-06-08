@@ -102,7 +102,7 @@ function ShareScreen({ onReplay }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="relative w-full rounded-2xl px-5 py-4 mb-7 text-center"
-          style={{ backgroundColor: 'rgba(20,20,26,0.85)', border: '1px solid rgba(255,255,255,0.08)' }}
+          style={{ backgroundColor: 'rgba(16,19,60,0.88)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           <div
             className="mx-auto mb-2 flex items-center justify-center rounded-full"
@@ -162,10 +162,10 @@ export default function LiveDemoCard() {
 
   return (
     <div
-      className="relative w-full rounded-b-xl overflow-hidden"
+      className="relative w-full rounded-b-xl overflow-hidden isolate"
       style={{
         height: 560,
-        background: 'radial-gradient(120% 90% at 50% 0%, #141019 0%, #0A0A0E 60%, #08080B 100%)',
+        background: '#020423',
       }}
     >
       <AnimatePresence mode="wait">
