@@ -404,3 +404,19 @@ input::placeholder {
     animation: none;
   }
 }
+
+/* ===== Mobile paint budget =====
+   On phones, pause the always-on decorative animations. The shine rings animate
+   a conic-gradient via an @property angle, which forces a full background repaint
+   EVERY frame, forever — running ~7 of them keeps the phone's raster thread
+   permanently busy, so taps/scroll have no spare frames and feel laggy. The
+   starfield twinkle adds more constant overdraw. Frozen, they look virtually
+   identical but cost nothing per frame, which keeps interactions smooth. */
+@media (max-width: 767px) {
+  .shine-border::before {
+    animation: none;
+  }
+  .starfield {
+    animation: none;
+  }
+}
