@@ -81,12 +81,17 @@ export default function SampleCreatorCard({ data = randomCreator() }) {
           className="shrink-0 rounded-full"
           style={{ width: 60, height: 60, padding: 2.5, background: 'linear-gradient(135deg, #8B5CF6 0%, #C04DCC 50%, #EC4899 100%)' }}
         >
-          <img
-            src="/2.jpg"
-            alt={data.name}
-            className="w-full h-full rounded-full object-cover"
-            style={{ objectPosition: '50% 28%' }}
-          />
+          <div
+            className="w-full h-full rounded-full flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #2a2f6b 0%, #16183c 100%)' }}
+          >
+            <span
+              className="text-white font-bold select-none"
+              style={{ fontFamily: "'Outfit', sans-serif", fontSize: '28px', lineHeight: 1 }}
+            >
+              {data.name.charAt(0)}
+            </span>
+          </div>
         </div>
         <div className="min-w-0">
           <h3 className="text-white font-bold leading-tight truncate" style={{ fontFamily: "'Outfit', sans-serif", fontSize: '23px' }}>

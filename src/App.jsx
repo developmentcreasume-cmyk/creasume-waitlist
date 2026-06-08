@@ -639,7 +639,7 @@ function App() {
                 </span>
                 {/* URL pill */}
                 <div
-                  className="flex items-center justify-center gap-2 ml-2 md:ml-24 mr-auto px-4 rounded-full"
+                  className="flex items-center justify-center gap-2 ml-2 md:ml-20 mr-auto px-4 rounded-full"
                   style={{
                     height: '24px',
                     backgroundColor: 'rgba(0,0,0,0.35)',
