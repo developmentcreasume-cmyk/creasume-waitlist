@@ -419,4 +419,10 @@ input::placeholder {
   .starfield {
     animation: none;
   }
+  /* Opt-in: keep a few specific rings spinning on mobile (e.g. the hero CTA
+     buttons). Only a couple animate, so the per-frame repaint cost stays small
+     while the rest stay frozen for smooth scroll/taps. */
+  .shine-border.shine-animate-mobile::before {
+    animation: shine-spin 3.5s linear infinite;
+  }
 }

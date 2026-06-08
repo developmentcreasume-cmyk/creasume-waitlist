@@ -195,7 +195,7 @@ export default function SensesSection() {
   // there's a single source of truth for its markup.
   const cardBlock = (
     <div
-      className="relative rounded-[28px] overflow-hidden p-6 md:p-10 min-h-56 md:min-h-80"
+      className="relative rounded-[28px] overflow-hidden p-6 md:p-10 min-h-72 md:min-h-96"
       style={{
         background:
           'radial-gradient(90% 150% at 100% 100%, rgba(126, 105, 255, 0.32) 0%, rgba(126, 105, 255, 0) 75%) padding-box, linear-gradient(150deg, #0C0C12 0%, #09090E 58%, #07070D 100%) padding-box, linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(152,255,206,0.25) 40%, rgba(55,113,200,0.3) 73%, rgba(126,105,255,0.45) 100%) border-box',
@@ -210,7 +210,7 @@ export default function SensesSection() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}
-          className="relative flex flex-col text-left"
+          className="relative flex flex-col text-left pb-8 md:pb-10"
         >
           <h3
             className="text-white leading-tight mb-4 max-w-[80%] md:max-w-[70%]"

@@ -271,27 +271,34 @@ function FeatureCards({ isMobile }) {
                 </div>
               </div>
 
-              {/* Description reveal. The height switches instantly (a single
-                  cheap reflow, not animated) while only opacity + translateY
-                  animate — both are GPU-composited, so the fade-in is buttery on
-                  every phone, including iOS Safari (which janks on animated
-                  height / grid-template-rows). No per-frame layout work. */}
-              <div
+              {/* Description reveal — framer-motion animates height + opacity so
+                  the panel slides open and closed smoothly instead of snapping. */}
+              <motion.div
                 className="overflow-hidden -translate-y-12 lg:translate-y-0"
-                style={{ height: openCard === idx ? 'auto' : 0 }}
+                initial={false}
+                animate={{ height: openCard === idx ? 'auto' : 0 }}
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               >
-                <p
-                  className="text-white/75 pt-4 text-lg md:text-xl transition-[opacity,transform] duration-300 ease-out"
+                <motion.p
+                  className="text-white/75 pt-4 text-lg md:text-xl"
                   style={{
                     lineHeight: '140%',
                     fontFamily: "'Gelion', 'Outfit', sans-serif",
+                  }}
+                  initial={false}
+                  animate={{
                     opacity: openCard === idx ? 1 : 0,
-                    transform: openCard === idx ? 'translateY(0)' : 'translateY(10px)',
+                    y: openCard === idx ? 0 : 12,
+                  }}
+                  transition={{
+                    duration: 0.45,
+                    ease: 'easeOut',
+                    delay: openCard === idx ? 0.1 : 0,
                   }}
                 >
                   {card.desc}
-                </p>
-              </div>
+                </motion.p>
+              </motion.div>
             </div>
           </motion.div>
         </motion.div>
@@ -402,7 +409,7 @@ function App() {
 
 
       {/* ============ NAVIGATION ============ */}
-      <nav id="home" className="relative z-50 flex items-center justify-between px-8 sm:px-12 md:px-20 lg:px-28 pt-6 pb-8 border-b-2 border-white/40">
+      <nav id="home" className="relative z-50 flex items-center justify-between px-8 sm:px-12 md:px-20 lg:px-28 pt-6 pb-4 md:pb-8 border-b-2 border-white/40">
         <div className="flex items-center gap-2">
           <img src="/creasumelogo.png" alt="Creasume" className="h-12 md:h-14 w-auto" />
         </div>
@@ -503,7 +510,7 @@ function App() {
         >
           <motion.div
             variants={outlineDraw}
-            className="shine-border cursor-pointer inline-flex items-center justify-center rounded-full backdrop-blur-sm shrink px-2.5 sm:px-6 h-[34px] sm:h-[40px]"
+            className="shine-border shine-animate-mobile cursor-pointer inline-flex items-center justify-center rounded-full backdrop-blur-sm shrink px-2.5 sm:px-6 h-[34px] sm:h-[40px]"
             style={{
               backgroundColor: 'rgba(125, 113, 201, 0.09)',
             }}
@@ -525,7 +532,7 @@ function App() {
 
           <motion.div
             variants={outlineDraw}
-            className="shine-border shine-border--tint inline-flex items-center justify-center shrink-0 gap-2 sm:gap-3 rounded-full bg-white px-3 sm:px-0 h-[30px] sm:h-[35.46px] w-auto sm:w-[244.95px]"
+            className="shine-border shine-border--tint shine-animate-mobile inline-flex items-center justify-center shrink-0 gap-2 sm:gap-3 rounded-full bg-white px-3 sm:px-0 h-[30px] sm:h-[35.46px] w-auto sm:w-[244.95px]"
           >
             <img
               src="/Group%201707480613.png"
@@ -587,7 +594,7 @@ function App() {
                 Become A Founding Creator
               </motion.button>
               <motion.button
-                className="shine-border rounded-full text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap w-full sm:w-auto"
+                className="shine-border shine-animate-mobile rounded-full text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap w-full sm:w-auto"
                 whileHover={{ backgroundColor: '#FFFFFF', color: '#000000' }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{
@@ -613,7 +620,7 @@ function App() {
               className="w-full"
               style={{ maxWidth: '440px' }}
             >
-             <div className="shine-border rounded-xl overflow-hidden">
+             <div className="shine-border shine-animate-mobile rounded-xl overflow-hidden">
               {/* Browser chrome bar above the card */}
               <div
                 className="flex items-center gap-3 px-4 rounded-t-xl"
@@ -924,7 +931,7 @@ function App() {
               Your consent matters to us
             </p>
             <motion.div
-              className="shine-border shine-border--instagram inline-flex items-center gap-4 px-7 py-3 rounded-full bg-white mb-7"
+              className="shine-border shine-border--instagram shine-animate-mobile inline-flex items-center gap-4 px-7 py-3 rounded-full bg-white mb-7"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
