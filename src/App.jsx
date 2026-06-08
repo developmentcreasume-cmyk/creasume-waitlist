@@ -271,29 +271,26 @@ function FeatureCards({ isMobile }) {
                 </div>
               </div>
 
-              {/* Description grows smoothly up from the bottom on tap.
-                  Animated with a CSS grid-template-rows 0fr→1fr transition
-                  (browser-native, runs off the main thread) instead of a
-                  Framer height:auto animation — the latter re-measures and
-                  reflows every frame in JS, which janks badly on phones. */}
+              {/* Description reveal. The height switches instantly (a single
+                  cheap reflow, not animated) while only opacity + translateY
+                  animate — both are GPU-composited, so the fade-in is buttery on
+                  every phone, including iOS Safari (which janks on animated
+                  height / grid-template-rows). No per-frame layout work. */}
               <div
-                className="grid -translate-y-12 lg:translate-y-0 transition-[grid-template-rows,opacity] duration-300 ease-out"
-                style={{
-                  gridTemplateRows: openCard === idx ? '1fr' : '0fr',
-                  opacity: openCard === idx ? 1 : 0,
-                }}
+                className="overflow-hidden -translate-y-12 lg:translate-y-0"
+                style={{ height: openCard === idx ? 'auto' : 0 }}
               >
-                <div className="overflow-hidden">
-                  <p
-                    className="text-white/75 pt-4 text-lg md:text-xl"
-                    style={{
-                      lineHeight: '140%',
-                      fontFamily: "'Gelion', 'Outfit', sans-serif",
-                    }}
-                  >
-                    {card.desc}
-                  </p>
-                </div>
+                <p
+                  className="text-white/75 pt-4 text-lg md:text-xl transition-[opacity,transform] duration-300 ease-out"
+                  style={{
+                    lineHeight: '140%',
+                    fontFamily: "'Gelion', 'Outfit', sans-serif",
+                    opacity: openCard === idx ? 1 : 0,
+                    transform: openCard === idx ? 'translateY(0)' : 'translateY(10px)',
+                  }}
+                >
+                  {card.desc}
+                </p>
               </div>
             </div>
           </motion.div>
