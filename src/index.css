@@ -249,6 +249,18 @@ html.lenis body {
   text-shadow: none;
 }
 
+/* On phones the marquee lines are part of the vertical stack (heading → card →
+   copy interleaved with these rows), so they're scaled down to leave room for
+   the content and keep everything on one screen without overlap. */
+@media (max-width: 767px) {
+  .marquee-row {
+    font-size: clamp(38px, 11vw, 62px);
+  }
+  .marquee-row--sm {
+    font-size: clamp(30px, 8vw, 50px);
+  }
+}
+
 .marquee-word {
   padding: 0 0.12em;
 }

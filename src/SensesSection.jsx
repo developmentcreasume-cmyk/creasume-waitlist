@@ -191,56 +191,149 @@ export default function SensesSection() {
 
   const card = CARDS[active]
 
+  // The rotating card surface — shared between the phone and desktop layouts so
+  // there's a single source of truth for its markup.
+  const cardBlock = (
+    <div
+      className="relative rounded-[28px] overflow-hidden p-6 md:p-10 min-h-56 md:min-h-80"
+      style={{
+        background:
+          'radial-gradient(90% 150% at 100% 100%, rgba(126, 105, 255, 0.32) 0%, rgba(126, 105, 255, 0) 75%) padding-box, linear-gradient(150deg, #0C0C12 0%, #09090E 58%, #07070D 100%) padding-box, linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(152,255,206,0.25) 40%, rgba(55,113,200,0.3) 73%, rgba(126,105,255,0.45) 100%) border-box',
+        border: '1px solid transparent',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+      }}
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={active}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="relative flex flex-col text-left"
+        >
+          <h3
+            className="text-white leading-tight mb-4 max-w-[80%] md:max-w-[70%]"
+            style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 'clamp(26px, 3vw, 34px)' }}
+          >
+            {card.title}
+          </h3>
+          <p className="text-white/70 text-sm md:text-[15px] leading-relaxed max-w-[70%] md:max-w-[62%]">
+            {card.desc}
+          </p>
+          <div className="absolute bottom-3 -right-2 md:bottom-4 md:-right-1 scale-[0.72] md:scale-100 origin-bottom-right">{card.icon}</div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* progress dashes */}
+      <div className="absolute bottom-6 left-6 md:bottom-8 md:left-10 flex items-center gap-2">
+        {CARDS.map((_, i) => (
+          <span
+            key={i}
+            className="h-0.75 rounded-full transition-all duration-300"
+            style={{
+              width: i === active ? 32 : 18,
+              backgroundColor: i === active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)',
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+
+  const headingText = (
+    <>
+      Made for the{' '}
+      <span
+        style={{
+          background: 'linear-gradient(90deg, #5D65DC 0%, #9CA2E1 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}
+      >
+        next generation of creators.
+      </span>
+    </>
+  )
+
+  const copyText =
+    'Everything you need to present your influence professionally and get discovered by the right brands.'
+
   return (
     <section ref={ref} className="relative z-10" style={{ height: `${CARDS.length * 160}vh` }}>
-      <div className="sticky top-0 h-screen overflow-hidden flex items-center">
-        {/* ===== Background scrolling marquee text ===== */}
-        <div className="pointer-events-none absolute inset-0 flex flex-col justify-between select-none py-0">
-          {/* TOP cluster — COLLABORATE always; on mobile the first INFLUENCE row
-              tucks directly beneath it so it sits in the clear band ABOVE the card
-              instead of peeking out from behind the centered card. */}
-          <div className="flex flex-col gap-2 md:pt-20">
-            <MarqueeRow
-              word={['COLLABORATE', 'COMMUNITY', 'CONNECT', 'CREATE', 'CONTENT']}
-              variant="marquee-row--bright"
-              direction={1}
-              progress={marqueeProgress}
-            />
-            {/* mt pushes this row down below the "…creators." heading on mobile
-                so the INFLUENCE text reads after the heading, not on top of it. */}
-            <div className="md:hidden mt-41">
+      <div className="sticky top-0 h-screen overflow-hidden">
+
+        {/* ===================== PHONE LAYOUT (< md) =====================
+            One vertical column where the marquee lines and the content are
+            SIBLINGS, not stacked layers. justify-between spreads them evenly
+            across the screen height, so on every phone the order reads cleanly:
+            COLLABORATE → heading → INFLUENCE → card → INFLUENCE → copy →
+            ENGAGEMENT, each with breathing room and never overlapping. */}
+        <div className="md:hidden h-full flex flex-col justify-between items-center text-center gap-3 py-5 select-none">
+          <MarqueeRow
+            word={['COLLABORATE', 'COMMUNITY', 'CONNECT', 'CREATE', 'CONTENT']}
+            variant="marquee-row--bright"
+            direction={1}
+            progress={marqueeProgress}
+          />
+
+          <h2
+            className="shrink-0 font-bold leading-[1.05] px-6"
+            style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(28px, 7.5vw, 44px)' }}
+          >
+            {headingText}
+          </h2>
+
+          <MarqueeRow
+            word={['INFLUENCE', 'EXPOSURE', 'BRAND READY']}
+            variant="marquee-row--sm"
+            direction={-1}
+            progress={marqueeProgress}
+          />
+
+          <div className="shrink-0 w-full max-w-sm px-6">{cardBlock}</div>
+
+          <MarqueeRow
+            word={['INFLUENCE', 'CREDIBILITY', 'REACH', 'INSIGHTS']}
+            variant="marquee-row--sm"
+            direction={1}
+            progress={marqueeProgress}
+          />
+
+          <p className="shrink-0 text-white/75 text-base leading-snug px-8">
+            {copyText}
+          </p>
+
+          <MarqueeRow
+            word={['ENGAGEMENT', 'BRAND DEALS', 'MEDIA KIT', 'OPPORTUNITIES', 'PARTNERSHIPS']}
+            variant="marquee-row--bright"
+            direction={1}
+            progress={marqueeProgress}
+          />
+        </div>
+
+        {/* ===================== DESKTOP / TABLET LAYOUT (md+) =====================
+            Background marquee layer behind a centred content grid. */}
+        <div className="hidden md:flex h-full items-center relative">
+          {/* ===== Background scrolling marquee text ===== */}
+          <div className="pointer-events-none absolute inset-0 flex flex-col justify-between select-none py-0">
+            <div className="flex flex-col gap-2 md:pt-20">
+              <MarqueeRow
+                word={['COLLABORATE', 'COMMUNITY', 'CONNECT', 'CREATE', 'CONTENT']}
+                variant="marquee-row--bright"
+                direction={1}
+                progress={marqueeProgress}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
               <MarqueeRow
                 word={['INFLUENCE', 'EXPOSURE', 'BRAND READY']}
                 variant="marquee-row--sm"
                 direction={-1}
                 progress={marqueeProgress}
               />
-            </div>
-          </div>
-
-          {/* MIDDLE — desktop only: both INFLUENCE rows stay grouped in the centre.
-              Hidden on mobile (display:none removes it from the justify-between flow),
-              so the card gets the whole middle band to itself. */}
-          <div className="hidden md:flex md:flex-col md:gap-2">
-            <MarqueeRow
-              word={['INFLUENCE', 'EXPOSURE', 'BRAND READY']}
-              variant="marquee-row--sm"
-              direction={-1}
-              progress={marqueeProgress}
-            />
-            <MarqueeRow
-              word={['INFLUENCE', 'CREDIBILITY', 'REACH', 'INSIGHTS']}
-              variant="marquee-row--sm"
-              direction={1}
-              progress={marqueeProgress}
-            />
-          </div>
-
-          {/* BOTTOM cluster — ENGAGEMENT stays pinned at the very bottom (pb-0).
-              On mobile, mb lifts the second INFLUENCE row UP so it sits ABOVE the
-              "…by the right brands." copy instead of below it. */}
-          <div className="flex flex-col gap-2 md:pb-20">
-            <div className="md:hidden mb-36">
               <MarqueeRow
                 word={['INFLUENCE', 'CREDIBILITY', 'REACH', 'INSIGHTS']}
                 variant="marquee-row--sm"
@@ -248,89 +341,34 @@ export default function SensesSection() {
                 progress={marqueeProgress}
               />
             </div>
-            <MarqueeRow
-              word={['ENGAGEMENT', 'BRAND DEALS', 'MEDIA KIT', 'OPPORTUNITIES', 'PARTNERSHIPS']}
-              variant="marquee-row--bright"
-              direction={1}
-              progress={marqueeProgress}
-            />
-          </div>
-        </div>
 
-        {/* ===== Foreground content ===== */}
-        <div className="relative z-10 w-full px-8 sm:px-12 md:px-20 lg:px-28 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-        {/* Heading — top on mobile, left/top on desktop */}
-        <h2
-          className="order-1 lg:order-0 lg:col-start-1 lg:row-start-1 font-bold leading-[1.05] mb-0 lg:mb-0 text-center lg:text-left -translate-y-14 lg:translate-y-0"
-          style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(34px, 7vw, 72px)' }}
-        >
-          Made for the{' '}
-          <span
-            style={{
-              background: 'linear-gradient(90deg, #5D65DC 0%, #9CA2E1 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            next generation of creators.
-          </span>
-        </h2>
-
-        {/* Copy — bottom on mobile, under heading on desktop */}
-        <p className="order-3 lg:order-0 lg:col-start-1 lg:row-start-2 text-white/75 max-w-xl mx-auto lg:mx-0 text-center lg:text-left text-lg md:text-2xl leading-relaxed translate-y-13.5 lg:translate-y-0 lg:-mt-10">
-          Everything you need to present your influence professionally and get discovered
-          by the right brands.
-        </p>
-
-        {/* Rotating card — centered between heading and copy on mobile, right side on desktop */}
-        <div className="order-2 lg:order-0 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-center relative mx-auto w-full max-w-125">
-          <div
-            className="relative rounded-[28px] overflow-hidden p-8 md:p-10 min-h-75 md:min-h-80"
-            style={{
-              background:
-                'radial-gradient(90% 150% at 100% 100%, rgba(126, 105, 255, 0.32) 0%, rgba(126, 105, 255, 0) 75%) padding-box, linear-gradient(150deg, #0C0C12 0%, #09090E 58%, #07070D 100%) padding-box, linear-gradient(135deg, rgba(255,255,255,0.45) 0%, rgba(152,255,206,0.25) 40%, rgba(55,113,200,0.3) 73%, rgba(126,105,255,0.45) 100%) border-box',
-              border: '1px solid transparent',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
-            }}
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={active}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeInOut' }}
-                className="relative flex flex-col"
-              >
-                <h3
-                  className="text-white leading-tight mb-4 max-w-[70%]"
-                  style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: 'clamp(26px, 3vw, 34px)' }}
-                >
-                  {card.title}
-                </h3>
-                <p className="text-white/70 text-sm md:text-[15px] leading-relaxed max-w-[62%]">
-                  {card.desc}
-                </p>
-                <div className="absolute bottom-3 -right-2 md:bottom-4 md:-right-1">{card.icon}</div>
-              </motion.div>
-            </AnimatePresence>
-
-            {/* progress dashes */}
-            <div className="absolute bottom-8 left-8 md:left-10 flex items-center gap-2">
-              {CARDS.map((_, i) => (
-                <span
-                  key={i}
-                  className="h-0.75 rounded-full transition-all duration-300"
-                  style={{
-                    width: i === active ? 32 : 18,
-                    backgroundColor: i === active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)',
-                  }}
-                />
-              ))}
+            <div className="flex flex-col gap-2 md:pb-20">
+              <MarqueeRow
+                word={['ENGAGEMENT', 'BRAND DEALS', 'MEDIA KIT', 'OPPORTUNITIES', 'PARTNERSHIPS']}
+                variant="marquee-row--bright"
+                direction={1}
+                progress={marqueeProgress}
+              />
             </div>
           </div>
-        </div>
+
+          {/* ===== Foreground content ===== */}
+          <div className="relative z-10 w-full px-8 sm:px-12 md:px-20 lg:px-28 grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-16 items-center">
+            <h2
+              className="lg:col-start-1 lg:row-start-1 font-bold leading-[1.05] text-center lg:text-left"
+              style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(34px, 7vw, 72px)' }}
+            >
+              {headingText}
+            </h2>
+
+            <p className="lg:col-start-1 lg:row-start-2 text-white/75 max-w-xl mx-auto lg:mx-0 text-center lg:text-left text-lg md:text-2xl leading-relaxed lg:-mt-10">
+              {copyText}
+            </p>
+
+            <div className="lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:self-center relative mx-auto w-full max-w-125">
+              {cardBlock}
+            </div>
+          </div>
         </div>
       </div>
     </section>

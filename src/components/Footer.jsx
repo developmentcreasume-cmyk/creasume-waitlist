@@ -19,18 +19,18 @@ function Footer() {
         src="/Ellipse%2024%20(2).png"
         alt=""
         aria-hidden="true"
-        className="absolute pointer-events-none select-none h-[64%] lg:h-[45%]"
+        className="absolute pointer-events-none select-none h-[64%] lg:h-[50%]"
         style={{ left: '-80px', top: '82px', width: '45%', opacity: 0.7, zIndex: 0 }}
       />
       <img
         src="/Ellipse%2024%20(2).png"
         alt=""
         aria-hidden="true"
-        className="absolute pointer-events-none select-none h-[64%] lg:h-[45%]"
+        className="absolute pointer-events-none select-none h-[64%] lg:h-[50%]"
         style={{ right: '-80px', top: '82px', width: '45%', opacity: 0.7, zIndex: 0 }}
       />
 
-      <div className="relative z-10 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-16">
+      <div className="relative z-10 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-0">
         <div>
           <h4 className="font-semibold text-2xl mb-6">Creasume</h4>
           <ul className="space-y-4 text-lg text-white font-normal">
@@ -67,8 +67,9 @@ function Footer() {
         </div>
       </div>
 
-      {/* Full-width divider line below the footer links */}
-      <div className="relative z-10 border-t-2 border-white/20 -mx-8 sm:-mx-12 md:-mx-16 lg:-mx-24 mb-8" />
+      {/* Full-bleed divider line below the footer links — spans the full
+          viewport width regardless of the footer's horizontal padding. */}
+      <div className="relative z-10 border-t-2 border-white/20 w-screen left-1/2 -translate-x-1/2 mt-26 mb-8" />
 
       <div className="relative z-10 text-left md:text-right text-base text-white/75 mb-20 md:mb-28 pl-8 md:pl-0 pr-4 md:pr-0">
         © 2026 Creasume. All rights reserved.
