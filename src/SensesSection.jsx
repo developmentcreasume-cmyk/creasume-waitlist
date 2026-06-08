@@ -5,85 +5,82 @@ import { motion, AnimatePresence, useScroll, useMotionValueEvent, useTransform, 
 // Higher = faster horizontal movement per unit of page scroll.
 const MARQUEE_LOOPS = 0.2
 
-// ---- Card icons (purple gradient on the dark card surface) ----
+// ---- Card icons (two-shade gradient on the dark card surface) ----
+// SVG stroke gradients via `url(#id)` refs don't render in this app (its
+// hash-route URLs break SVG fragment references), so each icon is drawn as a
+// white-stroke SVG used as a CSS mask over a gradient-filled box. This gives a
+// real #5D65DC → #9CA2E1 gradient on every icon with no fragile fragment refs.
+const ICON_GRADIENT = 'linear-gradient(135deg, #5D65DC 0%, #9CA2E1 100%)'
+
+function GradientIcon({ size, viewBox, paths, style }) {
+  const svg =
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='${viewBox}' fill='none' ` +
+    `stroke='#fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>${paths}</svg>`
+  const mask = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: size,
+        height: size,
+        background: ICON_GRADIENT,
+        WebkitMaskImage: mask,
+        maskImage: mask,
+        WebkitMaskRepeat: 'no-repeat',
+        maskRepeat: 'no-repeat',
+        WebkitMaskSize: 'contain',
+        maskSize: 'contain',
+        ...style,
+      }}
+    />
+  )
+}
+
 function LinkIcon() {
   return (
-    <svg width="112" height="112" viewBox="0 0 24 24" fill="none" style={{ transform: 'translateY(14px)' }}>
-      <defs>
-        <linearGradient id="cardIconLink" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#363C98" />
-          <stop offset="100%" stopColor="#9CA2E1" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
-        stroke="#9CA2E1"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
-        stroke="#9CA2E1"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <GradientIcon
+      size={112}
+      viewBox="0 0 24 24"
+      style={{ transform: 'translateY(14px)' }}
+      paths={
+        "<path d='M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71' stroke-width='2.2'/>" +
+        "<path d='M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71' stroke-width='2.2'/>"
+      }
+    />
   )
 }
 
 function PortfolioIcon() {
   return (
-    <svg
+    <GradientIcon
+      size={104}
       viewBox="0 0 24 24"
-      width="104"
-      height="104"
-      fill="none"
-      stroke="#9CA2E1"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
       style={{ transform: 'translateY(28px)' }}
-    >
-      <defs>
-        <linearGradient id="cardIconContact" gradientUnits="userSpaceOnUse" x1="3" y1="3" x2="21" y2="21">
-          <stop offset="0%" stopColor="#5D65DC" />
-          <stop offset="100%" stopColor="#9CA2E1" />
-        </linearGradient>
-      </defs>
-      {/* square book with a barely-there corner radius */}
-      <rect x="3.5" y="3" width="17" height="18" rx="0.6" strokeWidth="1.6" />
-      {/* spine column split off near the right */}
-      <path d="M16 3.2v17.6" strokeWidth="1.6" />
-      {/* two tab marks inside the spine */}
-      <path d="M18 9.4h1.1" />
-      <path d="M18 14.6h1.1" />
-      {/* person in the main left area */}
-      <circle cx="9.6" cy="10" r="2.4" />
-      <path d="M6.1 16.2c0-1.9 1.57-3.1 3.5-3.1s3.5 1.2 3.5 3.1" />
-    </svg>
+      paths={
+        "<rect x='3.5' y='3' width='17' height='18' rx='0.6' stroke-width='1.6'/>" +
+        "<path d='M16 3.2v17.6' stroke-width='1.6'/>" +
+        "<path d='M18 9.4h1.1'/>" +
+        "<path d='M18 14.6h1.1'/>" +
+        "<circle cx='9.6' cy='10' r='2.4'/>" +
+        "<path d='M6.1 16.2c0-1.9 1.57-3.1 3.5-3.1s3.5 1.2 3.5 3.1'/>"
+      }
+    />
   )
 }
 
 function ChartIcon() {
   return (
-    <svg width="128" height="128" viewBox="0 0 46 46" fill="none" style={{ transform: 'translateY(28px)' }}>
-      <defs>
-        <linearGradient id="cardIconChart" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#5D65DC" />
-          <stop offset="100%" stopColor="#9CA2E1" />
-        </linearGradient>
-      </defs>
-      <g stroke="#9CA2E1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none">
-        {/* outlined bars with rounded tops, increasing in height, all touching each other and the baseline */}
-        <rect x="11" y="26" width="8" height="13" />
-        <rect x="19" y="18" width="8" height="21" />
-        <rect x="27" y="8" width="8" height="31" />
-        {/* baseline */}
-        <path d="M9 39h28" />
-      </g>
-    </svg>
+    <GradientIcon
+      size={128}
+      viewBox="0 0 46 46"
+      style={{ transform: 'translateY(28px)' }}
+      paths={
+        "<rect x='11' y='26' width='8' height='13'/>" +
+        "<rect x='19' y='18' width='8' height='21'/>" +
+        "<rect x='27' y='8' width='8' height='31'/>" +
+        "<path d='M9 39h28'/>"
+      }
+    />
   )
 }
 
