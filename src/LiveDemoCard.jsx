@@ -141,11 +141,23 @@ export default function LiveDemoCard() {
   // A fresh random creator per demo run, so the dashboard shows different
   // names/numbers each time the user (re)plays.
   const [creator, setCreator] = useState(randomCreator)
+  // While the user is hovering/touching the (now scrollable) profile, hold the
+  // demo on it so it doesn't yank away to the Share step mid-scroll.
+  const [paused, setPaused] = useState(false)
   const reduceMotion = useReducedMotion()
 
   const start = () => {
     setCreator(randomCreator())
     setStep(reduceMotion ? STEPS.PROFILE : STEPS.SYNCING)
+  }
+
+  // Once the user scrolls the (tall) profile to the bottom, advance to the
+  // Share step — i.e. progress on reaching the end, not on a timer.
+  const onProfileScroll = (e) => {
+    const el = e.currentTarget
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 12) {
+      setStep(STEPS.SHARE)
+    }
   }
 
   // Auto-advance through the timed steps; user drives connect & replay.
@@ -154,11 +166,11 @@ export default function LiveDemoCard() {
       const t = setTimeout(() => setStep(STEPS.PROFILE), 2200)
       return () => clearTimeout(t)
     }
-    if (step === STEPS.PROFILE) {
-      const t = setTimeout(() => setStep(STEPS.SHARE), 4200)
+    if (step === STEPS.PROFILE && !paused) {
+      const t = setTimeout(() => setStep(STEPS.SHARE), 10000)
       return () => clearTimeout(t)
     }
-  }, [step])
+  }, [step, paused])
 
   return (
     <div
@@ -180,7 +192,12 @@ export default function LiveDemoCard() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4, ease: 'easeInOut' }}
-            className="absolute inset-0 overflow-y-auto"
+            className="demo-scroll absolute inset-0 overflow-y-auto overscroll-contain"
+            data-lenis-prevent
+            onScroll={onProfileScroll}
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+            onTouchStart={() => setPaused(true)}
           >
             <SampleCreatorCard data={creator} />
           </motion.div>

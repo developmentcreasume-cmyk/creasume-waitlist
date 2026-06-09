@@ -30,6 +30,13 @@ export function randomCreator() {
   const totalReach = rand(8, 46) * 1000
   const impressions = (rand(11, 94) / 10).toFixed(1) + 'M'
 
+  // Follower-growth line: 7 monthly points trending up toward the follower count.
+  const growth = Array.from({ length: 7 }, (_, i) =>
+    Math.round(followersK * (0.45 + (0.55 * i) / 6)),
+  )
+  // Engagement-rate bars: 6 modest values (last one is the "today" highlight).
+  const bars = Array.from({ length: 6 }, () => rand(22, 70))
+
   return {
     name,
     handle,
@@ -52,6 +59,13 @@ export function randomCreator() {
       { value: pick(CITIES), label: 'Top City', Icon: PinIcon },
       { value: String(rand(3, 42)), label: 'Brand Deals Done', Icon: HandshakeIcon },
     ],
+    analytics: { growth, bars },
+    brandStats: [
+      { value: (rand(31, 95) / 10).toFixed(1) + 'M', label: 'TOTAL REACH' },
+      { value: String(rand(3, 9)), label: 'BRANDS' },
+      { value: rand(8, 24) + '+', label: 'CAMPAIGNS' },
+      { value: '100%', label: 'ON TIME' },
+    ],
   }
 }
 
@@ -66,6 +80,237 @@ function HeartIcon() { return (<svg {...iconProps}><path d="M12 20s-7-4.5-7-9.5A
 function ScoreIcon() { return (<svg {...iconProps}><path d="M15.5 6a7 7 0 1 0 0 12" /><path d="M9 9.5 6.5 12 9 14.5" /></svg>) }
 function PinIcon() { return (<svg {...iconProps}><path d="M12 21s7-5.5 7-11a7 7 0 0 0-14 0c0 5.5 7 11 7 11Z" /><circle cx="12" cy="10" r="2.5" /></svg>) }
 function HandshakeIcon() { return (<svg {...iconProps}><path d="m11 7-3 3a2 2 0 0 0 0 3l3 3" /><path d="m13 7 3 3a2 2 0 0 1 0 3l-3 3" /><path d="M3 11l3-3h5M21 11l-3-3h-5" /></svg>) }
+
+// ===== Scrollable media-kit sections shown below the dashboard =====
+// Shared dark panel surface, matching the metric tiles.
+const PANEL = { backgroundColor: 'rgba(40,46,112,0.30)', border: '1px solid rgba(255,255,255,0.08)' }
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul']
+
+// Solid-stroke sparkline. (SVG gradient `url(#id)` refs don't render in this
+// app's hash-routed pages, so the line uses a flat brand color.)
+function Sparkline({ points, stroke = '#9CA2E1' }) {
+  const w = 320
+  const h = 64
+  const max = Math.max(...points)
+  const min = Math.min(...points)
+  const span = max - min || 1
+  const d = points
+    .map((p, i) => {
+      const x = (i / (points.length - 1)) * w
+      const y = h - ((p - min) / span) * (h - 10) - 5
+      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`
+    })
+    .join(' ')
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: 64 }} preserveAspectRatio="none">
+      <path d={d} fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function AnalyticsSection({ growth, bars }) {
+  return (
+    <div className="mt-7">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-white font-bold text-[16px]" style={{ fontFamily: "'Outfit', sans-serif" }}>Live Analytics</h4>
+        <div className="flex items-center gap-0.5 rounded-full p-0.5" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}>
+          {['30D', '90D', '1Y'].map((p, i) => (
+            <span
+              key={p}
+              className="text-[10px] px-2 py-0.5 rounded-full"
+              style={{
+                fontFamily: MONO,
+                color: i === 0 ? '#fff' : 'rgba(255,255,255,0.45)',
+                background: i === 0 ? 'linear-gradient(90deg,#5D65DC,#9CA2E1)' : 'transparent',
+              }}
+            >
+              {p}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-xl p-3 mb-2.5" style={PANEL}>
+        <div className="text-white/70 text-[12px] mb-1" style={{ fontFamily: "'Outfit', sans-serif" }}>Follower Growth</div>
+        <Sparkline points={growth} />
+        <div className="flex justify-between mt-1 text-white/30 text-[9px]" style={{ fontFamily: MONO }}>
+          {MONTHS.map((m) => <span key={m}>{m}</span>)}
+        </div>
+      </div>
+
+      <div className="rounded-xl p-3" style={PANEL}>
+        <div className="text-white/70 text-[12px] mb-2" style={{ fontFamily: "'Outfit', sans-serif" }}>Engagement Rate</div>
+        <div className="flex items-end justify-between gap-1.5" style={{ height: 64 }}>
+          {bars.map((b, i) => (
+            <div
+              key={i}
+              className="flex-1 rounded-t-sm"
+              style={{
+                height: `${b}%`,
+                background: i === bars.length - 1 ? '#4DE0B0' : 'linear-gradient(180deg,#9CA2E1,#5D65DC)',
+              }}
+            />
+          ))}
+        </div>
+        <div className="flex justify-between mt-1 text-white/30 text-[9px]" style={{ fontFamily: MONO }}>
+          {MONTHS.slice(0, 6).map((m) => <span key={m}>{m}</span>)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Blue glow orb that peeks out from behind a card corner.
+function GlowOrb({ className }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`absolute rounded-full pointer-events-none ${className}`}
+      style={{ width: 52, height: 52, background: '#2563EB', filter: 'blur(13px)', opacity: 0.75 }}
+    />
+  )
+}
+
+function BrandCollabSection({ stats }) {
+  return (
+    <div className="mt-7 flex items-center gap-3">
+      {/* Heading on the left */}
+      <h4 className="shrink-0 w-28 text-white font-extrabold leading-[1.15] text-[13px] wrap-break-word" style={{ fontFamily: "'Outfit', sans-serif" }}>
+        Brand Collaborations
+      </h4>
+
+      {/* Glass card on the right, ringed by blue glow orbs */}
+      <div className="relative flex-1 min-w-0">
+        <GlowOrb className="-top-3 -left-3" />
+        <GlowOrb className="-top-3 -right-3" />
+        <GlowOrb className="-bottom-3 -left-3" />
+        <GlowOrb className="-bottom-3 -right-3" />
+
+        <div
+          className="relative rounded-2xl px-4 py-4 flex gap-3 items-center"
+          style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+        >
+          {/* line teasers */}
+          <div className="flex-1 flex flex-col justify-center gap-3.5">
+            {[92, 60, 78, 70].map((w, i) => (
+              <div key={i} className="h-[2px] rounded-full bg-white/90" style={{ width: `${w}%` }} />
+            ))}
+          </div>
+
+          {/* stats */}
+          <div className="shrink-0 flex flex-col gap-2.5 text-right">
+            {stats.map((s) => (
+              <div key={s.label}>
+                <div className="text-white font-bold text-[15px] leading-none" style={{ fontFamily: "'Outfit', sans-serif" }}>{s.value}</div>
+                <div className="text-white/40 text-[7px] tracking-wider mt-0.5" style={{ fontFamily: MONO }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const PACKAGES = [
+  {
+    tier: 'STARTER',
+    price: '₹25,000',
+    features: ['1× Instagram Reel (60s)', '3× Stories + link', '2 revision rounds', 'Usage rights: 90 days', 'Strategy call included'],
+  },
+  {
+    tier: 'CORE',
+    price: '₹75,000',
+    popular: true,
+    features: ['1× Instagram Reel (60s)', '3× Stories + link', '2 revision rounds', 'Usage rights: 90 days', 'Strategy call included'],
+  },
+  {
+    tier: 'CAMPAIGN',
+    price: '₹2,00,000+',
+    sub: 'custom quote',
+    features: ['Multi-platform campaign', 'YouTube + Instagram + TikTok', 'Exclusivity option available', 'Unlimited revisions', 'Dedicated campaign manager'],
+  },
+]
+
+function PackagesSection() {
+  return (
+    <div className="mt-7">
+      <h4 className="text-white font-bold text-[16px]" style={{ fontFamily: "'Outfit', sans-serif" }}>Collaboration Packages</h4>
+      <p className="text-white/45 text-[11px] mb-3">Standard services. Exact quotes provided after alignment.</p>
+      <div className="flex flex-col gap-2.5">
+        {PACKAGES.map((p) => (
+          <div
+            key={p.tier}
+            className="relative rounded-xl p-3.5"
+            style={{ backgroundColor: 'rgba(40,46,112,0.25)', border: p.popular ? '1px solid rgba(93,101,220,0.7)' : '1px solid rgba(255,255,255,0.08)' }}
+          >
+            {p.popular && (
+              <span
+                className="absolute -top-2 right-3 text-[9px] font-semibold text-white px-2 py-0.5 rounded-full"
+                style={{ background: 'linear-gradient(90deg,#5D65DC,#9CA2E1)', fontFamily: "'Outfit', sans-serif" }}
+              >
+                Most Popular
+              </span>
+            )}
+            <div className="text-[10px] tracking-widest mb-1" style={{ fontFamily: MONO, color: '#A78BE8' }}>{p.tier}</div>
+            <div className="text-white font-bold text-[22px] leading-none" style={{ fontFamily: "'Outfit', sans-serif" }}>{p.price}</div>
+            <div className="text-white/40 text-[10px] mb-2.5" style={{ fontFamily: MONO }}>{p.sub || 'starting price'}</div>
+            <ul className="flex flex-col gap-1">
+              {p.features.map((f) => (
+                <li key={f} className="text-white/70 text-[11.5px] flex items-start gap-1.5">
+                  <span style={{ color: '#5D65DC' }}>•</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <button
+              className="mt-3 w-full rounded-full font-semibold text-[12px] py-2 transition-all hover:scale-[1.02] hover:!bg-none hover:!bg-[#2563EB] hover:!text-white"
+              style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', fontFamily: "'Outfit', sans-serif" }}
+            >
+              Book Now
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function WorkWithMeSection() {
+  const inputStyle = { backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }
+  return (
+    <div className="mt-7 rounded-2xl p-4" style={PANEL}>
+      <h4 className="text-white font-bold text-[20px]" style={{ fontFamily: "'Outfit', sans-serif" }}>Work With Me.</h4>
+      <p className="text-white/45 text-[11.5px] mb-3">Looking for transparent, data-driven partnerships? Drop your details and I&apos;ll get back to you.</p>
+      <div className="flex flex-col gap-2">
+        {['Brand Name', 'Agency (Optional)', 'Your Professional Email', 'Campaign Type'].map((ph) => (
+          <input
+            key={ph}
+            type="text"
+            placeholder={ph}
+            className="rounded-lg px-3 text-white text-[12.5px] placeholder:text-white/35 outline-none"
+            style={{ ...inputStyle, height: 38 }}
+          />
+        ))}
+        <textarea
+          placeholder="Campaign Brief or Goals"
+          rows={3}
+          className="rounded-lg px-3 py-2 text-white text-[12.5px] placeholder:text-white/35 outline-none resize-none"
+          style={inputStyle}
+        />
+        <button
+          className="mt-1 w-full rounded-full text-white font-semibold text-[13px] py-2.5 inline-flex items-center justify-center gap-2 transition-transform hover:scale-[1.02]"
+          style={{ background: 'linear-gradient(90deg,#8B5CF6 0%, #EC4899 100%)', fontFamily: "'Outfit', sans-serif" }}
+        >
+          Send Inquiry
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  )
+}
 
 // Presentational dashboard. `data` defaults to a fresh random creator so it can
 // also be rendered standalone.
@@ -162,6 +407,12 @@ export default function SampleCreatorCard({ data = randomCreator() }) {
           </div>
         ))}
       </div>
+
+      {/* ===== Scrollable media-kit sections ===== */}
+      <AnalyticsSection growth={data.analytics.growth} bars={data.analytics.bars} />
+      <BrandCollabSection stats={data.brandStats} />
+      <PackagesSection />
+      <WorkWithMeSection />
       </div>
     </div>
   )

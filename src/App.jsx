@@ -101,34 +101,58 @@ function ScrubCard({ progress, start, length = 0.30, stackedX, stackedY, zIndex,
   const mobileOpacity = useTransform(cardProgress, [0, 0.6], [0, 1])
 
   return (
+    // Outer element carries the scroll-scrubbed transform (x/y/scale on desktop,
+    // x/opacity on mobile) and drives the rest/hover variant state. The hover
+    // "zoom" lives on the inner card so it composes on top of the scroll scale
+    // instead of overwriting it.
     <motion.div
       ref={cardRef}
-      className="rounded-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
+      initial="rest"
+      animate="rest"
+      whileHover={isMobile ? undefined : 'hover'}
+      variants={{ rest: {}, hover: {} }}
       style={{
         // Mobile uses the per-card scrub (mobileX/opacity); desktop uses the
         // shared stacked unstack (x/y/scale).
         ...(isMobile ? { x: mobileX, opacity: mobileOpacity } : { x, y, scale }),
         zIndex,
-        height: '260px',
-        background:
-          'linear-gradient(#000000, #000000) padding-box, linear-gradient(0deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%) border-box',
-        border: '1px solid transparent',
       }}
     >
-      <img
-        src="/image/shape.png"
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-        style={{ opacity: 0.5 }}
-      />
-      <div className="mb-6 relative z-10">{perk.icon}</div>
-      <h3
-        className={titleClass}
-        style={{ fontFamily: "'Gelion', 'Outfit', sans-serif", fontWeight: 500, fontSize: '20px' }}
+      <motion.div
+        className="rounded-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
+        variants={{
+          rest: { scale: 1, boxShadow: '0 0 0 0 rgba(93,101,220,0), 0 0 0 0 rgba(93,101,220,0)' },
+          hover: {
+            scale: 1.05,
+            // Bright edge ring + soft outer bloom = a glowing border on hover.
+            boxShadow:
+              '0 0 0 1px rgba(156,162,225,0.9), 0 0 18px 1px rgba(93,101,220,0.6), 0 0 44px 6px rgba(93,101,220,0.35)',
+          },
+        }}
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        style={{
+          height: '260px',
+          background:
+            'linear-gradient(#000000, #000000) padding-box, linear-gradient(0deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%) border-box',
+          border: '1px solid transparent',
+        }}
       >
-        {perk.title}
-      </h3>
+        <img
+          src="/image/shape.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+          style={{ opacity: 0.5 }}
+        />
+
+        <div className="mb-6 relative z-10">{perk.icon}</div>
+        <h3
+          className={titleClass}
+          style={{ fontFamily: "'Gelion', 'Outfit', sans-serif", fontWeight: 500, fontSize: '20px' }}
+        >
+          {perk.title}
+        </h3>
+      </motion.div>
     </motion.div>
   )
 }
@@ -579,8 +603,9 @@ function App() {
               Create your dynamic media kit and turn your social presence into a professional creator identity that brands trust.
             </motion.p>
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:flex-nowrap gap-6 sm:gap-10 relative z-10">
-              <motion.button
-                className="rounded-full flex items-center justify-center shrink-0 whitespace-nowrap w-full sm:w-[360px]"
+              <motion.a
+                href="#waitlist"
+                className="no-underline cursor-pointer rounded-full flex items-center justify-center shrink-0 whitespace-nowrap w-full sm:w-[360px]"
                 whileHover={{ scale: 1.05, boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.5)' }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{
@@ -593,9 +618,10 @@ function App() {
                 }}
               >
                 Become A Founding Creator
-              </motion.button>
-              <motion.button
-                className="shine-border shine-animate-mobile rounded-full text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap w-full sm:w-auto"
+              </motion.a>
+              <motion.a
+                href="#vision"
+                className="no-underline cursor-pointer shine-border shine-animate-mobile rounded-full text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap w-full sm:w-auto"
                 whileHover={{ backgroundColor: '#FFFFFF', color: '#000000' }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{
@@ -607,7 +633,7 @@ function App() {
                 }}
               >
                 Explore Vision
-              </motion.button>
+              </motion.a>
             </motion.div>
           </motion.div>
 

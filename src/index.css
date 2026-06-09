@@ -334,6 +334,26 @@ input::placeholder {
   height: 1px;
 }
 
+/* Slim, on-brand scrollbar for the live-demo card (replaces the chunky native
+   one). Firefox uses scrollbar-width/color; WebKit/Blink use the pseudo-els. */
+.demo-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 162, 225, 0.45) transparent;
+}
+.demo-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.demo-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.demo-scroll::-webkit-scrollbar-thumb {
+  background: rgba(156, 162, 225, 0.45);
+  border-radius: 9999px;
+}
+.demo-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 162, 225, 0.7);
+}
+
 /* ===== Revolving shine border (hero badge pills) =====
    A faint static ring with a bright arc that continuously travels
    around the perimeter. The arc is a conic-gradient whose start angle
