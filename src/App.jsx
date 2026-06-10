@@ -187,6 +187,8 @@ const FEATURE_CARDS = [
 // every tap was what made the mobile expand feel laggy).
 function FeatureCards({ isMobile }) {
   const [openCard, setOpenCard] = useState(null)
+  // Desktop reveals the description on hover; mobile still taps to open.
+  const [hoverCard, setHoverCard] = useState(null)
   return (
     <div
       className="rounded-2xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 lg:h-[428px]"
@@ -198,7 +200,10 @@ function FeatureCards({ isMobile }) {
         border: '1px solid rgba(54, 55, 122, 0.4)',
       }}
     >
-      {FEATURE_CARDS.map((card, idx) => (
+      {FEATURE_CARDS.map((card, idx) => {
+        // Open on hover (desktop) or on tap (mobile, where hover never fires).
+        const isOpen = openCard === idx || (!isMobile && hoverCard === idx)
+        return (
         <motion.div
           key={idx}
           className="relative px-8 pt-6 lg:pt-14 pb-8 flex flex-col rounded-2xl overflow-hidden cursor-pointer"
@@ -208,6 +213,8 @@ function FeatureCards({ isMobile }) {
           animate="rest"
           variants={{ rest: {}, hover: {} }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
+          onHoverStart={() => setHoverCard(idx)}
+          onHoverEnd={() => setHoverCard((c) => (c === idx ? null : c))}
           onClick={() => setOpenCard(openCard === idx ? null : idx)}
         >
           {/* Straight white divider between cards */}
@@ -258,8 +265,8 @@ function FeatureCards({ isMobile }) {
                     Hidden on lg+ where the layout has room to show on hover/click. */}
                 <button
                   type="button"
-                  aria-label={openCard === idx ? 'Hide details' : 'Show details'}
-                  aria-expanded={openCard === idx}
+                  aria-label={isOpen ? 'Hide details' : 'Show details'}
+                  aria-expanded={isOpen}
                   className="lg:hidden shrink-0 -translate-y-8.5 flex items-center justify-center w-9 h-9 rounded-full border border-white/25 text-white/80"
                 >
                   <svg
@@ -268,7 +275,7 @@ function FeatureCards({ isMobile }) {
                     viewBox="0 0 24 24"
                     fill="none"
                     className="transition-transform duration-300"
-                    style={{ transform: openCard === idx ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                    style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
                   >
                     <path
                       d="M6 9l6 6 6-6"
@@ -300,7 +307,7 @@ function FeatureCards({ isMobile }) {
               <motion.div
                 className="overflow-hidden -translate-y-12 lg:translate-y-0"
                 initial={false}
-                animate={{ height: openCard === idx ? 'auto' : 0 }}
+                animate={{ height: isOpen ? 'auto' : 0 }}
                 transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               >
                 <motion.p
@@ -311,13 +318,13 @@ function FeatureCards({ isMobile }) {
                   }}
                   initial={false}
                   animate={{
-                    opacity: openCard === idx ? 1 : 0,
-                    y: openCard === idx ? 0 : 12,
+                    opacity: isOpen ? 1 : 0,
+                    y: isOpen ? 0 : 12,
                   }}
                   transition={{
                     duration: 0.45,
                     ease: 'easeOut',
-                    delay: openCard === idx ? 0.1 : 0,
+                    delay: isOpen ? 0.1 : 0,
                   }}
                 >
                   {card.desc}
@@ -326,7 +333,8 @@ function FeatureCards({ isMobile }) {
             </div>
           </motion.div>
         </motion.div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -388,9 +396,22 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (status === 'sending') return
+
+    const endpoint = import.meta.env.VITE_SHEET_ENDPOINT
+    // Without an endpoint the row goes nowhere — but a `no-cors` POST to a bad
+    // URL still resolves opaquely, which would falsely look like success. Guard
+    // it so the form reports an error instead of silently dropping the signup.
+    if (!endpoint) {
+      console.error(
+        'VITE_SHEET_ENDPOINT is not set — the waitlist form has no Google Sheet endpoint to post to. Add it to a .env file (see .env.example).',
+      )
+      setStatus('error')
+      return
+    }
+
     setStatus('sending')
     try {
-      await fetch(import.meta.env.VITE_SHEET_ENDPOINT, {
+      await fetch(endpoint, {
         method: 'POST',
         // Apps Script web apps don't return CORS headers, so a normal `cors`
         // fetch rejects even when the row is written. `no-cors` lets the POST
