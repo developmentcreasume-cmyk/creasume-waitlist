@@ -397,6 +397,17 @@ function App() {
     e.preventDefault()
     if (status === 'sending') return
 
+    // Require all fields (trimmed, so whitespace-only doesn't count) and a
+    // sane email shape before sending — no blank/junk rows.
+    const name = formData.name.trim()
+    const email = formData.email.trim()
+    const handle = formData.handle.trim()
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+    if (!name || !email || !handle || !emailOk) {
+      setStatus('invalid')
+      return
+    }
+
     const endpoint = import.meta.env.VITE_SHEET_ENDPOINT
     // Without an endpoint the row goes nowhere — but a `no-cors` POST to a bad
     // URL still resolves opaquely, which would falsely look like success. Guard
@@ -1193,6 +1204,7 @@ function App() {
             <div className="space-y-5">
               <input
                 type="text"
+                required
                 placeholder="Your full name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -1210,6 +1222,7 @@ function App() {
               />
               <input
                 type="email"
+                required
                 placeholder="Email address"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -1227,6 +1240,7 @@ function App() {
               />
               <input
                 type="text"
+                required
                 placeholder="Instagram username (e.g. @yourhandle)"
                 value={formData.handle}
                 onChange={(e) => setFormData({ ...formData, handle: e.target.value })}
@@ -1263,6 +1277,11 @@ function App() {
               {status === 'success' && (
                 <p className="text-center mt-4 text-base text-white relative z-10">
                   🎉 You're on the waitlist! We'll be in touch.
+                </p>
+              )}
+              {status === 'invalid' && (
+                <p className="text-center mt-4 text-base text-[#F22997] relative z-10">
+                  Please fill in your name, a valid email, and Instagram handle.
                 </p>
               )}
               {status === 'error' && (
