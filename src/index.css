@@ -311,6 +311,10 @@ html.lenis body {
   .giant-text {
     font-size: 18vw;
     letter-spacing: 0.02em;
+    /* Looser line box + a little bottom room so the footer's overflow-hidden
+       doesn't shave the bottom off the letters on phones. */
+    line-height: 1;
+    padding-bottom: 0.08em;
   }
 }
 

@@ -71,12 +71,15 @@ function Footer() {
           viewport width regardless of the footer's horizontal padding. */}
       <div className="relative z-10 border-t-2 border-white/20 w-screen left-1/2 -translate-x-1/2 mt-26 mb-8" />
 
-      <div className="relative z-10 text-left md:text-right text-base text-white/75 mb-20 md:mb-28 pl-8 md:pl-0 pr-4 md:pr-0">
+      <div className="relative z-10 text-left md:text-right text-base text-white/75 mb-20 md:mb-10 pl-8 md:pl-0 pr-4 md:pr-0">
         © 2026 Creasume. All rights reserved.
       </div>
 
-      {/* Giant CREASUME text — hollow outline of the real font */}
-      <div className="relative z-10 overflow-hidden -mb-8 -mx-6 md:-mx-16 lg:-mx-24">
+      {/* Giant CREASUME text — hollow outline of the real font. The footer
+          itself has overflow-hidden (to contain its glows) and clips the word's
+          intentional horizontal bleed. No negative bottom margin here, or the
+          footer cuts the lower half of the letters off. */}
+      <div className="relative z-10 -mx-7.5 md:-mx-16 lg:-mx-24 pt-2 md:pt-16 md:-mb-8">
         <h1 className="giant-text text-center select-none whitespace-nowrap">
           CREASUME
         </h1>
