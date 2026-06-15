@@ -5,6 +5,7 @@ import { CountUp, Typewriter } from './anim.jsx'
 import SensesSection from './SensesSection.jsx'
 import LiveDemoCard from './LiveDemoCard.jsx'
 import Footer from './components/Footer.jsx'
+import { goToPath } from './router.js'
 import './App.css'
 
 // Founding Creator perk cards (order = reveal order in the coverflow).
@@ -468,6 +469,15 @@ function App() {
       <nav id="home" className="relative z-50 flex items-center justify-between px-8 sm:px-12 md:px-20 lg:px-28 pt-6 pb-4 md:pb-8 border-b-2 border-white/40">
         <div className="flex items-center gap-2">
           <img src="/creasumelogo.png" alt="Creasume" className="h-12 md:h-14 w-auto" />
+          {/* TEMP: quick link to the Influence Card page (remove before launch) */}
+          <a
+            href="/influence"
+            onClick={(e) => { e.preventDefault(); goToPath('/influence') }}
+            className="no-underline ml-3 inline-flex items-center rounded-full text-white text-xs md:text-sm font-medium px-3 md:px-4 py-1.5 transition-colors hover:bg-white/10"
+            style={{ fontFamily: "'Outfit', sans-serif", border: '1px dashed rgba(255,255,255,0.4)' }}
+          >
+            Influence Card →
+          </a>
         </div>
         <div
           className="hidden md:flex items-center justify-between gap-1 px-2 rounded-full bg-[#020423] backdrop-blur-sm ml-auto"
@@ -1062,6 +1072,20 @@ function App() {
 
       {/* ============ RESERVE YOUR IDENTITY ============ */}
       <section id="waitlist" className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-12 md:pt-20 pb-12 md:pb-24 overflow-hidden">
+
+        {/* Soft colored ellipse around the section — fades on all sides */}
+        <div
+          aria-hidden="true"
+          className="absolute pointer-events-none select-none"
+          style={{
+            top: '-40px',
+            bottom: '-40px',
+            left: '0%',
+            right: '0%',
+            background: 'radial-gradient(62% 58% at 50% 50%, rgba(26,33,92,0.38) 0%, rgba(26,33,92,0.38) 52%, rgba(37,49,133,0) 82%)',
+            zIndex: 0,
+          }}
+        />
 
         {/* Soft ellipse glow on the left edge */}
         <img

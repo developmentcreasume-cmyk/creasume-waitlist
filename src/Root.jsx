@@ -3,6 +3,7 @@ import Lenis from 'lenis'
 import App from './App.jsx'
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
 import TermsConditions from './pages/TermsConditions.jsx'
+import InfluenceCard from './pages/InfluenceCard.jsx'
 import { useRoute } from './router.js'
 
 // Site-wide Lenis smooth scrolling. Lenis scrolls the real document, so
@@ -13,6 +14,9 @@ import { useRoute } from './router.js'
 function useLenis() {
   useEffect(() => {
     const lenis = new Lenis()
+    // Exposed so animations (e.g. the paper-plane flight) can drive the real
+    // scroll position in sync instead of fighting Lenis with window.scrollTo.
+    window.__lenis = lenis
 
     let frame
     const raf = (time) => {
@@ -37,6 +41,7 @@ function useLenis() {
     return () => {
       cancelAnimationFrame(frame)
       document.removeEventListener('click', onAnchorClick)
+      if (window.__lenis === lenis) window.__lenis = null
       lenis.destroy()
     }
   }, [])
@@ -49,6 +54,7 @@ function Root() {
   const route = useRoute()
   if (route === '/privacy-policy') return <PrivacyPolicy />
   if (route === '/terms') return <TermsConditions />
+  if (route === '/influence') return <InfluenceCard />
   return <App />
 }
 

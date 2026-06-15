@@ -333,6 +333,14 @@ input::placeholder {
   color: rgba(158, 165, 226, 0.5);
 }
 
+/* Work With Me form: white placeholders (overrides the global rule above) */
+#work-with-me input::placeholder,
+#work-with-me textarea::placeholder {
+  color: rgba(255, 255, 255, 0.82);
+  opacity: 1;
+  font-weight: 200;
+}
+
 .step-line {
   background: linear-gradient(90deg, transparent, #36377A, transparent);
   height: 1px;
