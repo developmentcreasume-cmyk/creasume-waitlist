@@ -469,15 +469,6 @@ function App() {
       <nav id="home" className="relative z-50 flex items-center justify-between px-8 sm:px-12 md:px-20 lg:px-28 pt-6 pb-4 md:pb-8 border-b-2 border-white/40">
         <div className="flex items-center gap-2">
           <img src="/creasumelogo.png" alt="Creasume" className="h-12 md:h-14 w-auto" />
-          {/* TEMP: quick link to the Influence Card page (remove before launch) */}
-          <a
-            href="/influence"
-            onClick={(e) => { e.preventDefault(); goToPath('/influence') }}
-            className="no-underline ml-3 inline-flex items-center rounded-full text-white text-xs md:text-sm font-medium px-3 md:px-4 py-1.5 transition-colors hover:bg-white/10"
-            style={{ fontFamily: "'Outfit', sans-serif", border: '1px dashed rgba(255,255,255,0.4)' }}
-          >
-            Influence Card →
-          </a>
         </div>
         <div
           className="hidden md:flex items-center justify-between gap-1 px-2 rounded-full bg-[#020423] backdrop-blur-sm ml-auto"

@@ -34,7 +34,7 @@ const SIZES = [
   { w: 379.12, h: 389.19 }, // top-right
 ]
 
-const LINE_Y = -310 // the horizontal line sits above the center
+const LINE_Y = -440 // the horizontal line sits above the center (clear of the image)
 const LINE_SPACING = 70 // cards overlap slightly in the line
 const lineX = (i) => -LINE_SPACING * (N - 1) / 2 + LINE_SPACING * i // centered line
 
@@ -178,9 +178,10 @@ export default function CampaignShowcase() {
 
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-8 md:pt-10 pb-32 md:pb-48 overflow-hidden" style={{ background: '#06060F' }}>
-      <div className="max-w-[1180px] mx-auto">
-        {/* Animation stage — hidden below md (needs room); a grid stands in on small screens. */}
-        <div ref={stageRef} className="hidden md:block relative mx-auto" style={{ width: 1340, height: 1340 }}>
+      {/* Animation stage — full-width flex centers the oversized stage on the
+          viewport (mx-auto would pin it left and overflow right). */}
+      <div className="hidden md:flex justify-center">
+        <div ref={stageRef} className="relative" style={{ width: 1340, height: 1340 }}>
           {/* Center image */}
           <img
             id="centerImg"
@@ -202,8 +203,8 @@ export default function CampaignShowcase() {
                 id={`c${i}`}
                 className="card absolute cursor-pointer"
                 style={{ left: 0, top: 0, width: SIZES[i].w, height: SIZES[i].h, marginLeft: -SIZES[i].w / 2, marginTop: -SIZES[i].h / 2 }}
-                onMouseEnter={() => { setHoverIdx(i); tlRef.current && tlRef.current.pause() }}
-                onMouseLeave={() => { setHoverIdx(null); tlRef.current && tlRef.current.play() }}
+                onMouseEnter={() => setHoverIdx(i)}
+                onMouseLeave={() => setHoverIdx(null)}
                 onClick={() => setOpenIdx(i)}
               >
                 <CampaignCard data={data} hovered={hoverIdx === i} />
@@ -211,15 +212,15 @@ export default function CampaignShowcase() {
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Mobile fallback grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:hidden place-items-center">
-          {DATA.slice(0, 4).map((data, i) => (
-            <div key={i} className="cursor-pointer" onClick={() => setOpenIdx(i)} style={{ width: SIZES[i].w, height: SIZES[i].h }}>
-              <CampaignCard data={data} />
-            </div>
-          ))}
-        </div>
+      {/* Mobile fallback grid */}
+      <div className="max-w-[1180px] mx-auto grid grid-cols-1 sm:grid-cols-2 gap-5 md:hidden place-items-center">
+        {DATA.slice(0, 4).map((data, i) => (
+          <div key={i} className="cursor-pointer" onClick={() => setOpenIdx(i)} style={{ width: SIZES[i].w, height: SIZES[i].h }}>
+            <CampaignCard data={data} />
+          </div>
+        ))}
       </div>
 
       {/* Click-to-open detail popover */}
