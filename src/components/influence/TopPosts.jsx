@@ -81,7 +81,7 @@ export default function TopPosts() {
             and crossfades from one post to the next as you scroll. */}
         <div className="relative z-10 w-full flex items-center justify-center pointer-events-none">
           <div
-            className="pointer-events-auto relative rounded-[28px] flex items-center justify-end px-8 md:px-12 overflow-hidden"
+            className="pointer-events-auto relative rounded-[28px] flex items-center justify-between gap-6 px-8 md:px-12 overflow-hidden"
             style={{
               width: 'min(900px, 88vw)',
               height: 'min(400px, 56vh)',
@@ -93,6 +93,28 @@ export default function TopPosts() {
               boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
             }}
           >
+            {/* Left: one hero metric + a row of supporting stats (dummy numbers) */}
+            <div className="flex flex-col justify-center gap-7">
+              <div>
+                <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(40px, 5vw, 64px)' }}>1.2M</div>
+                <div className="text-white text-sm tracking-widest uppercase mt-2" style={{ fontFamily: MONO }}>Total Views</div>
+              </div>
+              <div className="flex gap-5 md:gap-7">
+                {[
+                  { label: 'Likes', value: '128K' },
+                  { label: 'Reach', value: '540K' },
+                  { label: 'Engage', value: '4.2%' },
+                  { label: 'Interact', value: '32K' },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(16px, 1.6vw, 22px)' }}>{value}</div>
+                    <div className="text-white text-xs tracking-widest uppercase mt-1" style={{ fontFamily: MONO }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: the post photo only (no overlay), crossfading */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={active}
@@ -104,17 +126,6 @@ export default function TopPosts() {
                 style={{ height: '78%', aspectRatio: '4/5', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
               >
                 <img src={post.photo} alt="Featured post" className="w-full h-full object-cover" />
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 45%, rgba(0,0,0,0.8) 100%)' }} />
-                <span className="absolute left-3 top-3 inline-block text-[10px] tracking-widest px-2 py-0.5 rounded text-white" style={{ fontFamily: MONO, border: '1px solid rgba(167,139,232,0.5)', background: 'rgba(0,0,0,0.35)' }}>
-                  {post.type}
-                </span>
-                <div className="absolute left-3 bottom-3 right-3">
-                  <p className="text-white font-semibold text-base leading-snug mb-1" style={{ fontFamily: FONT }}>{post.caption}</p>
-                  <p className="text-white/70 text-xs inline-flex items-center gap-1" style={{ fontFamily: MONO }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5C19 15.5 12 20 12 20Z" /></svg>
-                    {post.likes} likes
-                  </p>
-                </div>
               </motion.div>
             </AnimatePresence>
 

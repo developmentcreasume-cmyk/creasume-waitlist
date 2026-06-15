@@ -64,8 +64,11 @@ export default function PaperPlaneFlight() {
       const cr = ctaEl.getBoundingClientRect()
       const ctaTop = cr.top + window.scrollY
       const ctaRight = cr.right + window.scrollX // right edge — past the 2026 text
-      const endC = centerOf(endEl)
-      const end = { x: endC.x, y: endC.y - 12 }
+      // Land on the button's arrow icon (right side), so it swaps to the plane
+      // exactly where the plane lands — not at the button centre.
+      const arrowEl = endEl.querySelector('svg')
+      const endC = centerOf(arrowEl || endEl)
+      const end = { x: endC.x, y: endC.y }
       const dy = end.y - start.y
       const aboveY = ctaTop - 50 // the upper line the plane flies along
       // Turn well before the screen edge — the plane is still large here, so
@@ -78,10 +81,10 @@ export default function PaperPlaneFlight() {
         start,
         { x: start.x + 520, y: aboveY }, // take off up-right (flatter), clearing the text
         { x: rightX, y: aboveY }, // continue right past 2026 (turn before the edge)
-        { x: start.x + 120, y: start.y + dy * 0.34 }, // criss back-left, descending
-        { x: start.x + 660, y: start.y + dy * 0.58 }, // criss right (~half page)
-        { x: end.x - 90, y: end.y - 170 }, // turn right toward the button
-        end, // Send Inquiry button
+        { x: start.x + 120, y: start.y + dy * 0.32 }, // criss back-left, descending
+        { x: start.x + 660, y: start.y + dy * 0.54 }, // criss right (~half page)
+        { x: end.x - 260, y: end.y }, // line up to the LEFT of the arrow, same height
+        end, // glide horizontally onto the arrow (no downward dip)
       ]
       const pathStr = buildSmoothPath(points)
       const endScale = END_SIZE / baseSize
@@ -111,6 +114,7 @@ export default function PaperPlaneFlight() {
       setFlight({ path: pathStr, height: document.documentElement.scrollHeight, baseSize })
 
       let t0 = null
+      let scrollFloor = window.scrollY // scroll only ever moves down, never up
       const tick = (now) => {
         if (t0 === null) t0 = now
         const lin = Math.min(1, (now - t0) / DURATION)
@@ -120,7 +124,13 @@ export default function PaperPlaneFlight() {
         const angle = (Math.atan2(ptN.y - pt.y, ptN.x - pt.x) * 180) / Math.PI
         x.set(pt.x)
         y.set(pt.y)
-        rotate.set(angle + 42) // align the plane nose (points up-right) to travel
+        // Rotation: ease out of the parked 8° at takeoff, follow the path, then
+        // settle into a level landscape (nose right, like the → arrow) on landing.
+        const pathRot = angle + 42
+        let rot = pathRot
+        if (v < 0.18) rot = lerp(8, pathRot, v / 0.18)
+        else if (v > 0.82) rot = lerp(pathRot, 42, (v - 0.82) / 0.18) // land in landscape
+        rotate.set(rot)
         scale.set(lerp(1, endScale, v))
         trail.set(v)
         // Follow the plane: keep it ~45% down the viewport so it stays in frame.
@@ -128,8 +138,9 @@ export default function PaperPlaneFlight() {
         // rather than lagging behind its smoothing.
         const maxScroll = document.documentElement.scrollHeight - window.innerHeight
         const target = Math.max(0, Math.min(maxScroll, pt.y - window.innerHeight * 0.45))
-        if (window.__lenis) window.__lenis.scrollTo(target, { immediate: true })
-        else window.scrollTo(0, target)
+        scrollFloor = Math.max(scrollFloor, target) // never scroll back up
+        if (window.__lenis) window.__lenis.scrollTo(scrollFloor, { immediate: true })
+        else window.scrollTo(0, scrollFloor)
 
         if (lin < 1) {
           rafRef.current = requestAnimationFrame(tick)
@@ -140,6 +151,8 @@ export default function PaperPlaneFlight() {
             btn.classList.add('plane-arrive-pulse')
             setTimeout(() => btn.classList.remove('plane-arrive-pulse'), 1300)
           }
+          // Tell the Send Inquiry button to swap its arrow for the plane image.
+          window.dispatchEvent(new Event('plane-landed'))
           setTimeout(() => {
             setFlight(null)
             busy.current = false
