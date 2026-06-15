@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { MotionPathPlugin } from 'gsap/MotionPathPlugin'
-import { FONT, MONO, PHOTOS } from './influenceData.js'
+import { FONT, MONO } from './influenceData.js'
+import { useInfluence } from './InfluenceDataContext.jsx'
 
 gsap.registerPlugin(MotionPathPlugin)
 
@@ -97,6 +98,7 @@ function CampaignCard({ data, hovered = false }) {
 }
 
 export default function CampaignShowcase() {
+  const { PHOTOS } = useInfluence()
   const stageRef = useRef(null)
   const tlRef = useRef(null)
   const [hoverIdx, setHoverIdx] = useState(null)

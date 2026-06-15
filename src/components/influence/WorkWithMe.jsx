@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FONT } from './influenceData.js'
+import { sendInquiry, INFLUENCE_USERNAME } from '../../services/influenceApi.js'
 
 const FIELDS = [
   { key: 'brand', placeholder: 'Brand Name', type: 'text' },
@@ -12,6 +13,8 @@ const FIELDS = [
 export default function WorkWithMe() {
   const [data, setData] = useState({ brand: '', agency: '', email: '', campaignType: '', brief: '' })
   const [sent, setSent] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
   // When the flying plane lands here, swap the button's arrow for the plane image.
   const [landed, setLanded] = useState(false)
   const inputStyle = { backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }
@@ -22,9 +25,24 @@ export default function WorkWithMe() {
     return () => window.removeEventListener('plane-landed', onLanded)
   }, [])
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault()
-    setSent(true)
+    if (sending || sent) return
+    // No live creator configured → keep the original demo confirmation.
+    if (!INFLUENCE_USERNAME) {
+      setSent(true)
+      return
+    }
+    setSending(true)
+    setError('')
+    try {
+      await sendInquiry(data)
+      setSent(true)
+    } catch (err) {
+      setError(err.message || 'Could not send. Please try again.')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -107,13 +125,17 @@ export default function WorkWithMe() {
               className="rounded-xl px-5 py-4 text-white text-base placeholder:text-white placeholder:opacity-100 outline-none focus:border-white/25 transition-colors resize-none"
               style={inputStyle}
             />
+            {error && (
+              <p className="text-sm font-medium" style={{ color: '#FF8FB0' }}>{error}</p>
+            )}
             <button
               type="submit"
-              className="mt-2 w-full rounded-full text-white font-semibold text-xl py-5 inline-flex items-center justify-center gap-2.5 transition-transform hover:scale-[1.02]"
+              disabled={sending || sent}
+              className="mt-2 w-full rounded-full text-white font-semibold text-xl py-5 inline-flex items-center justify-center gap-2.5 transition-transform hover:scale-[1.02] disabled:opacity-70"
               style={{ background: 'linear-gradient(90deg,#8B5CF6 0%, #EC4899 100%)', fontFamily: FONT }}
             >
-              {sent ? 'Inquiry Sent ✓' : 'Send Inquiry'}
-              {!sent && (
+              {sent ? 'Inquiry Sent ✓' : sending ? 'Sending…' : 'Send Inquiry'}
+              {!sent && !sending && (
                 landed ? (
                   // Plane has landed — show the plane image in place of the arrow.
                   <img src="/PLANE.png" alt="" draggable={false} style={{ width: 26, height: 26, objectFit: 'contain', transform: 'rotate(42deg)' }} />

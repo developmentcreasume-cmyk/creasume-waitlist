@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import {
-  FONT, MONO, PANEL, GROWTH, MONTHS, ENGAGEMENT_BARS,
-  AGE_GROUPS, TOP_LOCATIONS, GENDER_SPLIT,
-} from './influenceData.js'
+import { FONT, MONO, PANEL } from './influenceData.js'
+import { useInfluence } from './InfluenceDataContext.jsx'
 
 // Follower Growth line chart: left Y-axis ticks (280k…70k), dashed gridlines,
 // and a white line. vectorEffect keeps the stroke crisp under the stretched
@@ -17,7 +15,7 @@ const AXIS_W = 46
 const BASELINE_Y = 97
 const LINE_AMP = 9
 
-function FollowerGrowthChart({ points }) {
+function FollowerGrowthChart({ points, months }) {
   // One straight line: starts on the baseline (first value) and climbs to the
   // last value. Endpoints are data-driven; the middle isn't drawn.
   const lo = Math.min(...points)
@@ -71,7 +69,7 @@ function FollowerGrowthChart({ points }) {
         </svg>
       </div>
       <div className="flex justify-between mt-2 text-white text-[10px]" style={{ fontFamily: MONO, marginLeft: AXIS_W }}>
-        {MONTHS.map((m) => <span key={m}>{m}</span>)}
+        {months.map((m, i) => <span key={`${m}-${i}`}>{m}</span>)}
       </div>
     </div>
   )
@@ -83,7 +81,7 @@ function FollowerGrowthChart({ points }) {
 const E_AXIS_MAX = 8
 const E_TICKS = [8, 6, 4, 2, 0]
 
-function EngagementChart({ bars }) {
+function EngagementChart({ bars, months }) {
   return (
     <div>
       <div className="relative" style={{ height: CHART_H }}>
@@ -115,7 +113,7 @@ function EngagementChart({ bars }) {
         </div>
       </div>
       <div className="flex gap-3 mt-2 text-white text-[10px]" style={{ fontFamily: MONO, marginLeft: AXIS_W, marginRight: 6 }}>
-        {MONTHS.slice(0, 6).map((m) => <span key={m} className="flex-1 text-center">{m}</span>)}
+        {months.slice(0, 6).map((m, i) => <span key={`${m}-${i}`} className="flex-1 text-center">{m}</span>)}
       </div>
     </div>
   )
@@ -147,6 +145,9 @@ function Panel({ title, children, from = 'up', className = '', bare = false, sty
 }
 
 export default function LiveAnalytics() {
+  const {
+    GROWTH, MONTHS, ENGAGEMENT_BARS, AGE_GROUPS, TOP_LOCATIONS, GENDER_SPLIT,
+  } = useInfluence()
   const [range, setRange] = useState('30D')
   const [hovered, setHovered] = useState(null)
   return (
@@ -202,11 +203,11 @@ export default function LiveAnalytics() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <Panel title="Follower Growth" from="left" style={{ background: 'linear-gradient(155deg, #1b2052 0%, #10133C 60%)' }}>
-            <FollowerGrowthChart points={GROWTH} />
+            <FollowerGrowthChart points={GROWTH} months={MONTHS} />
           </Panel>
 
           <Panel title="Engagement Rate" from="right" style={{ background: 'linear-gradient(155deg, #1b2052 0%, #10133C 60%)' }}>
-            <EngagementChart bars={ENGAGEMENT_BARS} />
+            <EngagementChart bars={ENGAGEMENT_BARS} months={MONTHS} />
           </Panel>
 
           {/* Audience Insights + Top Locations / gender — combined card */}

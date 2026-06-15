@@ -113,3 +113,14 @@ export const PACKAGES = [
 export const PHOTOS = ['1 (2).jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg'].map(
   (f) => `/${encodeURIComponent(f)}`,
 )
+
+// Featured "Top Posts" carousel (TopPosts section). `likeCount`/`comments` back
+// the per-post stats on the left of the card; `likes` is the pre-formatted label.
+export const TOP_POSTS = [
+  { photo: PHOTOS[0], caption: 'A day in my creative routine', likes: '128K', type: 'REEL', likeCount: 128000, comments: 1900 },
+  { photo: PHOTOS[1], caption: 'Festive looks for the season', likes: '96K', type: 'POST', likeCount: 96000, comments: 1200 },
+  { photo: PHOTOS[5], caption: 'Mindful morning rituals ☀️', likes: '84K', type: 'REEL', likeCount: 84000, comments: 980 },
+]
+
+// Account-wide numbers shown beside the featured post (TopPosts hero metrics).
+export const FEATURED = { totalViews: '1.2M', reach: '540K', engage: '4.2%', interact: '32K' }

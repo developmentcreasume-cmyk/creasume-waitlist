@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { fadeUp, staggerParent } from '../../motion-variants.js'
-import { FONT, MONO, PACKAGES, LABEL_GRADIENT } from './influenceData.js'
+import { FONT, MONO } from './influenceData.js'
+import { useInfluence } from './InfluenceDataContext.jsx'
 
 export default function Packages() {
+  const { PACKAGES } = useInfluence()
   // The parked plane is hidden while the click flight runs.
   const [flying, setFlying] = useState(false)
 

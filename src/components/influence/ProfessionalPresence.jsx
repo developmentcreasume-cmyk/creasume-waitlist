@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
-import { FONT, MONO, SOCIALS, BRAND_SUMMARY } from './influenceData.js'
+import { FONT, MONO } from './influenceData.js'
+import { useInfluence } from './InfluenceDataContext.jsx'
 
 // Spec §4: platform cards fade in (opacity only), 450ms ease-out, staggered.
 const fadeStagger = {
@@ -19,6 +20,7 @@ const PLATFORM_ICON = {
 }
 
 export default function ProfessionalPresence() {
+  const { SOCIALS, BRAND_SUMMARY } = useInfluence()
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-12 md:py-20 overflow-hidden">
       {/* Soft ellipse glow on the left edge, vertically centered */}

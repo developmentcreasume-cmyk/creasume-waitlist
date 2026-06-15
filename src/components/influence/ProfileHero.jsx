@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useLayoutEffect } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
-import { CREATOR, FONT, MONO, LABEL_GRADIENT } from './influenceData.js'
+import { FONT, MONO, LABEL_GRADIENT } from './influenceData.js'
+import { useInfluence } from './InfluenceDataContext.jsx'
 
 // ---- Outline icons for the metric tiles (inherit stroke colour) ----
 const ip = { width: 32, height: 32, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.2, strokeLinecap: 'round', strokeLinejoin: 'round' }
@@ -43,6 +44,7 @@ const viewport = { once: true, margin: '-60px' }
 // cell out to its grid position. Offsets are measured from the real laid-out
 // grid so it works at any breakpoint (2 cols on mobile, 3 on desktop).
 function StatsGrid() {
+  const { CREATOR } = useInfluence()
   const containerRef = useRef(null)
   const cardRefs = useRef([])
   const inView = useInView(containerRef, { once: true, margin: '-80px' })
@@ -120,6 +122,11 @@ function StatsGrid() {
 // Public-facing hero of the influence card: avatar + name + headline pills +
 // bio + actions, then the 3×3 metric grid.
 export default function ProfileHero() {
+  const { CREATOR } = useInfluence()
+  // Instagram CDN avatar URLs block cross-origin hotlinking and expire, so the
+  // <img> can fail to load — fall back to the name initial when it does.
+  const [avatarBroken, setAvatarBroken] = useState(false)
+  const showAvatar = CREATOR.avatar && !avatarBroken
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-24 pb-12 md:pt-32 md:pb-16 overflow-hidden">
       {/* Soft colored ellipse around the hero + stats — fades on all sides */}
@@ -161,12 +168,23 @@ export default function ProfileHero() {
               style={{ width: 140, height: 140, padding: 3, background: 'linear-gradient(135deg, #8B5CF6 0%, #C04DCC 50%, #EC4899 100%)' }}
             >
               <div
-                className="w-full h-full rounded-full flex items-center justify-center"
+                className="w-full h-full rounded-full flex items-center justify-center overflow-hidden"
                 style={{ background: 'linear-gradient(135deg, #2a2f6b 0%, #16183c 100%)' }}
               >
-                <span className="text-white font-bold select-none" style={{ fontFamily: FONT, fontSize: 54, lineHeight: 1 }}>
-                  {CREATOR.name.charAt(0)}
-                </span>
+                {showAvatar ? (
+                  <img
+                    src={CREATOR.avatar}
+                    alt={CREATOR.name}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                    referrerPolicy="no-referrer"
+                    onError={() => setAvatarBroken(true)}
+                  />
+                ) : (
+                  <span className="text-white font-bold select-none" style={{ fontFamily: FONT, fontSize: 54, lineHeight: 1 }}>
+                    {CREATOR.name.charAt(0)}
+                  </span>
+                )}
               </div>
             </div>
           </motion.div>

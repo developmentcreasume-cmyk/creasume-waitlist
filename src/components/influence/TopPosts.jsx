@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { motion, AnimatePresence, useScroll, useMotionValueEvent, useTransform } from 'framer-motion'
-import { FONT, MONO, PHOTOS } from './influenceData.js'
+import { FONT, MONO } from './influenceData.js'
+import { useInfluence } from './InfluenceDataContext.jsx'
 
 // One marquee row of "TOP POSTS • INFLUENCE •" text. Driven by the section's
 // scroll progress: scrolling down slides it one way, scrolling up the other.
@@ -39,13 +40,8 @@ function MarqueeRow({ text, reverse = false, hollow = false, progress, className
   )
 }
 
-const POSTS = [
-  { photo: PHOTOS[0], caption: 'A day in my creative routine', likes: '128K', type: 'REEL' },
-  { photo: PHOTOS[1], caption: 'Festive looks for the season', likes: '96K', type: 'POST' },
-  { photo: PHOTOS[5], caption: 'Mindful morning rituals ☀️', likes: '84K', type: 'REEL' },
-]
-
 export default function TopPosts() {
+  const { TOP_POSTS: POSTS, FEATURED } = useInfluence()
   const sectionRef = useRef(null)
   // Pinned section (like the home page's SensesSection): the panel is sticky
   // while you scroll the tall section, and scroll progress drives which featured
@@ -55,8 +51,8 @@ export default function TopPosts() {
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] })
   const { scrollYProgress: marqueeProgress } = useScroll({ target: sectionRef, offset: ['start end', 'end start'] })
 
-  // Card boundaries along the pinned scroll — one card per even slice.
-  const THRESHOLDS = [0.34, 0.67]
+  // Card boundaries along the pinned scroll — one even slice per post.
+  const THRESHOLDS = POSTS.slice(1).map((_, i) => (i + 1) / POSTS.length)
   const [active, setActive] = useState(0)
   useMotionValueEvent(scrollYProgress, 'change', (p) => {
     let idx = 0
@@ -96,15 +92,15 @@ export default function TopPosts() {
             {/* Left: one hero metric + a row of supporting stats (dummy numbers) */}
             <div className="flex flex-col justify-center gap-7">
               <div>
-                <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(40px, 5vw, 64px)' }}>1.2M</div>
+                <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(40px, 5vw, 64px)' }}>{FEATURED.totalViews}</div>
                 <div className="text-white/70 font-light text-sm tracking-widest uppercase mt-2" style={{ fontFamily: MONO }}>Total Views</div>
               </div>
               <div className="flex gap-5 md:gap-7">
                 {[
-                  { label: 'Likes', value: '128K' },
-                  { label: 'Reach', value: '540K' },
-                  { label: 'Engage', value: '4.2%' },
-                  { label: 'Interact', value: '32K' },
+                  { label: 'Likes', value: post.likes },
+                  { label: 'Reach', value: FEATURED.reach },
+                  { label: 'Engage', value: FEATURED.engage },
+                  { label: 'Interact', value: FEATURED.interact },
                 ].map(({ label, value }) => (
                   <div key={label}>
                     <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(16px, 1.6vw, 22px)' }}>{value}</div>
