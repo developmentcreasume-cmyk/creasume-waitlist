@@ -97,7 +97,7 @@ export default function TopPosts() {
             <div className="flex flex-col justify-center gap-7">
               <div>
                 <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(40px, 5vw, 64px)' }}>1.2M</div>
-                <div className="text-white text-sm tracking-widest uppercase mt-2" style={{ fontFamily: MONO }}>Total Views</div>
+                <div className="text-white/70 font-light text-sm tracking-widest uppercase mt-2" style={{ fontFamily: MONO }}>Total Views</div>
               </div>
               <div className="flex gap-5 md:gap-7">
                 {[
@@ -108,7 +108,7 @@ export default function TopPosts() {
                 ].map(({ label, value }) => (
                   <div key={label}>
                     <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(16px, 1.6vw, 22px)' }}>{value}</div>
-                    <div className="text-white text-xs tracking-widest uppercase mt-1" style={{ fontFamily: MONO }}>{label}</div>
+                    <div className="text-white/70 font-light text-xs tracking-widest uppercase mt-1" style={{ fontFamily: MONO }}>{label}</div>
                   </div>
                 ))}
               </div>
