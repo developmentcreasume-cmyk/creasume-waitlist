@@ -21,18 +21,11 @@ const N = DATA.length
 const R = 470 // ring radius — pushed out so the large cards sit apart with gaps
 const PARK_DEG = [-90, -135, 180, 135, 90, 45, 0, -45]
 
-// Per-position card size (index matches PARK_DEG → ring position).
-// 0 top · 1 top-left · 2 left · 3 bottom-left · 4 bottom · 5 bottom-right · 6 right · 7 top-right
-const SIZES = [
-  { w: 384.29, h: 383.72 }, // top
-  { w: 379.12, h: 389.19 }, // top-left
-  { w: 370.65, h: 397.84 }, // left
-  { w: 379.95, h: 388.33 }, // bottom-left
-  { w: 384.29, h: 383.72 }, // bottom
-  { w: 379.95, h: 388.33 }, // bottom-right
-  { w: 370.65, h: 397.84 }, // right
-  { w: 379.12, h: 389.19 }, // top-right
-]
+// Uniform card size — all cards identical so the ring keeps a consistent shape
+// as it spins (per-position sizes made the outline wobble while rotating).
+const CARD_W = 300
+const CARD_H = 300
+const SIZES = Array.from({ length: N }, () => ({ w: CARD_W, h: CARD_H }))
 
 const LINE_Y = -440 // the horizontal line sits above the center (clear of the image)
 const LINE_SPACING = 70 // cards overlap slightly in the line
@@ -61,7 +54,7 @@ function uShapePath(fromX, fromY, parkDeg) {
 function CampaignCard({ data, hovered = false }) {
   return (
     <div
-      className="w-full h-full rounded-2xl p-8 flex flex-col transition-transform duration-300"
+      className="w-full h-full rounded-2xl p-6 flex flex-col transition-transform duration-300"
       style={{
         transform: hovered ? 'scale(1.04)' : 'scale(1)',
         // Dark glass fill with a plain, flat border (no glow). Hover brightens
@@ -75,21 +68,21 @@ function CampaignCard({ data, hovered = false }) {
         boxShadow: 'none',
       }}
     >
-      <div className="text-white font-bold leading-none mb-4" style={{ fontFamily: FONT, fontSize: 40 }}>{data.brand}</div>
-      <div className="text-white/60 leading-snug mb-5" style={{ fontFamily: MONO, fontSize: 16 }}>{data.subtitle}</div>
-      <div className="flex gap-3 mb-auto">
+      <div className="text-white font-bold leading-none mb-3" style={{ fontFamily: FONT, fontSize: 32 }}>{data.brand}</div>
+      <div className="text-white/60 leading-snug mb-4" style={{ fontFamily: MONO, fontSize: 14 }}>{data.subtitle}</div>
+      <div className="flex gap-2.5 mb-auto">
         {['REEL', 'POST'].map((t) => (
-          <span key={t} className="tracking-[0.25em] px-4 py-2 rounded-md" style={{ fontFamily: MONO, fontSize: 12, color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.18)' }}>{t}</span>
+          <span key={t} className="tracking-[0.22em] px-3 py-1.5 rounded-md" style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.18)' }}>{t}</span>
         ))}
       </div>
-      <div className="text-white font-bold leading-none mb-2" style={{ fontFamily: FONT, fontSize: 52 }}>{data.metric}</div>
+      <div className="text-white font-bold leading-none mb-1.5" style={{ fontFamily: FONT, fontSize: 42 }}>{data.metric}</div>
       <div
-        className="tracking-[0.25em] font-semibold"
+        className="tracking-[0.22em] font-semibold"
         style={{
           display: 'inline-block',
           width: 'fit-content',
           fontFamily: MONO,
-          fontSize: 15,
+          fontSize: 14,
           background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)',
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',

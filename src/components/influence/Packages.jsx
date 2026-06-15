@@ -34,7 +34,7 @@ export default function Packages() {
         src="/PLANE.png"
         alt=""
         draggable={false}
-        style={{ position: 'absolute', left: -10, top: -20, width: 420, height: 420, objectFit: 'contain', opacity: flying ? 0 : 0.9, transform: 'rotate(8deg)', pointerEvents: 'none', filter: 'drop-shadow(0 12px 30px rgba(0,0,0,0.5))', zIndex: -1 }}
+        style={{ position: 'absolute', left: 180, top: 60, width: 500, height: 500, objectFit: 'contain', opacity: flying ? 0 : 0.9, transform: 'rotate(8deg)', pointerEvents: 'none', filter: 'drop-shadow(0 12px 30px rgba(0,0,0,0.5))', zIndex: -1 }}
       />
       {/* Paper-plane CTA banner */}
       <div id="cta-banner" className="max-w-[1180px] mx-auto text-center mb-20 md:mb-28" style={{ transform: 'translate(230px, -60px)' }}>

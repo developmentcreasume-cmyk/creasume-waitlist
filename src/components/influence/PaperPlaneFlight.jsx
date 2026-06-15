@@ -83,8 +83,9 @@ export default function PaperPlaneFlight() {
         { x: rightX, y: aboveY }, // continue right past 2026 (turn before the edge)
         { x: start.x + 120, y: start.y + dy * 0.32 }, // criss back-left, descending
         { x: start.x + 660, y: start.y + dy * 0.54 }, // criss right (~half page)
-        { x: end.x - 260, y: end.y }, // line up to the LEFT of the arrow, same height
-        end, // glide horizontally onto the arrow (no downward dip)
+        { x: end.x - 460, y: end.y }, // descend to the arrow's height (far left)
+        { x: end.x - 200, y: end.y }, // glide level — keeps the final approach flat
+        end, // land exactly on the arrow (no downward dip)
       ]
       const pathStr = buildSmoothPath(points)
       const endScale = END_SIZE / baseSize
