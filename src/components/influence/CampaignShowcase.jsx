@@ -19,13 +19,13 @@ const DATA = [
 ]
 
 const N = DATA.length
-const R = 470 // ring radius — pushed out so the large cards sit apart with gaps
+const R = 380 // ring radius — tightened so the cards hug the center image
 const PARK_DEG = [-90, -135, 180, 135, 90, 45, 0, -45]
 
 // Uniform card size — all cards identical so the ring keeps a consistent shape
 // as it spins (per-position sizes made the outline wobble while rotating).
-const CARD_W = 300
-const CARD_H = 300
+const CARD_W = 270
+const CARD_H = 270
 const SIZES = Array.from({ length: N }, () => ({ w: CARD_W, h: CARD_H }))
 
 const LINE_Y = -440 // the horizontal line sits above the center (clear of the image)

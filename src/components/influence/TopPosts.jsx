@@ -81,7 +81,7 @@ export default function TopPosts() {
             style={{
               width: 'min(900px, 88vw)',
               height: 'min(400px, 56vh)',
-              marginLeft: 'clamp(0px, 46vw, 740px)',
+              marginLeft: 'clamp(0px, 38vw, 600px)',
               background:
                 'linear-gradient(150deg, rgba(20,21,30,0.92) 0%, rgba(8,9,16,0.9) 100%) padding-box, ' +
                 'linear-gradient(120deg, rgba(255,255,255,0.5) 0%, rgba(120,210,185,0.45) 38%, rgba(90,120,220,0.5) 70%, rgba(150,120,255,0.6) 100%) border-box',
