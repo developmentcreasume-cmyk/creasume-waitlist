@@ -54,7 +54,9 @@ function Root() {
   const route = useRoute()
   if (route === '/privacy-policy') return <PrivacyPolicy />
   if (route === '/terms') return <TermsConditions />
-  if (route === '/influence') return <InfluenceCard />
+  // `/influence` (env default creator) and `/influence/<username>` (any creator
+  // by clean URL) both render the media kit; the username is read in influenceApi.
+  if (route === '/influence' || route.startsWith('/influence/')) return <InfluenceCard />
   return <App />
 }
 

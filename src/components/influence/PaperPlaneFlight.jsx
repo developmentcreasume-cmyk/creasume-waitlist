@@ -53,6 +53,11 @@ export default function PaperPlaneFlight() {
   useEffect(() => {
     const onLaunch = () => {
       if (busy.current) return
+      // On mobile the parked plane is hidden — skip the flight, just scroll.
+      if (window.innerWidth < 768) {
+        document.getElementById('work-with-me')?.scrollIntoView({ behavior: 'smooth' })
+        return
+      }
       const parkedEl = document.getElementById('parked-plane')
       const ctaEl = document.getElementById('cta-banner')
       const endEl = document.querySelector('#work-with-me button[type="submit"]')

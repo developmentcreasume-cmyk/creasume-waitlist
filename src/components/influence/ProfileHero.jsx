@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useLayoutEffect } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
 import { FONT, MONO, LABEL_GRADIENT } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
+import { RollUp } from '../../anim.jsx'
 
 // ---- Outline icons for the metric tiles (inherit stroke colour) ----
 const ip = { width: 32, height: 32, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.2, strokeLinecap: 'round', strokeLinejoin: 'round' }
@@ -74,7 +75,7 @@ function StatsGrid() {
 
   useEffect(() => {
     if (reduce || !inView || !offsets) return
-    const t = setTimeout(() => setDealing(true), 600) // hold the pile, then deal
+    const t = setTimeout(() => setDealing(true), 300) // hold the pile, then deal
     return () => clearTimeout(t)
   }, [reduce, inView, offsets])
 
@@ -100,18 +101,27 @@ function StatsGrid() {
             animate={animate}
             // Sequential deal: each card flies 350ms and lands before the next
             // is thrown, with a 120ms gap between throws (spec §2).
-            transition={{ duration: 0.35, ease: 'easeOut', delay: dealing ? dealPos * (0.35 + 0.12) : 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut', delay: dealing ? dealPos * 0.16 : 0 }}
             whileHover={dealing ? { y: -4 } : undefined}
             className="relative rounded-2xl px-6 py-8 flex flex-col justify-center"
             style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)', zIndex: offsets && !dealing ? dealPos : undefined }}
           >
             <span className="absolute top-4 right-4 text-white">{ICONS[icon]}</span>
-            <div className="font-semibold leading-none mb-2" style={{ fontFamily: FONT, fontSize: 'clamp(28px, 3.6vw, 36px)', color: color || '#ffffff' }}>
-              {value}
+            {/* Value + label roll up from a mask, staggered in the deal order. */}
+            <div className="mb-2">
+              <RollUp
+                text={value}
+                delay={0.4 + dealPos * 0.12}
+                className="font-semibold leading-none"
+                style={{ fontFamily: FONT, fontSize: 'clamp(28px, 3.6vw, 36px)', color: color || '#ffffff' }}
+              />
             </div>
-            <div className="text-[15px] leading-tight font-semibold" style={{ fontFamily: MONO, ...LABEL_GRADIENT }}>
-              {label}
-            </div>
+            <RollUp
+              text={label}
+              delay={0.5 + dealPos * 0.12}
+              className="text-[15px] leading-tight font-semibold"
+              style={{ fontFamily: MONO, ...LABEL_GRADIENT }}
+            />
           </motion.div>
         )
       })}
@@ -123,10 +133,13 @@ function StatsGrid() {
 // bio + actions, then the 3×3 metric grid.
 export default function ProfileHero() {
   const { CREATOR } = useInfluence()
-  // Instagram CDN avatar URLs block cross-origin hotlinking and expire, so the
-  // <img> can fail to load — fall back to the name initial when it does.
-  const [avatarBroken, setAvatarBroken] = useState(false)
-  const showAvatar = CREATOR.avatar && !avatarBroken
+  // Try each avatar source in turn: backend proxy → raw Instagram CDN URL →
+  // (finally) the name initial. The proxy is most reliable once deployed; the
+  // raw URL covers the gap before that (Instagram often serves it with
+  // referrerPolicy=no-referrer). On each load error we advance to the next.
+  const avatarSources = [CREATOR.avatar, CREATOR.avatarRaw].filter(Boolean)
+  const [srcIdx, setSrcIdx] = useState(0)
+  const avatarSrc = avatarSources[srcIdx]
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-24 pb-12 md:pt-32 md:pb-16 overflow-hidden">
       {/* Soft colored ellipse around the hero + stats — fades on all sides */}
@@ -171,14 +184,15 @@ export default function ProfileHero() {
                 className="w-full h-full rounded-full flex items-center justify-center overflow-hidden"
                 style={{ background: 'linear-gradient(135deg, #2a2f6b 0%, #16183c 100%)' }}
               >
-                {showAvatar ? (
+                {avatarSrc ? (
                   <img
-                    src={CREATOR.avatar}
+                    key={avatarSrc}
+                    src={avatarSrc}
                     alt={CREATOR.name}
                     className="w-full h-full object-cover"
                     draggable={false}
                     referrerPolicy="no-referrer"
-                    onError={() => setAvatarBroken(true)}
+                    onError={() => setSrcIdx((i) => i + 1)}
                   />
                 ) : (
                   <span className="text-white font-bold select-none" style={{ fontFamily: FONT, fontSize: 54, lineHeight: 1 }}>

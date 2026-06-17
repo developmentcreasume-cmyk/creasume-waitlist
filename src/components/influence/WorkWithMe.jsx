@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FONT } from './influenceData.js'
-import { sendInquiry, INFLUENCE_USERNAME } from '../../services/influenceApi.js'
+import { sendInquiry, resolveUsername } from '../../services/influenceApi.js'
 
 const FIELDS = [
   { key: 'brand', placeholder: 'Brand Name', type: 'text' },
@@ -28,8 +28,8 @@ export default function WorkWithMe() {
   const submit = async (e) => {
     e.preventDefault()
     if (sending || sent) return
-    // No live creator configured → keep the original demo confirmation.
-    if (!INFLUENCE_USERNAME) {
+    // No live creator (no URL username and no env default) → demo confirmation.
+    if (!resolveUsername()) {
       setSent(true)
       return
     }
@@ -59,7 +59,7 @@ export default function WorkWithMe() {
           <div
             key={i}
             aria-hidden="true"
-            className="absolute rounded-full pointer-events-none select-none"
+            className="hidden md:block absolute rounded-full pointer-events-none select-none"
             style={{
               width: '128.19px',
               height: '128.18px',
@@ -76,10 +76,9 @@ export default function WorkWithMe() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.5, ease: 'easeOut' }}
-          className="relative z-10 rounded-[28px] p-2 md:p-2.5 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center"
+          className="relative z-10 rounded-[28px] p-2 md:p-2.5 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center h-auto lg:h-[667px]"
           style={{
             width: '1196px',
-            height: '667px',
             maxWidth: '100%',
             background: 'rgba(18,18,22,0.55)',
             backdropFilter: 'blur(24px)',

@@ -77,11 +77,9 @@ export default function TopPosts() {
             and crossfades from one post to the next as you scroll. */}
         <div className="relative z-10 w-full flex items-center justify-center pointer-events-none">
           <div
-            className="pointer-events-auto relative rounded-[28px] flex items-center justify-between gap-6 px-8 md:px-12 overflow-hidden"
+            className="pointer-events-auto relative rounded-[28px] flex flex-col md:flex-row items-center justify-between gap-6 px-8 md:px-12 py-8 md:py-0 overflow-hidden h-auto md:h-[min(400px,56vh)] ml-0 md:ml-[clamp(0px,38vw,600px)]"
             style={{
               width: 'min(900px, 88vw)',
-              height: 'min(400px, 56vh)',
-              marginLeft: 'clamp(0px, 38vw, 600px)',
               background:
                 'linear-gradient(150deg, rgba(20,21,30,0.92) 0%, rgba(8,9,16,0.9) 100%) padding-box, ' +
                 'linear-gradient(120deg, rgba(255,255,255,0.5) 0%, rgba(120,210,185,0.45) 38%, rgba(90,120,220,0.5) 70%, rgba(150,120,255,0.6) 100%) border-box',
@@ -95,7 +93,7 @@ export default function TopPosts() {
                 <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(40px, 5vw, 64px)' }}>{FEATURED.totalViews}</div>
                 <div className="text-white/70 font-light text-sm tracking-widest uppercase mt-2" style={{ fontFamily: MONO }}>Total Views</div>
               </div>
-              <div className="flex gap-5 md:gap-7">
+              <div className="flex flex-wrap gap-x-5 gap-y-3 md:gap-7">
                 {[
                   { label: 'Likes', value: post.likes },
                   { label: 'Reach', value: FEATURED.reach },
@@ -118,8 +116,8 @@ export default function TopPosts() {
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, x: -40, scale: 0.96 }}
                 transition={{ duration: 0.45, ease: 'easeInOut' }}
-                className="relative rounded-2xl overflow-hidden shrink-0"
-                style={{ height: '78%', aspectRatio: '4/5', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
+                className="relative rounded-2xl overflow-hidden shrink-0 h-[240px] md:h-[78%]"
+                style={{ aspectRatio: '4/5', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
               >
                 <img src={post.photo} alt="Featured post" className="w-full h-full object-cover" />
               </motion.div>

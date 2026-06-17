@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { FONT, MONO, PANEL } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
+import { CountUp } from '../../anim.jsx'
 
 // Follower Growth line chart: left Y-axis ticks (280k…70k), dashed gridlines,
 // and a white line. vectorEffect keeps the stroke crisp under the stretched
@@ -20,9 +21,9 @@ function FollowerGrowthChart({ points, months }) {
   // last value. Endpoints are data-driven; the middle isn't drawn.
   const lo = Math.min(...points)
   const span = Math.max(...points) - lo || 1
-  const y0 = BASELINE_Y - ((points[0] - lo) / span) * LINE_AMP
-  const y1 = BASELINE_Y - ((points[points.length - 1] - lo) / span) * LINE_AMP
-  const d = `M0 ${y0.toFixed(1)} L100 ${y1.toFixed(1)}`
+  // Flat line, just above the baseline.
+  const flatY = (BASELINE_Y - 4).toFixed(1)
+  const d = `M0 ${flatY} L100 ${flatY}`
   return (
     <div>
       <div className="relative" style={{ height: CHART_H }}>
@@ -228,7 +229,7 @@ export default function LiveAnalytics() {
                 <div key={label}>
                   <div className="text-white/70 text-xs mb-2" style={{ fontFamily: MONO }}>{label}</div>
                   <div className="flex items-center gap-3">
-                    <div className="h-2.5 w-80">
+                    <div className="h-2.5 flex-1 md:flex-none md:w-80">
                       <motion.div
                         className="h-full rounded-full"
                         style={{ background: color }}
@@ -267,7 +268,9 @@ export default function LiveAnalytics() {
                     className="flex flex-col items-center justify-center text-center"
                     style={{ minHeight: 104, ...(i === 1 ? { borderLeft: '1px solid rgba(255,255,255,0.25)' } : {}) }}
                   >
-                    <div className="text-white font-bold text-2xl leading-none mb-1.5" style={{ fontFamily: FONT }}>{value}%</div>
+                    <div className="text-white font-bold text-2xl leading-none mb-1.5" style={{ fontFamily: FONT }}>
+                      <CountUp value={Number(value)} suffix="%" />
+                    </div>
                     <div className="text-white/85 text-[11px] tracking-widest" style={{ fontFamily: MONO }}>{label}</div>
                   </div>
                 ))}

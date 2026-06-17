@@ -4,7 +4,20 @@
 // so every mapper here degrades gracefully when a field is missing.
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-export const INFLUENCE_USERNAME = import.meta.env.VITE_INFLUENCE_USERNAME || ''
+
+// Which creator the page loads — taken ONLY from a clean `/influence/<username>`
+// path. A bare `/influence` has no creator, so it renders the bundled demo;
+// real data shows only at `/influence/<username>`. The SPA rewrite in
+// vercel.json makes those deep links / refreshes serve index.html.
+export function resolveUsername() {
+  if (typeof window === 'undefined') return ''
+  const path = window.location.pathname.replace(/\/+$/, '')
+  if (path.startsWith('/influence/')) {
+    const seg = path.slice('/influence/'.length).split('/')[0]
+    if (seg) return decodeURIComponent(seg)
+  }
+  return ''
+}
 
 // 1234567 → "1.2M", 12500 → "12.5K". Returns null for missing/NaN so callers
 // can decide whether to keep the default value.
@@ -19,8 +32,9 @@ export function formatCount(n) {
 // GET /public/:username → the raw backend payload, or null if there's no
 // configured creator, the request fails, or the creator isn't found.
 export async function fetchInfluenceData() {
-  if (!INFLUENCE_USERNAME) return null
-  const res = await fetch(`${API_BASE}/public/${encodeURIComponent(INFLUENCE_USERNAME)}`)
+  const username = resolveUsername()
+  if (!username) return null
+  const res = await fetch(`${API_BASE}/public/${encodeURIComponent(username)}`)
   const data = await res.json().catch(() => null)
   if (!data?.success || !data.creator) return null
   return data
@@ -30,13 +44,14 @@ export async function fetchInfluenceData() {
 // stores { brandName, email, brief }; we fold the optional agency/campaign-type
 // fields into the brief so nothing the brand typed is lost.
 export async function sendInquiry({ brand, agency, email, campaignType, brief }) {
-  if (!INFLUENCE_USERNAME) throw new Error('No creator configured')
+  const username = resolveUsername()
+  if (!username) throw new Error('No creator configured')
   const briefParts = [
     campaignType && `Campaign type: ${campaignType}`,
     agency && `Agency: ${agency}`,
     brief,
   ].filter(Boolean)
-  const res = await fetch(`${API_BASE}/inquiry/send/${encodeURIComponent(INFLUENCE_USERNAME)}`, {
+  const res = await fetch(`${API_BASE}/inquiry/send/${encodeURIComponent(username)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ brandName: brand, email, brief: briefParts.join('\n') }),
@@ -88,10 +103,14 @@ export function mapInfluenceData(api, d) {
     niche: c.niche || d.CREATOR.niche,
     // Load the avatar through our backend proxy (the raw Instagram CDN URL is
     // hotlink-blocked and expires); ProfileHero falls back to the initial if
-    // even the proxy can't serve it.
-    avatar: c.profilePicture
-      ? `${API_BASE}/public/avatar/${encodeURIComponent(INFLUENCE_USERNAME)}`
+    // even the proxy can't serve it. Keyed by the creator's own username so it's
+    // correct no matter how the page resolved which creator to show.
+    avatar: c.profilePicture && c.username
+      ? `${API_BASE}/public/avatar/${encodeURIComponent(c.username)}`
       : '',
+    // Raw Instagram CDN URL — used as a fallback if the proxy isn't deployed yet
+    // (ProfileHero tries it with referrerPolicy=no-referrer before the initial).
+    avatarRaw: c.profilePicture || '',
     pills,
     tiles,
   }

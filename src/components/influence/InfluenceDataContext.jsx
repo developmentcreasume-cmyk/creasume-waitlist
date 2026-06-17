@@ -7,8 +7,9 @@ import {
 } from './influenceData.js'
 import { fetchInfluenceData, mapInfluenceData } from '../../services/influenceApi.js'
 
-// The bundled Sample.Creator dataset. Shown immediately on load and kept as the
-// fallback if the backend is unreachable or VITE_INFLUENCE_USERNAME is unset.
+// The bundled Sample.Creator dataset. Shown immediately on load, on a bare
+// `/influence` (no username in the URL), and as the fallback if the backend is
+// unreachable or the creator isn't found.
 const DEFAULTS = {
   CREATOR, GROWTH, MONTHS, ENGAGEMENT_BARS, AGE_GROUPS, TOP_LOCATIONS,
   GENDER_SPLIT, SOCIALS, BRAND_SUMMARY, BRAND_DEALS, PACKAGES, PHOTOS,

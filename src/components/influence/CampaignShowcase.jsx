@@ -210,7 +210,7 @@ export default function CampaignShowcase() {
       {/* Mobile fallback grid */}
       <div className="max-w-[1180px] mx-auto grid grid-cols-1 sm:grid-cols-2 gap-5 md:hidden place-items-center">
         {DATA.slice(0, 4).map((data, i) => (
-          <div key={i} className="cursor-pointer" onClick={() => setOpenIdx(i)} style={{ width: SIZES[i].w, height: SIZES[i].h }}>
+          <div key={i} className="cursor-pointer w-full max-w-[270px] aspect-square" onClick={() => setOpenIdx(i)}>
             <CampaignCard data={data} />
           </div>
         ))}

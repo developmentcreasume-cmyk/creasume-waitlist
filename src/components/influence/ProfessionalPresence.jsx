@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion'
+import { useRef } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import { FONT, MONO } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
 
@@ -21,6 +22,14 @@ const PLATFORM_ICON = {
 
 export default function ProfessionalPresence() {
   const { SOCIALS, BRAND_SUMMARY } = useInfluence()
+
+  // Scroll-linked sweep: the Brand Collaborations card glides in from the right
+  // as the section scrolls into view (slower, tied to scroll, not a one-shot).
+  const cardRef = useRef(null)
+  const { scrollYProgress } = useScroll({ target: cardRef, offset: ['start end', 'center center'] })
+  const cardX = useTransform(scrollYProgress, [0, 0.55], [420, 0])
+  const cardOpacity = useTransform(scrollYProgress, [0, 0.25], [0, 1])
+
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-12 md:py-20 overflow-hidden">
       {/* Soft ellipse glow on the left edge, vertically centered */}
@@ -93,13 +102,7 @@ export default function ProfessionalPresence() {
             Brand<br />Collaborations
           </motion.h3>
 
-          <motion.div
-            className="relative"
-            initial={{ opacity: 0, x: 70 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          >
+          <motion.div ref={cardRef} className="relative" style={{ x: cardX, opacity: cardOpacity }}>
             {/* Four solid blue circles tucked behind each card corner — same as the
                 home-page waitlist card. */}
             {[

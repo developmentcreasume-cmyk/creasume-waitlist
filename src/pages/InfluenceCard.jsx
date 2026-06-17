@@ -9,11 +9,11 @@ import WorkWithMe from '../components/influence/WorkWithMe.jsx'
 import PaperPlaneFlight from '../components/influence/PaperPlaneFlight.jsx'
 import { InfluenceDataProvider } from '../components/influence/InfluenceDataContext.jsx'
 
-// Public-facing Influence Card (creator media kit). Reached via the
-// `/influence` route. Each section lives in its own component under
-// components/influence/ and reads from InfluenceDataProvider, which loads the
-// live creator (VITE_INFLUENCE_USERNAME) from the Creasume backend and falls
-// back to the bundled Sample.Creator demo when no data is available.
+// Public-facing Influence Card (creator media kit). Reached at
+// `/influence/<username>`, which loads that creator's live data from the
+// Creasume backend. A bare `/influence` (no username) renders the bundled
+// Sample.Creator demo. Each section lives under components/influence/ and reads
+// from InfluenceDataProvider.
 export default function InfluenceCard() {
   return (
     <InfluenceDataProvider>

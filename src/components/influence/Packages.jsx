@@ -30,16 +30,18 @@ export default function Packages() {
         style={{ right: '1%', top: '-8%', width: 900, height: 'auto', opacity: 0.8, zIndex: 0 }}
       />
 
-      {/* Parked plane — static decoration. Takes off when the CTA is clicked. */}
+      {/* Parked plane — static decoration. Takes off when the CTA is clicked.
+          Hidden on mobile (too large; the flight is a desktop interaction). */}
       <img
         id="parked-plane"
         src="/PLANE.png"
         alt=""
         draggable={false}
+        className="hidden md:block"
         style={{ position: 'absolute', left: 180, top: 60, width: 500, height: 500, objectFit: 'contain', opacity: flying ? 0 : 0.9, transform: 'rotate(8deg)', pointerEvents: 'none', filter: 'drop-shadow(0 12px 30px rgba(0,0,0,0.5))', zIndex: -1 }}
       />
-      {/* Paper-plane CTA banner */}
-      <div id="cta-banner" className="max-w-[1180px] mx-auto text-center mb-20 md:mb-28" style={{ transform: 'translate(230px, -60px)' }}>
+      {/* Paper-plane CTA banner — shifted right only on desktop, centered on mobile */}
+      <div id="cta-banner" className="max-w-[1180px] mx-auto text-center mb-20 md:mb-28 lg:translate-x-[230px] lg:-translate-y-[60px]">
         <motion.p
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -78,7 +80,7 @@ export default function Packages() {
       </div>
 
       <motion.div
-        className="max-w-[1180px] mx-auto flex flex-nowrap justify-center items-center gap-4"
+        className="max-w-[1180px] mx-auto flex flex-col md:flex-row md:flex-nowrap justify-center items-center gap-6 md:gap-4"
         variants={staggerParent}
         initial="hidden"
         whileInView="show"
@@ -90,9 +92,9 @@ export default function Packages() {
             id={p.tier === 'STARTER' ? 'pkg-starter' : undefined}
             variants={fadeUp}
             whileHover={{ y: -6 }}
-            className="relative rounded-2xl p-7 flex flex-col shrink-0"
+            className="relative rounded-2xl p-7 flex flex-col shrink-0 w-full max-w-[360px] md:w-[360px]"
             style={{
-              ...(p.popular ? { width: '360px', height: '400.64px', maxWidth: '100%', marginTop: '-23px' } : { width: '360px', height: '377.57px', maxWidth: '100%' }),
+              ...(p.popular ? { height: '400.64px', marginTop: '-23px' } : { height: '377.57px' }),
               background: 'rgba(15,16,24,0.5)',
               border: '1px solid #ffffff',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 18px 50px rgba(0,0,0,0.4)',

@@ -36,6 +36,44 @@ export function CountUp({ value, prefix = '', suffix = '', duration = 1.4, class
 }
 
 /* ============================================================
+   <RollUp /> — text rolls up from below a mask on scroll-in.
+   The clip wrapper hides the line until its inner copy slides
+   into place. Works for any text (numbers, words, "Mumbai").
+   ============================================================ */
+export function RollUp({ text, delay = 0, duration = 0.6, className, style }) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-40px' })
+  const reduce = useReducedMotion()
+
+  if (reduce) {
+    return (
+      <span ref={ref} className={className} style={style}>
+        {text}
+      </span>
+    )
+  }
+
+  return (
+    // paddingBottom + matching negative margin leaves room for descenders
+    // (g, y) inside the clip without adding any layout height.
+    <span
+      ref={ref}
+      style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.16em', marginBottom: '-0.16em' }}
+    >
+      <motion.span
+        className={className}
+        style={{ display: 'block', ...style }}
+        initial={{ y: '115%' }}
+        animate={inView ? { y: '0%' } : { y: '115%' }}
+        transition={{ duration, delay, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {text}
+      </motion.span>
+    </span>
+  )
+}
+
+/* ============================================================
    <Typewriter /> — characters appear one-by-one on scroll-in.
    ~35ms per character (spec: 30–40ms), with an optional
    startDelay so the four stats stagger across each other.
