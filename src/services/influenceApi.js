@@ -248,14 +248,30 @@ export function mapInfluenceData(api, d) {
   // ---- Collaboration packages (page lays out up to 3 side by side) ----
   let PACKAGES = d.PACKAGES
   if (packages.length) {
-    PACKAGES = packages.slice(0, 3).map((p, i) => ({
+    const sliced = packages.slice(0, 3)
+    // Honour the admin's "Most Popular" choice (isPopular from the backend).
+    // Only fall back to a default (middle, or the sole card) if none is flagged.
+    const hasFlagged = sliced.some((p) => p.isPopular)
+    PACKAGES = sliced.map((p, i) => ({
       tier: (p.title || `Tier ${i + 1}`).toUpperCase(),
       price: p.pricing != null ? `₹${Number(p.pricing).toLocaleString('en-IN')}` : 'Custom',
       sub: p.turnaroundTime ? `${p.turnaroundTime} turnaround` : 'starting price',
-      popular: packages.length >= 2 ? i === 1 : i === 0,
+      popular: hasFlagged
+        ? !!p.isPopular
+        : sliced.length >= 2
+        ? i === 1
+        : i === 0,
       features:
         p.deliverables?.length ? p.deliverables : [p.description].filter(Boolean),
     }))
+
+    // Move the "most popular" card to the centre of the row.
+    const popIdx = PACKAGES.findIndex((p) => p.popular)
+    if (popIdx !== -1 && PACKAGES.length >= 3) {
+      const mid = Math.floor(PACKAGES.length / 2)
+      const [pop] = PACKAGES.splice(popIdx, 1)
+      PACKAGES.splice(mid, 0, pop)
+    }
   }
 
   // ---- Top posts + photo pool ----

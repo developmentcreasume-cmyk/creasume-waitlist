@@ -271,7 +271,6 @@ export default function Packages() {
             key={p.tier}
             id={i === 0 ? 'pkg-starter' : undefined}
             variants={fadeUp}
-            whileHover={{ y: -6 }}
             className={`relative rounded-[22px] p-7 md:p-8 flex flex-col w-full ${isPopular ? 'md:-mt-6' : ''}`}
             style={{
               ...(isPopular
@@ -302,7 +301,7 @@ export default function Packages() {
               <a
                 id="pkg-book-now"
                 href="#work-with-me"
-                className="no-underline mt-auto w-full rounded-full font-semibold text-sm py-3.5 text-center transition-all hover:scale-[1.02] text-white"
+                className="no-underline mt-auto w-full rounded-full font-semibold text-sm py-3.5 text-center text-white"
                 style={{ fontFamily: FONT, background: '#0918E5' }}
               >
                 Book Now

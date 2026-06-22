@@ -248,20 +248,26 @@ export default function ProfileHero() {
               initial="hidden"
               whileInView="show"
               viewport={viewport}
-              className="flex flex-wrap items-center justify-center lg:justify-start gap-x-3 gap-y-2 mb-2.5"
+              className="flex flex-col items-center lg:flex-row lg:items-center justify-center lg:justify-start gap-2 lg:gap-3 mb-2.5"
             >
               <h1 className="font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(32px, 5vw, 52px)' }}>
                 {CREATOR.username}
               </h1>
-              {/* Founding Creator badge — admin-managed, next to the username */}
+              {/* Founding Creator badge — gold-metal pill: glossy gold ring border
+                  around a dark interior, with a warm gold glow. */}
               {CREATOR.isFoundingCreator && (
                 <span
-                  className="inline-flex items-center rounded-full px-3.5 py-1.5 text-xs md:text-sm font-semibold whitespace-nowrap"
+                  className="inline-flex items-center justify-center rounded-full text-xs md:text-sm font-bold whitespace-nowrap order-first self-end lg:order-none lg:self-auto"
                   style={{
                     fontFamily: FONT,
-                    color: '#ffffff',
-                    background: '#E3B23C',
-                    border: '1.5px solid #E8C56A',
+                    color: '#F6E3A8',
+                    padding: '7px 24px',
+                    background:
+                      'linear-gradient(180deg, #2a1d07 0%, #150e03 100%) padding-box, ' +
+                      'linear-gradient(160deg, #FBE7A0 0%, #D8A93C 46%, #9A701F 100%) border-box',
+                    border: '3px solid transparent',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                    letterSpacing: '0.02em',
                   }}
                   title="Founding Creator"
                 >
