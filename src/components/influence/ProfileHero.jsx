@@ -339,7 +339,7 @@ export default function ProfileHero() {
             {/* Headline stat pills — flip in on a horizontal axis. Two per row
                 (2×2) on small screens; a single flex row on large screens. */}
             <motion.div
-              className="grid grid-cols-2 w-full max-w-[420px] mx-auto justify-items-center gap-2 mb-9 md:mb-11 lg:flex lg:w-auto lg:max-w-none lg:mx-0 lg:flex-wrap lg:justify-start"
+              className="grid grid-cols-2 w-full max-w-[460px] mx-auto justify-items-center gap-2.5 mb-9 md:mb-11 lg:flex lg:w-auto lg:max-w-none lg:mx-0 lg:flex-wrap lg:justify-start"
               initial="hidden"
               whileInView="show"
               viewport={viewport}
@@ -350,11 +350,11 @@ export default function ProfileHero() {
                   key={label}
                   custom={i}
                   variants={flipIn}
-                  className="inline-flex items-baseline gap-1.5 md:gap-2 rounded-full px-3.5 py-2 md:px-5 md:py-2.5 whitespace-nowrap max-w-full"
+                  className="inline-flex items-baseline gap-2 md:gap-2.5 rounded-full px-4.5 py-2.5 md:px-6 md:py-3 whitespace-nowrap max-w-full"
                   style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', transformOrigin: 'center', backfaceVisibility: 'hidden' }}
                 >
-                  <span className="font-bold text-base md:text-xl" style={{ color }}>{value}</span>
-                  <span className="text-xs md:text-base" style={{ color: labelColor || 'rgba(255,255,255,0.45)' }}>{label}</span>
+                  <span className="font-bold text-lg md:text-2xl" style={{ color }}>{value}</span>
+                  <span className="text-sm md:text-lg" style={{ color: labelColor || 'rgba(255,255,255,0.45)' }}>{label}</span>
                 </motion.span>
               ))}
             </motion.div>
