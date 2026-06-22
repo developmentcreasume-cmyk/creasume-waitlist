@@ -122,8 +122,16 @@ export function mapInfluenceData(api, d) {
   // aggregate isn't in the Graph API, so this is the sum of the available media).
   const sumMedia = (key) => media.reduce((a, m) => a + (m[key] || 0), 0)
   // Likes / comments / shares totalled across the fetched posts (no lifetime
-  // aggregate exists in the Graph API).
+  // aggregate exists in the Graph API), so the figure tracks live post likes.
   const likeT = sumMedia('like_count')
+  // Dev-only: log how many posts the API returned and each one's likes, so the
+  // likes total can be reconciled against the real account. Remove when done.
+  if (import.meta.env.DEV) {
+    console.log(
+      `[influence] media posts: ${media.length}, likes sum: ${likeT}`,
+      media.map((m) => ({ id: m.id, type: m.media_type, product: m.media_product_type, like_count: m.like_count })),
+    )
+  }
   const commentT = sumMedia('comments_count')
   const shareT = sumMedia('shares')
   const tileValues = {
@@ -195,6 +203,18 @@ export function mapInfluenceData(api, d) {
     })
     ENG_MONTHS = recent.map((m) => new Date(m.timestamp).toLocaleString('en-US', { month: 'short' }))
   }
+
+  // Dated raw series so the 30D / 90D / 1Y toggle can filter by time window in
+  // the component (followers per snapshot day, engagement rate per post).
+  const GROWTH_POINTS = growth.map((g) => ({ date: g.date, followers: g.followers }))
+  const ENG_POINTS = media
+    .filter((m) => m.timestamp)
+    .map((m) => {
+      const e = (m.like_count || 0) + (m.comments_count || 0) + (m.saved || 0) + (m.shares || 0)
+      const denom = m.views || s.reach || s.followersCount || 1
+      return { date: m.timestamp, rate: Math.round((e / denom) * 1000) / 10 }
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
 
   // ---- Audience: age distribution, top cities, gender split ----
   let AGE_GROUPS = d.AGE_GROUPS
@@ -362,6 +382,8 @@ export function mapInfluenceData(api, d) {
     MONTHS,
     ENGAGEMENT_BARS,
     ENG_MONTHS,
+    GROWTH_POINTS,
+    ENG_POINTS,
     AGE_GROUPS,
     TOP_LOCATIONS,
     TOP_COUNTRIES,

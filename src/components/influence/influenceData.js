@@ -46,7 +46,7 @@ export const CREATOR = {
     { value: '125K', label: 'Total Followers', icon: 'followers' },
     { value: '87', label: 'Creasume Score', icon: 'score' },
     {
-      value: '2.4M', label: 'Total Impressions', icon: 'heart',
+      value: '892K', label: 'Total Impressions', icon: 'heart',
       // Likes / comments / shares shown as a mini-row inside this tile.
       details: [
         { icon: 'heart', value: '892K' },

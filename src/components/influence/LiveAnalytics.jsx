@@ -161,9 +161,24 @@ function Panel({ title, children, from = 'up', className = '', bare = false, sty
 
 export default function LiveAnalytics() {
   const {
-    GROWTH, MONTHS, ENGAGEMENT_BARS, ENG_MONTHS, AGE_GROUPS, TOP_LOCATIONS, TOP_COUNTRIES, GENDER_SPLIT,
+    GROWTH, MONTHS, ENGAGEMENT_BARS, ENG_MONTHS, GROWTH_POINTS, ENG_POINTS,
+    AGE_GROUPS, TOP_LOCATIONS, TOP_COUNTRIES, GENDER_SPLIT,
   } = useInfluence()
   const [range, setRange] = useState('30D')
+
+  // Filter the dated series by the selected window so 30D / 90D / 1Y actually
+  // change the charts. Falls back to the precomputed arrays (demo / no dates).
+  // Day + short month (e.g. "10 Apr") so posts in the same month don't all show
+  // an identical label.
+  const mShort = (iso) => new Date(iso).toLocaleString('en-US', { day: 'numeric', month: 'short' })
+  const days = range === '90D' ? 90 : range === '1Y' ? 365 : 30
+  const cutoff = Date.now() - days * 86400000
+  const engSel = (ENG_POINTS || []).filter((p) => new Date(p.date).getTime() >= cutoff).slice(-6)
+  const growSel = (GROWTH_POINTS || []).filter((p) => new Date(p.date).getTime() >= cutoff).slice(-7)
+  const engBars = engSel.length ? engSel.map((p) => p.rate) : ENGAGEMENT_BARS
+  const engMonths = engSel.length ? engSel.map((p) => mShort(p.date)) : (ENG_MONTHS || MONTHS)
+  const growthVals = growSel.length >= 2 ? growSel.map((g) => Math.max(1, Math.round(g.followers / 1000))) : GROWTH
+  const growthMonths = growSel.length >= 2 ? growSel.map((g) => mShort(g.date)) : MONTHS
   const [hovered, setHovered] = useState(null)
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-12 md:py-20 overflow-hidden">
@@ -218,11 +233,11 @@ export default function LiveAnalytics() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <Panel title="Follower Growth" from="left" style={{ background: 'linear-gradient(155deg, #1b2052 0%, #10133C 60%)' }}>
-            <FollowerGrowthChart points={GROWTH} months={MONTHS} />
+            <FollowerGrowthChart points={growthVals} months={growthMonths} />
           </Panel>
 
           <Panel title="Engagement Rate" from="right" style={{ background: 'linear-gradient(155deg, #1b2052 0%, #10133C 60%)' }}>
-            <EngagementChart bars={ENGAGEMENT_BARS} months={ENG_MONTHS || MONTHS} />
+            <EngagementChart bars={engBars} months={engMonths} />
           </Panel>
 
           {/* Audience Insights + Top Locations / gender — combined card */}
