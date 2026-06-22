@@ -122,13 +122,20 @@ export function mapInfluenceData(api, d) {
   // toward the likes / impressions totals (exclude Reels). Items without a
   // product type (e.g. before the backend sends `media_product_type`) are kept
   // so the totals never collapse to 0.
-  const posts = media.filter((m) => m.media_product_type !== 'REELS')
-  // Likes / comments / shares totalled across the feed posts, so the figure
-  // tracks live post likes (no lifetime aggregate exists in the Graph API).
-  const sumMedia = (key) => posts.reduce((a, m) => a + (m[key] || 0), 0)
-  const likeT = sumMedia('like_count')
-  const commentT = sumMedia('comments_count')
+  const sumMedia = (key) => media.reduce((a, m) => a + (m[key] || 0), 0)
+  // Likes / comments are totalled across ALL the creator's media — posts and
+  // Reels (the backend paginates the whole profile into s.totalLikes /
+  // s.totalComments). Shares have no list field, so they stay the sum of the
+  // fetched posts only.
+  const likeT = s.totalLikes != null ? s.totalLikes : sumMedia('like_count')
+  const commentT = s.totalComments != null ? s.totalComments : sumMedia('comments_count')
   const shareT = sumMedia('shares')
+  // Dev-only: did the backend's all-profile totals come through? Remove when done.
+  if (import.meta.env.DEV) {
+    console.log(
+      `[influence] s.totalLikes=${s.totalLikes}, s.totalComments=${s.totalComments}, recent-sum=${sumMedia('like_count')}, using likeT=${likeT}`,
+    )
+  }
   const tileValues = {
     'Engagement Rate': eng,
     'Total Views': fc0(s.views),
