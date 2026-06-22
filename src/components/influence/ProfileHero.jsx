@@ -141,7 +141,10 @@ function StatsGrid({ includeScore = false }) {
             transition={{ duration: 0.25, ease: 'easeOut', delay: dealing ? dealPos * 0.05 : 0 }}
             whileHover={dealing ? { y: -4 } : undefined}
             className="relative rounded-2xl px-4 py-6 md:px-6 md:py-8 flex flex-col justify-center items-center text-center"
-            style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)', zIndex: offsets && !dealing ? dealPos : undefined }}
+            // Tiles with a details row get extra height (and every tile matches it
+            // via auto-rows-fr) so the value still centres like the other tiles
+            // while the details pin to the bottom.
+            style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)', minHeight: details ? 150 : undefined, zIndex: offsets && !dealing ? dealPos : undefined }}
           >
             <span className="absolute top-3 right-3 md:top-4 md:right-4 text-white scale-[0.65] md:scale-100 origin-top-right">{ICONS[icon]}</span>
             {/* Value + label roll up from a mask. Each card triggers on its own
@@ -188,13 +191,14 @@ function StatsGrid({ includeScore = false }) {
               className="text-[13px] md:text-[15px] leading-tight font-semibold"
               style={{ fontFamily: MONO, ...LABEL_GRADIENT }}
             />
-            {/* Mini-row of likes / comments / shares (Impressions tile only). */}
+            {/* Mini-row of likes / comments / shares (Impressions tile only) —
+                pinned to the bottom, kept on a single line on every screen. */}
             {details && (
-              <div className="flex items-center justify-center gap-2.5 md:gap-3 mt-3 flex-wrap">
+              <div className="absolute inset-x-0 bottom-3 md:bottom-4 flex items-center justify-center gap-2 whitespace-nowrap">
                 {details.map((d) => (
                   <span key={d.icon} className="inline-flex items-center gap-1 text-white/65">
-                    <span className="inline-flex items-center justify-center text-white/55 [&>svg]:w-[14px] [&>svg]:h-[14px] md:[&>svg]:w-[15px] md:[&>svg]:h-[15px]">{ICONS[d.icon]}</span>
-                    <span className="font-semibold leading-none" style={{ fontFamily: FONT, fontSize: 12.5 }}>{d.value}</span>
+                    <span className="inline-flex items-center justify-center text-white/55 [&>svg]:w-3 [&>svg]:h-3 md:[&>svg]:w-[13px] md:[&>svg]:h-[13px]">{ICONS[d.icon]}</span>
+                    <span className="font-semibold leading-none" style={{ fontFamily: FONT, fontSize: 11 }}>{d.value}</span>
                   </span>
                 ))}
               </div>

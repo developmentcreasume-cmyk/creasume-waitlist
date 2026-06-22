@@ -49,8 +49,11 @@ function PackageCard({ p, i, isPopular, showCta, noId = false, carousel = false 
         // instead of letting a long feature list spill outside the box.
         minHeight: carousel ? 336 : isPopular ? 400.64 : 377.56,
         maxWidth: '100%',
-        background: 'transparent',
-        border: '1px solid rgba(255,255,255,0.75)',
+        // Frosted dark-blue glass, matching the campaign showcase cards.
+        background: 'linear-gradient(150deg, rgba(48,56,130,0.20) 0%, rgba(16,19,60,0.13) 100%)',
+        backdropFilter: 'blur(16px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(16px) saturate(140%)',
+        border: '1px solid rgba(150,165,255,0.22)',
         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
       }}
     >
@@ -258,19 +261,17 @@ export default function Packages() {
       {/* Paper-plane CTA banner — shifted right only on desktop, centered on mobile */}
       <div id="cta-banner" className="max-w-[1180px] mx-auto text-center mb-20 md:mb-28 lg:translate-x-[230px] lg:-translate-y-[60px]">
         {/* Mobile-only decorative plane filling the space above the heading.
-            Also the launch origin for the click fly-across. Hidden while it flies. */}
-        <motion.img
+            Also the launch origin for the click fly-across. Hidden while it flies.
+            Plain <img> (no framer entrance) — animating opacity in both framer and
+            inline style fought on first paint and flashed/doubled the plane. */}
+        <img
           id="cta-plane-mobile"
           src="/PLANE.png"
           alt=""
           aria-hidden="true"
           draggable={false}
-          initial={{ opacity: 0, y: 16, rotate: 35 }}
-          whileInView={{ opacity: flyMobile ? 0 : 1, y: 0, rotate: 35 }}
-          viewport={{ once: true, margin: '-60px' }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
           className="md:hidden mx-auto mb-6 w-40 h-32 object-contain select-none pointer-events-none transition-opacity duration-300"
-          style={{ opacity: flyMobile ? 0 : 1, filter: 'drop-shadow(0 12px 26px rgba(0,0,0,0.5))' }}
+          style={{ opacity: flyMobile ? 0 : 1, transform: 'rotate(35deg)', filter: 'drop-shadow(0 12px 26px rgba(0,0,0,0.5))' }}
         />
         <motion.p
           initial={{ opacity: 0, y: 16 }}

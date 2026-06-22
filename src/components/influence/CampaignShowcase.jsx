@@ -12,14 +12,14 @@ const CARD_W = 380
 // Frosted-glass surface shared by the card and the modal: a faint neutral
 // border ring on the outside, a translucent blurred panel inside.
 const GLASS_RING = {
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 100%)',
+  background: 'linear-gradient(135deg, rgba(150,165,255,0.22) 0%, rgba(40,46,112,0.06) 100%)',
 }
 const GLASS_PANEL = {
-  // Genuinely see-through frosted glass: a very faint white film over a blurred,
-  // slightly saturated backdrop, so the card takes on whatever is behind it.
-  background: 'linear-gradient(150deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.015) 100%)',
-  backdropFilter: 'blur(16px) saturate(150%)',
-  WebkitBackdropFilter: 'blur(16px) saturate(150%)',
+  // Frosted glass with a light dark-blue tint — translucent so the card reads as
+  // glass with a hint of navy, not a solid block.
+  background: 'linear-gradient(150deg, rgba(48,56,130,0.20) 0%, rgba(16,19,60,0.13) 100%)',
+  backdropFilter: 'blur(16px) saturate(140%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(140%)',
 }
 
 // One campaign-highlight glass card — now shows the full campaign layout
@@ -45,8 +45,11 @@ function CampaignCard({ data, onClick, sizeW = CARD_W }) {
     <div
       onPointerDown={onClick ? handleDown : undefined}
       onPointerUp={onClick ? handleUp : undefined}
-      className={`shrink-0 rounded-[20px] p-px transition-transform duration-300 ${onClick ? 'cursor-pointer hover:scale-[1.02]' : ''}`}
-      style={{ width: sizeW, ...GLASS_RING }}
+      // Press-and-hold on mobile should hold the card (pause the marquee), not
+      // pop the browser's text-selection / copy menu — so block selection and
+      // the iOS/Android long-press callout on the card and its contents.
+      className={`shrink-0 rounded-[20px] p-px transition-transform duration-300 select-none [-webkit-touch-callout:none] ${onClick ? 'cursor-pointer hover:scale-[1.02]' : ''}`}
+      style={{ width: sizeW, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none', ...GLASS_RING }}
     >
       <div className="rounded-[19px] p-7 flex flex-col h-full" style={{ ...GLASS_PANEL, minHeight: 415 }}>
         {/* Brand + date */}

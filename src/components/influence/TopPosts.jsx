@@ -67,7 +67,7 @@ export default function TopPosts() {
   const cardAndDashes = (
     <div className="relative z-10 w-full flex flex-col items-center gap-5 pointer-events-none">
       <div
-        className="pointer-events-auto relative rounded-[28px] flex flex-col md:flex-row items-center justify-between gap-5 md:gap-6 px-6 md:px-12 pt-5 pb-6 md:py-0 overflow-hidden h-auto md:h-[min(400px,56vh)] ml-0 md:ml-[clamp(0px,38vw,600px)]"
+        className="pointer-events-auto relative rounded-[28px] flex flex-col md:flex-row items-center justify-between gap-5 md:gap-6 px-6 md:px-12 pt-5 pb-6 md:py-0 overflow-hidden h-auto md:h-[min(400px,56svh)] ml-0 md:ml-[clamp(0px,38vw,600px)]"
         style={{
           width: 'min(900px, 88vw)',
           background:
@@ -110,7 +110,7 @@ export default function TopPosts() {
             exit={{ opacity: 0, x: -40, scale: 0.96 }}
             transition={{ duration: 0.45, ease: 'easeInOut' }}
             title={post.permalink ? 'Open post on Instagram' : undefined}
-            className={`block no-underline relative rounded-2xl overflow-hidden shrink-0 h-[clamp(150px,27vh,290px)] md:h-[78%] transition-transform hover:scale-[1.02] ${post.permalink ? 'cursor-pointer' : ''}`}
+            className={`block no-underline relative rounded-2xl overflow-hidden shrink-0 h-[clamp(150px,27svh,290px)] md:h-[78%] transition-transform hover:scale-[1.02] ${post.permalink ? 'cursor-pointer' : ''}`}
             style={{ aspectRatio: '4/5', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
           >
             <img src={post.photo} alt="Featured post" className="w-full h-full object-cover" />
@@ -132,8 +132,8 @@ export default function TopPosts() {
   )
 
   return (
-    <section ref={sectionRef} className="relative z-10 mb-20 md:mb-32" style={{ height: `${POSTS.length * 140}vh` }}>
-      <div className="sticky top-0 h-screen overflow-hidden">
+    <section ref={sectionRef} className="relative z-10 mb-20 md:mb-32" style={{ height: `${POSTS.length * 140}svh` }}>
+      <div className="sticky top-0 h-svh overflow-hidden">
         {/* Desktop: full marquee band sits BEHIND the centered card */}
         <div className="hidden md:flex absolute inset-0 flex-col justify-center gap-16 select-none pointer-events-none">
           <MarqueeRow text="TOP POSTS" progress={marqueeProgress} />
