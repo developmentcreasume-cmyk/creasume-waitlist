@@ -350,11 +350,11 @@ export default function ProfileHero() {
                   key={label}
                   custom={i}
                   variants={flipIn}
-                  className="inline-flex items-baseline gap-2 md:gap-2.5 rounded-full px-4.5 py-2.5 md:px-6 md:py-3 whitespace-nowrap max-w-full"
+                  className="inline-flex items-baseline gap-1.5 md:gap-2.5 rounded-full px-3 py-2.5 md:px-6 md:py-3 whitespace-nowrap max-w-full"
                   style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', transformOrigin: 'center', backfaceVisibility: 'hidden' }}
                 >
                   <span className="font-bold text-lg md:text-2xl" style={{ color }}>{value}</span>
-                  <span className="text-sm md:text-lg" style={{ color: labelColor || 'rgba(255,255,255,0.45)' }}>{label}</span>
+                  <span className="text-xs md:text-lg" style={{ color: labelColor || 'rgba(255,255,255,0.45)' }}>{label}</span>
                 </motion.span>
               ))}
             </motion.div>
