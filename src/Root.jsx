@@ -13,17 +13,29 @@ import { useRoute } from './router.js'
 // are left to the router.
 function useLenis() {
   useEffect(() => {
-    const lenis = new Lenis()
-    // Exposed so animations (e.g. the paper-plane flight) can drive the real
-    // scroll position in sync instead of fighting Lenis with window.scrollTo.
-    window.__lenis = lenis
+    // Skip Lenis on touch devices. Its JS-driven rAF scroll hijack replaces the
+    // phone's native momentum scrolling and keeps the main thread busy every
+    // frame, which is a major source of mobile scroll/tap lag. Native scrolling
+    // is smoother there; framer-motion's useScroll tracks the real document
+    // either way. In-page anchors fall back to native smooth scroll below.
+    const isTouch =
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window)
 
+    let lenis = null
     let frame
-    const raf = (time) => {
-      lenis.raf(time)
+    if (!isTouch) {
+      lenis = new Lenis()
+      // Exposed so animations (e.g. the paper-plane flight) can drive the real
+      // scroll position in sync instead of fighting Lenis with window.scrollTo.
+      window.__lenis = lenis
+
+      const raf = (time) => {
+        lenis.raf(time)
+        frame = requestAnimationFrame(raf)
+      }
       frame = requestAnimationFrame(raf)
     }
-    frame = requestAnimationFrame(raf)
 
     const onAnchorClick = (e) => {
       const link = e.target.closest('a[href^="#"]')
@@ -34,15 +46,18 @@ function useLenis() {
       const target = document.querySelector(href)
       if (!target) return
       e.preventDefault()
-      lenis.scrollTo(target)
+      if (lenis) lenis.scrollTo(target)
+      else target.scrollIntoView({ behavior: 'smooth' })
     }
     document.addEventListener('click', onAnchorClick)
 
     return () => {
-      cancelAnimationFrame(frame)
+      if (frame) cancelAnimationFrame(frame)
       document.removeEventListener('click', onAnchorClick)
-      if (window.__lenis === lenis) window.__lenis = null
-      lenis.destroy()
+      if (lenis) {
+        if (window.__lenis === lenis) window.__lenis = null
+        lenis.destroy()
+      }
     }
   }, [])
 }

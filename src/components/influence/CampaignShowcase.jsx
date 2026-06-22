@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FONT, MONO } from './influenceData.js'
@@ -235,34 +235,70 @@ function CampaignDetail({ data, onClose }) {
 }
 
 export default function CampaignShowcase() {
-  // Pause the continuous left→right marquee while hovered (CSS play-state, so it
-  // freezes/resumes seamlessly). Tapping a card opens that card on its own.
-  const [paused, setPaused] = useState(false)
   const [openIdx, setOpenIdx] = useState(null)
+  const scrollerRef = useRef(null)
+  // Pause the auto-advance while interacting: hover on desktop, finger-down
+  // (tap/hold) on mobile. A ref (not state) so the rAF loop reads it live
+  // without re-rendering.
+  const pausedRef = useRef(false)
 
   // Two copies of the cards so the row loops seamlessly.
   const loop = [...DATA, ...DATA]
 
+  // Auto-advance the row by nudging scrollLeft each frame. The row is a real
+  // horizontal scroll container, so on touch the user can swipe to slide it
+  // manually; auto-scroll pauses while a finger is down. Cards are duplicated,
+  // so we wrap back at the halfway point for a seamless loop.
+  useEffect(() => {
+    const el = scrollerRef.current
+    if (!el) return
+    let raf = 0
+    let last = performance.now()
+    const SPEED = 70 // px per second
+    const step = (now) => {
+      const dt = Math.min(0.05, (now - last) / 1000)
+      last = now
+      if (!pausedRef.current) {
+        el.scrollLeft += SPEED * dt
+        const half = el.scrollWidth / 2
+        if (half > 0 && el.scrollLeft >= half) el.scrollLeft -= half
+      }
+      raf = requestAnimationFrame(step)
+    }
+    raf = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  // When the row stops, snap to the nearest card boundary so it never rests
+  // with a card sliced off at the edge. Cards are CARD_W wide with a 24px
+  // (gap-6) gutter, so boundaries fall on multiples of that step.
+  const pause = () => {
+    pausedRef.current = true
+    const el = scrollerRef.current
+    if (!el) return
+    const step = CARD_W + 24
+    el.scrollTo({ left: Math.round(el.scrollLeft / step) * step, behavior: 'smooth' })
+  }
+  const resume = () => { pausedRef.current = false }
+
   return (
     <section className="relative z-10 py-20 md:py-28 overflow-hidden" style={{ background: 'transparent' }}>
-      <style>{`@keyframes campaignMarquee { from { transform: translateX(-50%); } to { transform: translateX(0%); } }`}</style>
-
       <div
-        className="relative w-full overflow-hidden"
-        onMouseEnter={() => setPaused(true)}
-        onMouseLeave={() => setPaused(false)}
+        ref={scrollerRef}
+        className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+        // Pointer events unify mouse + touch: on desktop these are hover
+        // enter/leave (pause while hovering); on touch they fire on finger
+        // down/up (pause while dragging). Using only these avoids the synthetic
+        // `mouseenter`-with-no-`mouseleave` that left the row stuck paused after
+        // a tap on mobile.
+        onPointerEnter={pause}
+        onPointerLeave={resume}
+        onPointerCancel={resume}
       >
-        <div
-          className="flex gap-6 w-max"
-          style={{
-            animation: 'campaignMarquee 28s linear infinite',
-            animationPlayState: paused ? 'paused' : 'running',
-          }}
-        >
-          {loop.map((data, i) => (
-            <CampaignCard key={i} data={data} onClick={() => setOpenIdx(i % DATA.length)} />
-          ))}
-        </div>
+        {loop.map((data, i) => (
+          <CampaignCard key={i} data={data} onClick={() => setOpenIdx(i % DATA.length)} />
+        ))}
       </div>
 
       {/* Tap-to-open detail of a single card. Rendered through a portal on

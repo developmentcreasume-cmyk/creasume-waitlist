@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, useMotionValue, animate } from 'framer-motion'
 import { fadeUp, staggerParent } from '../../motion-variants.js'
@@ -87,49 +87,23 @@ function PackageCard({ p, i, isPopular, showCta, noId = false, carousel = false 
 export default function Packages() {
   const { PACKAGES } = useInfluence()
   const n = PACKAGES.length
+  const loop = n > 1
+  const STEP = CAROUSEL_CARD + CAROUSEL_GAP
   // Mobile carousel: start on the "Most Popular" package (front/center).
   const popularIndex = Math.max(0, PACKAGES.findIndex((p) => p.popular))
-  // Seamless infinite loop: clone the last card to the front and the first to the
-  // back, so there's always a neighbour on each side. `pos` is the PHYSICAL index
-  // into `carouselSlides` (real card j sits at pos j+1). When the track lands on a
-  // clone we jump (no animation) to the matching real card — the swap is invisible
-  // because the clone and the real card are identical.
-  // TWO clones at each end so even a centred clone still has a neighbour peeking
-  // on its outer side (one clone flickers at the wrap). Real card j sits at
-  // physical index j + 2.
-  const loop = n > 1
-  const BASE = loop ? 2 : 0
-  const carouselSlides = loop
-    ? [PACKAGES[(n - 2 + n) % n], PACKAGES[(n - 1 + n) % n], ...PACKAGES, PACKAGES[0 % n], PACKAGES[1 % n]]
-    : PACKAGES
-  const STEP = CAROUSEL_CARD + CAROUSEL_GAP
-  const [pos, setPos] = useState(BASE + popularIndex)
-  const [noAnim, setNoAnim] = useState(false)
-  // The track's horizontal offset (a motion value so the drag follows the finger
-  // freely, then snaps to a card on release).
-  const x = useMotionValue(-(BASE + popularIndex) * STEP)
-  const logical = loop ? (((pos - BASE) % n) + n) % n : pos
+  // Windowed virtual carousel: `pos` is an UNBOUNDED card index. We render a small
+  // window of slots around it (each showing PACKAGES[pos mod n]) positioned by
+  // index, so it scrolls forever with no clones, no resets and never stops.
+  const [pos, setPos] = useState(popularIndex)
+  const x = useMotionValue(-popularIndex * STEP)
+  const logical = ((pos % n) + n) % n
+  // Slots either side of centre to render (enough buffer for a single swipe).
+  const WINDOW = 3
+  const slotKeys = Array.from({ length: WINDOW * 2 + 1 }, (_, idx) => pos - WINDOW + idx)
 
-  // After an instant (no-animation) jump, re-enable animation on the next frame.
-  useEffect(() => {
-    if (!noAnim) return
-    const id = requestAnimationFrame(() => setNoAnim(false))
-    return () => cancelAnimationFrame(id)
-  }, [noAnim])
-
-  // Animate the track to a target physical index; when it settles on a clone,
-  // jump (no animation) to the identical real card so the loop never rewinds.
-  const goTo = (target, instant = false) => {
-    if (instant) setNoAnim(true)
+  const goTo = (target) => {
     setPos(target)
-    animate(x, -target * STEP, {
-      ...(instant ? { duration: 0 } : { type: 'spring', stiffness: 260, damping: 30 }),
-      onComplete: () => {
-        if (instant || !loop) return
-        if (target < BASE) goTo(target + n, true)
-        else if (target > n + 1) goTo(target - n, true)
-      },
-    })
+    animate(x, -target * STEP, { type: 'spring', stiffness: 260, damping: 30 })
   }
   // The parked plane is hidden while the click flight runs.
   const [flying, setFlying] = useState(false)
@@ -370,20 +344,19 @@ export default function Packages() {
         })}
       </motion.div>
 
-      {/* Mobile: a seamless looping peek carousel. Cloned cards at both ends mean
-          the active card always has neighbours peeking on each side, and the loop
-          never rewinds. Full-bleed (-mx) so the side peeks aren't clipped. */}
+      {/* Mobile: an INFINITE windowed peek carousel. `pos` is unbounded; we render
+          a window of slots around it, so it scrolls forever (never stops). The
+          centred card pops up, the neighbours peek smaller on each side.
+          Full-bleed (-mx) so the side peeks aren't clipped. */}
       <div className="md:hidden relative -mx-8 sm:-mx-12">
         <div className="overflow-hidden pt-12">
           <motion.div
-            className="flex"
-            style={{ x, gap: CAROUSEL_GAP, paddingLeft: `calc(50% - ${CAROUSEL_CARD / 2}px)`, paddingRight: `calc(50% - ${CAROUSEL_CARD / 2}px)` }}
-            drag={loop || n > 1 ? 'x' : false}
-            dragConstraints={{ left: -(carouselSlides.length - 1) * STEP, right: 0 }}
-            dragElastic={0.12}
+            className="relative"
+            style={{ x, height: 360 }}
+            drag={loop ? 'x' : false}
+            dragElastic={0.16}
             dragMomentum={false}
             onDragEnd={(e, info) => {
-              // Snap to the nearest card; a flick steps one in its direction.
               let target = Math.round(-x.get() / STEP)
               if (info.velocity.x < -350) target = pos + 1
               else if (info.velocity.x > 350) target = pos - 1
@@ -391,25 +364,26 @@ export default function Packages() {
               goTo(target)
             }}
           >
-            {carouselSlides.map((p, phys) => {
-              const realIndex = loop ? (((phys - BASE) % n) + n) % n : phys
-              const isClone = loop && (phys < BASE || phys >= n + BASE)
+            {slotKeys.map((k) => {
+              const realIndex = ((k % n) + n) % n
+              const p = PACKAGES[realIndex]
               const isPopular = p.popular && n > 1
               const showCta = isPopular || n === 1
-              const isCenter = phys === pos
+              const isCenter = k === pos
               return (
                 <div
-                  key={phys}
-                  className="shrink-0 flex justify-center origin-top"
+                  key={k}
+                  className="absolute top-0 left-1/2 flex justify-center origin-top"
                   style={{
                     width: CAROUSEL_CARD,
-                    minHeight: 348,
+                    marginLeft: -CAROUSEL_CARD / 2,
+                    transform: `translateX(${k * STEP}px) ${isCenter ? 'translateY(-22px) scale(1)' : 'scale(0.86)'}`,
                     opacity: isCenter ? 1 : 0.45,
-                    transform: isCenter ? 'translateY(-22px) scale(1)' : 'scale(0.86)',
-                    transition: noAnim ? 'none' : 'opacity 0.3s ease, transform 0.3s ease',
+                    zIndex: isCenter ? 10 : 5,
+                    transition: 'opacity 0.3s ease, transform 0.3s ease',
                   }}
                 >
-                  <PackageCard p={p} i={realIndex} isPopular={isPopular} showCta={showCta} noId={isClone} carousel />
+                  <PackageCard p={p} i={realIndex} isPopular={isPopular} showCta={showCta} noId carousel />
                 </div>
               )
             })}
@@ -423,7 +397,7 @@ export default function Packages() {
                 key={p.tier}
                 type="button"
                 aria-label={`Go to ${p.tier}`}
-                onClick={() => goTo(BASE + i)}
+                onClick={() => goTo(pos - logical + i)}
                 className="rounded-full transition-all duration-300"
                 style={{ width: i === logical ? 26 : 8, height: 8, background: i === logical ? '#0918E5' : 'rgba(255,255,255,0.3)' }}
               />

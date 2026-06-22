@@ -466,6 +466,17 @@ input::placeholder {
   .shine-border.shine-animate-mobile::before {
     animation: shine-spin 3.5s linear infinite;
   }
+
+  /* The waitlist form's blur(24px) backdrop is re-rasterized every scroll frame
+     on mobile GPUs (the radial-gradient halo + circles behind it move as you
+     scroll), which is one of the heaviest paint costs on the page. Drop the live
+     blur on phones and lean on a more opaque fill so it still reads as a frosted
+     panel without the per-frame cost. */
+  .waitlist-form {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(14, 14, 20, 0.92) !important;
+  }
 }
 
 /* Mobile campaign carousel — fade the active card in on change. */

@@ -67,7 +67,7 @@ export default function TopPosts() {
   const cardAndDashes = (
     <div className="relative z-10 w-full flex flex-col items-center gap-5 pointer-events-none">
       <div
-        className="pointer-events-auto relative rounded-[28px] flex flex-col md:flex-row items-center justify-between gap-10 md:gap-6 px-8 md:px-12 pt-6 pb-8 md:py-0 overflow-hidden h-auto md:h-[min(400px,56vh)] ml-0 md:ml-[clamp(0px,38vw,600px)]"
+        className="pointer-events-auto relative rounded-[28px] flex flex-col md:flex-row items-center justify-between gap-5 md:gap-6 px-6 md:px-12 pt-5 pb-6 md:py-0 overflow-hidden h-auto md:h-[min(400px,56vh)] ml-0 md:ml-[clamp(0px,38vw,600px)]"
         style={{
           width: 'min(900px, 88vw)',
           background:
@@ -78,7 +78,7 @@ export default function TopPosts() {
         }}
       >
         {/* Left: this post's view count + its own supporting stats */}
-        <div className="flex flex-col justify-center gap-7 items-center md:items-start text-center md:text-left">
+        <div className="flex flex-col justify-center gap-4 md:gap-7 items-center md:items-start text-center md:text-left">
           <div>
             <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(40px, 5vw, 64px)' }}>{post.views}</div>
             <div className="text-white/70 font-light text-sm tracking-widest uppercase mt-2" style={{ fontFamily: MONO }}>Views</div>
@@ -110,7 +110,7 @@ export default function TopPosts() {
             exit={{ opacity: 0, x: -40, scale: 0.96 }}
             transition={{ duration: 0.45, ease: 'easeInOut' }}
             title={post.permalink ? 'Open post on Instagram' : undefined}
-            className={`block no-underline relative rounded-2xl overflow-hidden shrink-0 h-[210px] md:h-[78%] transition-transform hover:scale-[1.02] ${post.permalink ? 'cursor-pointer' : ''}`}
+            className={`block no-underline relative rounded-2xl overflow-hidden shrink-0 h-[150px] sm:h-[200px] md:h-[78%] transition-transform hover:scale-[1.02] ${post.permalink ? 'cursor-pointer' : ''}`}
             style={{ aspectRatio: '4/5', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
           >
             <img src={post.photo} alt="Featured post" className="w-full h-full object-cover" />
@@ -142,9 +142,9 @@ export default function TopPosts() {
           <MarqueeRow text="TOP POSTS" reverse progress={marqueeProgress} />
         </div>
 
-        <div className="relative z-10 h-full flex flex-col items-center justify-center gap-6">
+        <div className="relative z-10 h-full flex flex-col items-center justify-center gap-3 md:gap-6">
           {/* Mobile only: two marquee lines ABOVE the card */}
-          <div className="md:hidden w-full flex flex-col gap-6 select-none pointer-events-none">
+          <div className="md:hidden w-full flex flex-col gap-2 select-none pointer-events-none">
             <MarqueeRow text="TOP POSTS" progress={marqueeProgress} />
             <MarqueeRow text="INFLUENCE" reverse hollow progress={marqueeProgress} />
           </div>
@@ -152,7 +152,7 @@ export default function TopPosts() {
           {cardAndDashes}
 
           {/* Mobile only: two marquee lines BELOW the card */}
-          <div className="md:hidden w-full flex flex-col gap-6 select-none pointer-events-none">
+          <div className="md:hidden w-full flex flex-col gap-2 select-none pointer-events-none">
             <MarqueeRow text="INFLUENCE" hollow progress={marqueeProgress} />
             <MarqueeRow text="TOP POSTS" reverse progress={marqueeProgress} />
           </div>

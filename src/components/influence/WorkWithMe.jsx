@@ -104,7 +104,7 @@ export default function WorkWithMe() {
 
           <form
             onSubmit={submit}
-            className="flex flex-col justify-center gap-5 h-full pt-8 pb-8 px-8 md:px-9"
+            className="flex flex-col justify-center gap-5 h-full pt-2 pb-8 px-2 lg:pt-8 lg:px-9"
           >
             {FIELDS.map((f) => (
               <input
@@ -131,19 +131,22 @@ export default function WorkWithMe() {
             <button
               type="submit"
               disabled={sending || sent}
-              className="mt-2 w-full rounded-full text-white font-semibold text-xl py-5 inline-flex items-center justify-center gap-2.5 transition-transform hover:scale-[1.02] disabled:opacity-70"
+              className="mt-2 mx-6 lg:mx-0 rounded-full text-white font-semibold text-xl py-5 inline-flex items-center justify-center gap-2.5 transition-transform hover:scale-[1.02] disabled:opacity-70"
               style={{ background: 'linear-gradient(90deg,#8B5CF6 0%, #EC4899 100%)', fontFamily: FONT }}
             >
               {sent ? 'Inquiry Sent ✓' : sending ? 'Sending…' : 'Send Inquiry'}
               {!sent && !sending && (
-                landed ? (
-                  // Plane has landed — show the plane image in place of the arrow.
-                  <img src="/PLANE.png" alt="" draggable={false} style={{ width: 26, height: 26, objectFit: 'contain', transform: 'rotate(42deg)' }} />
-                ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14M13 6l6 6-6 6" />
-                  </svg>
-                )
+                // Fixed-size icon slot so swapping the arrow for the plane on
+                // landing never changes the button's width.
+                <span className="inline-flex items-center justify-center shrink-0" style={{ width: 24, height: 24 }}>
+                  {landed ? (
+                    <img src="/PLANE.png" alt="" draggable={false} style={{ width: 22, height: 22, objectFit: 'contain', transform: 'rotate(42deg)' }} />
+                  ) : (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                  )}
+                </span>
               )}
             </button>
           </form>

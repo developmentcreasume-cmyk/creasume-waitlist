@@ -25,6 +25,20 @@ const ICONS = {
   handshake: (<svg {...ip}><path d="m11 17 2 2a1 1 0 1 0 3-3" /><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4" /><path d="m21 3 1 11h-2" /><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3" /><path d="M3 4h8" /></svg>),
 }
 
+// Scalloped "verified seal" outline (a 24-bump star around a 24×24 circle),
+// computed once. Filled blue with a white check, it reads as the classic
+// verified badge instead of a plain circle.
+const SEAL_PATH = (() => {
+  const N = 24, cx = 12, cy = 12, rOuter = 12, rInner = 10.4
+  let d = ''
+  for (let i = 0; i < N * 2; i++) {
+    const r = i % 2 === 0 ? rOuter : rInner
+    const a = (Math.PI / N) * i - Math.PI / 2
+    d += `${i ? 'L' : 'M'}${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)} `
+  }
+  return `${d}Z`
+})()
+
 // Deck-deal: the grid's cards stack on the "Top City" cell then deal out one by
 // one, with Top City landing LAST back on the pile spot. The deal order + pile
 // index are computed per-render from the actual tile list (below).
@@ -91,7 +105,7 @@ function StatsGrid({ includeScore = false }) {
   }, [reduce, inView, offsets])
 
   return (
-    <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-3 gap-2.5 md:gap-3">
+    <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-3 auto-rows-fr gap-2.5 md:gap-3">
       {tiles.map(({ value, label, icon, color }, i) => {
         const dealPos = dealOrder.indexOf(i)
         // Shrink the value font for long text (e.g. "Indore, Madhya Pradesh") so
@@ -122,14 +136,14 @@ function StatsGrid({ includeScore = false }) {
             // is thrown, with a 120ms gap between throws (spec §2).
             transition={{ duration: 0.25, ease: 'easeOut', delay: dealing ? dealPos * 0.05 : 0 }}
             whileHover={dealing ? { y: -4 } : undefined}
-            className="relative rounded-2xl px-4 py-6 md:px-6 md:py-8 flex flex-col justify-center"
+            className="relative rounded-2xl px-4 py-6 md:px-6 md:py-8 flex flex-col justify-center items-center text-center"
             style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)', zIndex: offsets && !dealing ? dealPos : undefined }}
           >
             <span className="absolute top-3 right-3 md:top-4 md:right-4 text-white scale-[0.65] md:scale-100 origin-top-right">{ICONS[icon]}</span>
             {/* Value + label roll up from a mask. Each card triggers on its own
                 scroll-in, so the delay is keyed to the COLUMN (i % 3) — every row
                 rolls up the same quick way. */}
-            <div className="mb-2 pr-6 md:pr-9">
+            <div className="mb-2">
               {isTopCity ? (
                 <>
                   {/* Mobile: abbreviated state, sized like the other tiles. */}
@@ -258,15 +272,17 @@ export default function ProfileHero() {
                 )}
               </div>
 
-              {/* Verified tick — bottom-right of the avatar (admin-managed) */}
+              {/* Verified seal — scalloped blue badge with a white check,
+                  bottom-right of the avatar (admin-managed). */}
               {CREATOR.verified && (
                 <span
-                  className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded-full"
-                  style={{ width: 38, height: 38, background: '#1D9BF0', border: '3px solid #0b0b1e' }}
+                  className="absolute bottom-0.5 right-0.5 flex items-center justify-center"
+                  style={{ width: 38, height: 38, filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.5))' }}
                   title="Verified"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 6 9 17l-5-5" />
+                  <svg width="38" height="38" viewBox="0 0 24 24">
+                    <path d={SEAL_PATH} fill="#1D9BF0" stroke="#0b0b1e" strokeWidth="1.2" style={{ paintOrder: 'stroke' }} />
+                    <path d="M7.3 12.1 10.4 15.2 16.8 8.4" fill="none" stroke="#fff" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
               )}
@@ -323,7 +339,7 @@ export default function ProfileHero() {
             {/* Headline stat pills — flip in on a horizontal axis. Two per row
                 (2×2) on small screens; a single flex row on large screens. */}
             <motion.div
-              className="grid grid-cols-2 w-fit mx-auto justify-items-center gap-2 mb-9 md:mb-11 lg:flex lg:w-auto lg:mx-0 lg:flex-wrap lg:justify-start"
+              className="grid grid-cols-2 w-full max-w-[420px] mx-auto justify-items-center gap-2 mb-9 md:mb-11 lg:flex lg:w-auto lg:max-w-none lg:mx-0 lg:flex-wrap lg:justify-start"
               initial="hidden"
               whileInView="show"
               viewport={viewport}
@@ -334,11 +350,11 @@ export default function ProfileHero() {
                   key={label}
                   custom={i}
                   variants={flipIn}
-                  className="inline-flex items-baseline gap-2 rounded-full px-5 py-2.5 whitespace-nowrap"
+                  className="inline-flex items-baseline gap-1.5 md:gap-2 rounded-full px-3.5 py-2 md:px-5 md:py-2.5 whitespace-nowrap max-w-full"
                   style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', transformOrigin: 'center', backfaceVisibility: 'hidden' }}
                 >
-                  <span className="font-bold text-lg md:text-xl" style={{ color }}>{value}</span>
-                  <span className="text-sm md:text-base" style={{ color: labelColor || 'rgba(255,255,255,0.45)' }}>{label}</span>
+                  <span className="font-bold text-base md:text-xl" style={{ color }}>{value}</span>
+                  <span className="text-xs md:text-base" style={{ color: labelColor || 'rgba(255,255,255,0.45)' }}>{label}</span>
                 </motion.span>
               ))}
             </motion.div>

@@ -340,6 +340,65 @@ function FeatureCards({ isMobile }) {
   )
 }
 
+// Social-proof widget: a "joined already" counter that ticks up every 2.5s with
+// an avatar stack that slides a fresh face in on each tick. Kept as its own
+// component so its interval re-renders ONLY this small subtree — when this state
+// lived in App, every tick re-rendered the entire 1,300-line page, which showed
+// up as a periodic hitch while scrolling on mobile.
+const AVATAR_POOL = ['1 (2).jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg'].map(
+  (f) => `/${encodeURIComponent(f)}`,
+)
+function JoinedProof() {
+  const [joinedCount, setJoinedCount] = useState(140)
+  // The avatar stack shows the 4 most-recent "joiners". Each tick pushes a fresh
+  // face onto the right (cycling the image pool) and drops the leftmost, so a new
+  // photo slides in for every +1. `key` is unique & monotonic so AnimatePresence
+  // treats every push as a genuinely new element to animate in.
+  const [avatars, setAvatars] = useState(() =>
+    AVATAR_POOL.slice(0, 4).map((src, key) => ({ key, src })),
+  )
+  useEffect(() => {
+    const id = setInterval(() => {
+      setJoinedCount((n) => n + 1)
+      setAvatars((prev) => {
+        const nextKey = prev[prev.length - 1].key + 1
+        const src = AVATAR_POOL[nextKey % AVATAR_POOL.length]
+        return [...prev.slice(1), { key: nextKey, src }]
+      })
+    }, 2500) // one new join every 2.5s
+    return () => clearInterval(id)
+  }, [])
+
+  return (
+    <div className="flex items-center justify-center gap-3 mt-6 relative z-10">
+      <div className="flex -space-x-3">
+        <AnimatePresence initial={false} mode="popLayout">
+          {avatars.map((a) => (
+            <motion.img
+              key={a.key}
+              layout
+              src={a.src}
+              alt=""
+              aria-hidden="true"
+              initial={{ opacity: 0, scale: 0.4, x: 24 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.4, x: -24 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="w-12 h-12 rounded-full border-2 border-[#15151a] object-cover"
+            />
+          ))}
+        </AnimatePresence>
+      </div>
+      <div className="inline-flex items-center gap-2 rounded-full bg-white pl-1 pr-4 py-1">
+        <span className="flex items-center justify-center rounded-full bg-black text-white font-bold text-sm h-9 px-3 tabular-nums">
+          <RollingNumber value={joinedCount} />
+        </span>
+        <span className="text-black text-sm font-medium">Joined already</span>
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState('home')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -368,31 +427,6 @@ function App() {
     handle: '',
   })
   const [status, setStatus] = useState('idle') // 'idle' | 'sending' | 'success' | 'error'
-
-  // "Joined already" counter that ticks up slowly: 140 → 141 → 142 …
-  const [joinedCount, setJoinedCount] = useState(140)
-  // The avatar stack shows the 4 most-recent "joiners". Each tick pushes a fresh
-  // face onto the right (cycling the image pool) and drops the leftmost, so a new
-  // photo slides in for every +1. `key` is unique & monotonic so AnimatePresence
-  // treats every push as a genuinely new element to animate in.
-  // Six face photos dropped into /public; encodeURI handles the spaces/parens.
-  const AVATAR_POOL = ['1 (2).jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg'].map(
-    (f) => `/${encodeURIComponent(f)}`,
-  )
-  const [avatars, setAvatars] = useState(() =>
-    AVATAR_POOL.slice(0, 4).map((src, key) => ({ key, src })),
-  )
-  useEffect(() => {
-    const id = setInterval(() => {
-      setJoinedCount((n) => n + 1)
-      setAvatars((prev) => {
-        const nextKey = prev[prev.length - 1].key + 1
-        const src = AVATAR_POOL[nextKey % AVATAR_POOL.length]
-        return [...prev.slice(1), { key: nextKey, src }]
-      })
-    }, 2500) // one new join every 2.5s
-    return () => clearInterval(id)
-  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -568,7 +602,7 @@ function App() {
         >
           <motion.div
             variants={outlineDraw}
-            className="shine-border shine-animate-mobile cursor-pointer inline-flex items-center justify-center rounded-full backdrop-blur-sm shrink px-2.5 sm:px-6 h-[34px] sm:h-[40px]"
+            className="shine-border cursor-pointer inline-flex items-center justify-center rounded-full backdrop-blur-sm shrink px-2.5 sm:px-6 h-[34px] sm:h-[40px]"
             style={{
               backgroundColor: 'rgba(125, 113, 201, 0.09)',
             }}
@@ -590,7 +624,7 @@ function App() {
 
           <motion.div
             variants={outlineDraw}
-            className="shine-border shine-border--tint shine-animate-mobile inline-flex items-center justify-center shrink-0 gap-2 sm:gap-3 rounded-full bg-white px-3 sm:px-0 h-[30px] sm:h-[35.46px] w-auto sm:w-[244.95px]"
+            className="shine-border shine-border--tint inline-flex items-center justify-center shrink-0 gap-2 sm:gap-3 rounded-full bg-white px-3 sm:px-0 h-[30px] sm:h-[35.46px] w-auto sm:w-[244.95px]"
           >
             <img
               src="/Group%201707480613.png"
@@ -680,7 +714,7 @@ function App() {
               className="w-full"
               style={{ maxWidth: '480px' }}
             >
-             <div className="shine-border shine-animate-mobile rounded-xl overflow-hidden">
+             <div className="shine-border rounded-xl overflow-hidden">
               {/* Browser chrome bar above the card */}
               <div
                 className="flex items-center gap-3 px-4 rounded-t-xl"
@@ -992,7 +1026,7 @@ function App() {
               Your consent matters to us
             </p>
             <motion.div
-              className="shine-border shine-border--instagram shine-animate-mobile inline-flex items-center gap-4 px-7 py-3 rounded-full bg-white mb-7"
+              className="shine-border shine-border--instagram inline-flex items-center gap-4 px-7 py-3 rounded-full bg-white mb-7"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
@@ -1203,7 +1237,7 @@ function App() {
 
           <form
             onSubmit={handleSubmit}
-            className="rounded-[28px] mx-auto relative"
+            className="waitlist-form rounded-[28px] mx-auto relative"
             style={{
               minHeight: '440px',
               padding: 'clamp(28px, 6vw, 44px) clamp(20px, 4vw, 28px)',
@@ -1305,33 +1339,9 @@ function App() {
                 </p>
               )}
 
-              {/* Social proof — joined creators */}
-              <div className="flex items-center justify-center gap-3 mt-6 relative z-10">
-                <div className="flex -space-x-3">
-                  <AnimatePresence initial={false} mode="popLayout">
-                    {avatars.map((a) => (
-                      <motion.img
-                        key={a.key}
-                        layout
-                        src={a.src}
-                        alt=""
-                        aria-hidden="true"
-                        initial={{ opacity: 0, scale: 0.4, x: 24 }}
-                        animate={{ opacity: 1, scale: 1, x: 0 }}
-                        exit={{ opacity: 0, scale: 0.4, x: -24 }}
-                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                        className="w-12 h-12 rounded-full border-2 border-[#15151a] object-cover"
-                      />
-                    ))}
-                  </AnimatePresence>
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-white pl-1 pr-4 py-1">
-                  <span className="flex items-center justify-center rounded-full bg-black text-white font-bold text-sm h-9 px-3 tabular-nums">
-                    <RollingNumber value={joinedCount} />
-                  </span>
-                  <span className="text-black text-sm font-medium">Joined already</span>
-                </div>
-              </div>
+              {/* Social proof — joined creators (self-contained: its 2.5s ticker
+                  re-renders only itself, not the whole page) */}
+              <JoinedProof />
             </div>
           </form>
         </div>
