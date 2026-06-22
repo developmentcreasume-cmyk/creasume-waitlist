@@ -32,8 +32,8 @@ function smoothScrollTo(y, duration = 900) {
 
 // Mobile peek-carousel sizing: each slide is narrower than the screen so the
 // neighbouring cards peek in on both sides.
-const CAROUSEL_CARD = 280
-const CAROUSEL_GAP = 14
+const CAROUSEL_CARD = 248
+const CAROUSEL_GAP = 12
 
 // One package card — reused by the desktop row and the mobile carousel.
 function PackageCard({ p, i, isPopular, showCta }) {
@@ -325,48 +325,43 @@ export default function Packages() {
         })}
       </motion.div>
 
-      {/* Mobile: a LOOPING coverflow — the centered package is big, the prev/next
-          peek smaller on each side. Swipe (or tap a dot) to rotate; it wraps. */}
-      <motion.div
-        className="md:hidden relative overflow-hidden"
-        drag={n > 1 ? 'x' : false}
-        dragConstraints={{ left: 0, right: 0 }}
-        dragSnapToOrigin
-        dragElastic={0.2}
-        onDragEnd={(e, info) => {
-          const threshold = 50
-          if (info.offset.x < -threshold) setActive((a) => (a + 1) % n)
-          else if (info.offset.x > threshold) setActive((a) => (a - 1 + n) % n)
-        }}
-        style={{ touchAction: 'pan-y' }}
-      >
-        <div className="relative flex items-center justify-center" style={{ height: 470 }}>
-          {PACKAGES.map((p, i) => {
-            // Shortest signed distance from the active card, so it loops both ways.
-            let off = i - active
-            if (off > n / 2) off -= n
-            if (off < -n / 2) off += n
-            const isCenter = off === 0
-            const isPopular = p.popular && n > 1
-            const showCta = isPopular || n === 1
-            return (
-              <motion.div
-                key={p.tier}
-                className="absolute"
-                style={{ width: CAROUSEL_CARD, pointerEvents: isCenter ? 'auto' : 'none' }}
-                animate={{
-                  x: off * 168,
-                  y: isCenter ? 0 : 26,
-                  scale: isCenter ? 1 : 0.82,
-                  opacity: Math.abs(off) <= 1 ? (isCenter ? 1 : 0.5) : 0,
-                  zIndex: isCenter ? 20 : 10 - Math.abs(off),
-                }}
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              >
-                <PackageCard p={p} i={i} isPopular={isPopular} showCta={showCta} />
-              </motion.div>
-            )
-          })}
+      {/* Mobile: a peek carousel — the active package is centered with a sliver
+          of the prev/next cards showing. Swipe (or tap a dot) to slide. */}
+      <div className="md:hidden relative">
+        <div className="overflow-hidden pt-4">
+          <motion.div
+            className="flex"
+            style={{ gap: CAROUSEL_GAP, paddingLeft: `calc(50% - ${CAROUSEL_CARD / 2}px)`, paddingRight: `calc(50% - ${CAROUSEL_CARD / 2}px)` }}
+            animate={{ x: -active * (CAROUSEL_CARD + CAROUSEL_GAP) }}
+            transition={{ type: 'spring', stiffness: 300, damping: 32 }}
+            drag={n > 1 ? 'x' : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.18}
+            onDragEnd={(e, info) => {
+              const threshold = 50
+              if (info.offset.x < -threshold) setActive((a) => (a + 1) % n)
+              else if (info.offset.x > threshold) setActive((a) => (a - 1 + n) % n)
+            }}
+          >
+            {PACKAGES.map((p, i) => {
+              const isPopular = p.popular && n > 1
+              const showCta = isPopular || n === 1
+              return (
+                <div
+                  key={p.tier}
+                  className="shrink-0 flex justify-center transition-all duration-300 origin-center"
+                  style={{
+                    width: CAROUSEL_CARD,
+                    minHeight: 430,
+                    opacity: i === active ? 1 : 0.45,
+                    transform: i === active ? 'scale(1)' : 'translateY(24px) scale(0.84)',
+                  }}
+                >
+                  <PackageCard p={p} i={i} isPopular={isPopular} showCta={showCta} />
+                </div>
+              )
+            })}
+          </motion.div>
         </div>
 
         {n > 1 && (
@@ -383,7 +378,7 @@ export default function Packages() {
             ))}
           </div>
         )}
-      </motion.div>
+      </div>
     </section>
   )
 }
