@@ -118,19 +118,36 @@ export function mapInfluenceData(api, d) {
 
   // ---- 3×3 metric grid (override by label, keep icons/colors) ----
   const topCity = demo.city?.[0]?.key
+  // Likes / comments / shares totalled across the fetched posts (the lifetime
+  // aggregate isn't in the Graph API, so this is the sum of the available media).
+  const sumMedia = (key) => media.reduce((a, m) => a + (m[key] || 0), 0)
+  // Likes / comments / shares totalled across the fetched posts (no lifetime
+  // aggregate exists in the Graph API).
+  const likeT = sumMedia('like_count')
+  const commentT = sumMedia('comments_count')
+  const shareT = sumMedia('shares')
   const tileValues = {
     'Engagement Rate': eng,
     'Total Views': fc0(s.views),
     'Total Post': fc0(s.mediaCount),
     'Total Followers': fc0(s.followersCount),
-    'Total Impressions': fc0(s.impressions),
+    // Real impressions metric if present, otherwise the combined total of
+    // likes + comments + shares so the tile never reads a bare "0".
+    'Total Impressions': fc0(s.impressions || likeT + commentT + shareT),
     Reach: fc0(s.reach),
     'Top City': topCity || null,
     'Brand Deals Done': String(collabs.length),
   }
-  const tiles = d.CREATOR.tiles.map((t) =>
-    tileValues[t.label] != null ? { ...t, value: tileValues[t.label] } : t,
-  )
+  // The Impressions tile shows likes / comments / shares as a mini-row beneath.
+  const impressionDetails = [
+    { icon: 'heart', value: fc0(likeT) },
+    { icon: 'comment', value: fc0(commentT) },
+    { icon: 'share', value: fc0(shareT) },
+  ]
+  const tiles = d.CREATOR.tiles.map((t) => {
+    const nt = tileValues[t.label] != null ? { ...t, value: tileValues[t.label] } : t
+    return t.label === 'Total Impressions' ? { ...nt, details: impressionDetails } : nt
+  })
 
   const CREATOR = {
     ...d.CREATOR,

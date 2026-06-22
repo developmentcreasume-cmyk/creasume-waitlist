@@ -20,6 +20,9 @@ const ICONS = {
   followers: (<svg {...ip}><circle cx="12" cy="10" r="2.6" /><path d="M7 17c0-2.5 2.2-4.2 5-4.2s5 1.7 5 4.2" /><circle cx="12" cy="12" r="9.5" strokeDasharray="2.5 3" /></svg>),
   rocket: (<svg {...ip}><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91 0z" /><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" /><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" /><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /></svg>),
   heart: (<svg {...ip}><path d="M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5C19 15.5 12 20 12 20Z" /></svg>),
+  comment: (<svg {...ip}><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 20l1.4-4.1a8.5 8.5 0 0 1-.9-3.8A8.38 8.38 0 0 1 12 3.5a8.38 8.38 0 0 1 9 8Z" /></svg>),
+  share: (<svg {...ip}><circle cx="18" cy="5" r="2.6" /><circle cx="6" cy="12" r="2.6" /><circle cx="18" cy="19" r="2.6" /><path d="m8.3 13.3 7.4 4.3M15.7 6.4 8.3 10.7" /></svg>),
+  broadcast: (<svg {...ip}><circle cx="12" cy="12" r="1.8" /><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 4.9a10 10 0 0 1 0 14.2M5 19.1a10 10 0 0 1 0-14.2" /></svg>),
   score: (<img src="/creasume-c.png" alt="" width="32" height="32" style={{ display: 'block', objectFit: 'contain' }} />),
   pin: (<svg {...ip} width="38" height="38"><path d="M12 15s3.6-2.9 3.6-6a3.6 3.6 0 0 0-7.2 0c0 3.1 3.6 6 3.6 6Z" /><circle cx="12" cy="8.9" r="1.35" /><path d="M7 15.4c-1.8.4-3 1.1-3 1.9 0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5c0-.8-1.2-1.5-3-1.9" /></svg>),
   handshake: (<svg {...ip}><path d="m11 17 2 2a1 1 0 1 0 3-3" /><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4" /><path d="m21 3 1 11h-2" /><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3" /><path d="M3 4h8" /></svg>),
@@ -106,7 +109,7 @@ function StatsGrid({ includeScore = false }) {
 
   return (
     <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-3 auto-rows-fr gap-2.5 md:gap-3">
-      {tiles.map(({ value, label, icon, color }, i) => {
+      {tiles.map(({ value, label, icon, color, details }, i) => {
         const dealPos = dealOrder.indexOf(i)
         // Shrink the value font for long text (e.g. "Indore, Madhya Pradesh") so
         // it fits the tile; numbers / short values keep the large size.
@@ -184,6 +187,17 @@ function StatsGrid({ includeScore = false }) {
               className="text-[13px] md:text-[15px] leading-tight font-semibold"
               style={{ fontFamily: MONO, ...LABEL_GRADIENT }}
             />
+            {/* Mini-row of likes / comments / shares (Impressions tile only). */}
+            {details && (
+              <div className="flex items-center justify-center gap-2.5 md:gap-3 mt-3 flex-wrap">
+                {details.map((d) => (
+                  <span key={d.icon} className="inline-flex items-center gap-1 text-white/65">
+                    <span className="inline-flex items-center justify-center text-white/55 [&>svg]:w-[14px] [&>svg]:h-[14px] md:[&>svg]:w-[15px] md:[&>svg]:h-[15px]">{ICONS[d.icon]}</span>
+                    <span className="font-semibold leading-none" style={{ fontFamily: FONT, fontSize: 12.5 }}>{d.value}</span>
+                  </span>
+                ))}
+              </div>
+            )}
           </motion.div>
         )
       })}

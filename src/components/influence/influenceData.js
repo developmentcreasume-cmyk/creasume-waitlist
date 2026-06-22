@@ -45,7 +45,15 @@ export const CREATOR = {
     { value: '184', label: 'Total Post', icon: 'camera' },
     { value: '125K', label: 'Total Followers', icon: 'followers' },
     { value: '87', label: 'Creasume Score', icon: 'score' },
-    { value: '2.4M', label: 'Total Impressions', icon: 'heart' },
+    {
+      value: '2.4M', label: 'Total Impressions', icon: 'heart',
+      // Likes / comments / shares shown as a mini-row inside this tile.
+      details: [
+        { icon: 'heart', value: '892K' },
+        { icon: 'comment', value: '24.6K' },
+        { icon: 'share', value: '18.2K' },
+      ],
+    },
     { value: '17,000', label: 'Reach', icon: 'rocket' },
     { value: 'Mumbai', label: 'Top City', icon: 'pin' },
     { value: '12', label: 'Brand Deals Done', icon: 'handshake' },

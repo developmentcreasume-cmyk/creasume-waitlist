@@ -201,41 +201,37 @@ export default function Packages() {
     right: {
       left: flyLeft,
       scaleX: 1,
-      initial: { x: 0, opacity: 1 },
-      animate: { x: FLY_W - flyLeft + 80, opacity: [1, 1, 0] },
-      transition: { duration: 1.35, ease: 'easeIn', times: [0, 0.85, 1] },
+      // Curve up-and-away with a slight bank instead of a flat horizontal slide.
+      initial: { x: 0, y: 0, rotate: 42, opacity: 1 },
+      animate: { x: FLY_W - flyLeft + 80, y: [0, -30, -16], rotate: [42, 32, 36], opacity: [1, 1, 0] },
+      transition: { duration: 1.45, ease: [0.33, 0, 0.3, 1], times: [0, 0.85, 1] },
       onDone: onFlyRightDone,
     },
     left: {
       left: 0,
       scaleX: -1,
-      initial: { x: FLY_W + 80, opacity: 0 },
-      animate: { x: -100, opacity: [0, 1, 1, 0] },
-      transition: { duration: 1.45, ease: 'linear', times: [0, 0.12, 0.85, 1] },
+      // Glide across on a gentle arc (dip toward the middle, ease at both ends)
+      // rather than a constant-speed straight line.
+      initial: { x: FLY_W + 80, y: 0, rotate: 42, opacity: 0 },
+      animate: { x: -100, y: [0, -16, -28, 0], rotate: [42, 38, 46, 42], opacity: [0, 1, 1, 0] },
+      transition: { duration: 1.5, ease: [0.42, 0, 0.58, 1], times: [0, 0.12, 0.85, 1] },
       onDone: onFlyLeftDone,
     },
     land: {
       left: flyLeft,
       scaleX: 1,
+      // Swoop in and settle: a small lift then a soft, decelerating touch-down.
       // Shrink from full size (56px) toward the button arrow's plane (~26px) so
       // the hand-off to the static button image is seamless, not an instant jump.
-      initial: { x: -(flyLeft + 100), opacity: 0, scale: 1 },
-      animate: { x: 0, opacity: [0, 1, 1], scale: [1, 1, 0.46] },
-      transition: { duration: 1.25, ease: 'easeOut', times: [0, 0.15, 1] },
+      initial: { x: -(flyLeft + 100), y: 0, rotate: 42, opacity: 0, scale: 1 },
+      animate: { x: 0, y: [0, -12, 0], rotate: [42, 38, 42], opacity: [0, 1, 1], scale: [1, 1, 0.46] },
+      transition: { duration: 1.3, ease: [0.16, 1, 0.3, 1], times: [0, 0.15, 1] },
       onDone: onFlyLandDone,
     },
   }[flyPhase]
 
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-32 md:pt-52 pb-12 md:pb-20 overflow-x-clip">
-      {/* Decorative diagonal sheen */}
-      <img
-        src="/image/2nd%20line.png"
-        alt=""
-        aria-hidden="true"
-        className="absolute pointer-events-none select-none"
-        style={{ right: '1%', top: '-8%', width: 900, height: 'auto', opacity: 0.8, zIndex: 0 }}
-      />
 
       {/* Parked plane — static decoration. Takes off when the CTA is clicked.
           Hidden on mobile (too large; the flight is a desktop interaction). */}
@@ -254,7 +250,7 @@ export default function Packages() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.45, ease: 'easeOut' }}
-          className="text-2xl md:text-3xl lg:text-4xl font-light mb-6"
+          className="text-[clamp(13px,4.5vw,24px)] md:text-3xl lg:text-4xl font-light mb-6 whitespace-nowrap md:whitespace-normal"
           style={{ fontFamily: FONT }}
         >
           Open to new Collaborations in 2026.

@@ -110,7 +110,7 @@ export default function TopPosts() {
             exit={{ opacity: 0, x: -40, scale: 0.96 }}
             transition={{ duration: 0.45, ease: 'easeInOut' }}
             title={post.permalink ? 'Open post on Instagram' : undefined}
-            className={`block no-underline relative rounded-2xl overflow-hidden shrink-0 h-[150px] sm:h-[200px] md:h-[78%] transition-transform hover:scale-[1.02] ${post.permalink ? 'cursor-pointer' : ''}`}
+            className={`block no-underline relative rounded-2xl overflow-hidden shrink-0 h-[clamp(150px,27vh,290px)] md:h-[78%] transition-transform hover:scale-[1.02] ${post.permalink ? 'cursor-pointer' : ''}`}
             style={{ aspectRatio: '4/5', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
           >
             <img src={post.photo} alt="Featured post" className="w-full h-full object-cover" />

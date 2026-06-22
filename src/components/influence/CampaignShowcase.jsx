@@ -86,6 +86,11 @@ function CampaignCard({ data, onClick, sizeW = CARD_W }) {
     const moved = Math.hypot(e.clientX - down.current.x, e.clientY - down.current.y)
     if (moved < 8) onClick()
   }
+  const stats = [
+    { label: 'REACH', value: data.reach },
+    { label: 'ENGAGE', value: data.engagement },
+    { label: 'ENG. RATE', value: data.engRate },
+  ]
   return (
     <div
       onPointerDown={onClick ? handleDown : undefined}
@@ -93,21 +98,41 @@ function CampaignCard({ data, onClick, sizeW = CARD_W }) {
       className={`shrink-0 rounded-[20px] p-px transition-transform duration-300 ${onClick ? 'cursor-pointer hover:scale-[1.02]' : ''}`}
       style={{ width: sizeW, ...GLASS_RING }}
     >
-      <div className="rounded-[19px] p-6 flex flex-col h-full" style={GLASS_PANEL}>
-        <CampaignHeader data={data} />
-        <div className="mb-5" style={{ height: 1, background: 'rgba(255,255,255,0.1)' }} />
-        <CampaignBody data={data} ctaIcon={false} pinCta />
-      </div>
-    </div>
-  )
-}
+      <div className="rounded-[19px] p-7 flex flex-col h-full" style={{ ...GLASS_PANEL, minHeight: 415 }}>
+        {/* Brand + date */}
+        <div className="text-white leading-none" style={{ fontFamily: FONT, fontSize: 34, fontWeight: 700 }}>{data.brand}</div>
+        <div className="text-white/40 mt-2.5 uppercase tracking-[0.15em]" style={{ fontFamily: MONO, fontSize: 11, fontWeight: 400 }}>{data.date}</div>
 
-// Brand name + date header, shared by the card and the modal.
-function CampaignHeader({ data }) {
-  return (
-    <div className="mb-4">
-      <div className="text-white leading-none" style={{ fontFamily: FONT, fontSize: 40, fontWeight: 500 }}>{data.brand}</div>
-      <div className="text-white/45 mt-2" style={{ fontFamily: MONO, fontSize: 13, fontWeight: 300 }}>{data.date}</div>
+        {/* Stat boxes */}
+        <div className="grid grid-cols-3 gap-2.5 mt-7">
+          {stats.map((s) => (
+            <div key={s.label} className="rounded-xl px-3 py-3.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="tracking-[0.12em] mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, fontWeight: 400, color: 'rgba(255,255,255,0.42)' }}>{s.label}</div>
+              <div className="leading-none" style={{ fontFamily: FONT, fontSize: 23, fontWeight: 700, color: '#fff' }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Deliverable tags */}
+        <div className="flex flex-wrap gap-2 mt-6">
+          {data.deliverables.map((d) => (
+            <span key={d} className="rounded-lg px-3 py-1.5" style={{ fontFamily: MONO, fontSize: 11.5, fontWeight: 300, color: 'rgba(255,255,255,0.82)', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)' }}>{d}</span>
+          ))}
+        </div>
+
+        {/* Tap hint — pinned to the bottom so every card's hint lines up */}
+        <div
+          className="text-center mt-auto pt-6"
+          style={{
+            fontFamily: FONT, fontSize: 13.5, fontWeight: 500,
+            background: 'linear-gradient(90deg, #8B7CF6 0%, #A88BF0 100%)',
+            WebkitBackgroundClip: 'text', backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent', color: 'transparent',
+          }}
+        >
+          Tap to view full case study →
+        </div>
+      </div>
     </div>
   )
 }

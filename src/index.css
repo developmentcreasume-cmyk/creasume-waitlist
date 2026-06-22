@@ -303,14 +303,15 @@ html.lenis body {
 }
 
 /* Mobile (below md): scale the wordmark so CREASUME spans the full width
-   without overflowing. At 22vw the 8-letter word was ~120% of the viewport
-   and the "ME" got clipped by the overflow-hidden wrapper, so we drop to a
-   size (plus tighter tracking) that fits edge-to-edge. Desktop keeps the
-   16vw / 280px clamp above. */
+   without overflowing. At 22vw the 8-letter word was ~120% of the viewport and
+   the "ME" got clipped. 18vw WITH 0.02em tracking ran ~1vw past the edge (the
+   trailing "E" was cut by the overflow-x-clip wrapper); dropping the tracking to
+   0 pulls the 8 letters in by ~3vw, so 18vw now fills edge-to-edge without
+   clipping. Desktop keeps the 16vw / 280px clamp above. */
 @media (max-width: 767px) {
   .giant-text {
     font-size: 18vw;
-    letter-spacing: 0.02em;
+    letter-spacing: 0;
     /* Looser line box + a little bottom room so the footer's overflow-hidden
        doesn't shave the bottom off the letters on phones. */
     line-height: 1;

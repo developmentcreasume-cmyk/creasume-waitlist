@@ -88,9 +88,9 @@ export default function WorkWithMe() {
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.22), 0 30px 90px rgba(0,0,0,0.55)',
           }}
         >
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col lg:h-full">
             <div
-              className="rounded-[22px] pt-14 pb-5 pl-10 pr-9 md:pt-20 md:pb-6 md:pl-12 h-full flex flex-col justify-start"
+              className="rounded-[22px] pt-10 pb-8 pl-8 pr-8 md:pt-20 md:pb-6 md:pl-12 md:pr-9 lg:h-full flex flex-col justify-start"
               style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
             >
               <h2 className="font-bold leading-none mb-6" style={{ fontFamily: FONT, fontSize: 'clamp(44px, 6vw, 64px)' }}>
@@ -104,7 +104,7 @@ export default function WorkWithMe() {
 
           <form
             onSubmit={submit}
-            className="flex flex-col justify-center gap-5 h-full pt-2 pb-8 px-2 lg:pt-8 lg:px-9"
+            className="flex flex-col justify-center gap-5 lg:h-full pt-2 pb-8 px-2 lg:pt-8 lg:px-9"
           >
             {FIELDS.map((f) => (
               <input
@@ -155,7 +155,7 @@ export default function WorkWithMe() {
 
       {/* Giant CREASUME wordmark — clip horizontal only so the letters aren't
           cut off at the bottom on mobile. */}
-      <div className="relative z-10 overflow-x-clip overflow-y-visible mt-64 md:mt-80 -mx-6 md:-mx-16 lg:-mx-24">
+      <div className="relative z-10 overflow-x-clip overflow-y-visible mt-20 md:mt-80 -mx-6 md:-mx-16 lg:-mx-24">
         <h1 className="giant-text text-center select-none whitespace-nowrap">CREASUME</h1>
       </div>
     </section>
