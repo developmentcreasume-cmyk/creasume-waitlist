@@ -92,12 +92,18 @@ export default function Packages() {
   // into `carouselSlides` (real card j sits at pos j+1). When the track lands on a
   // clone we jump (no animation) to the matching real card — the swap is invisible
   // because the clone and the real card are identical.
+  // TWO clones at each end so even a centred clone still has a neighbour peeking
+  // on its outer side (one clone flickers at the wrap). Real card j sits at
+  // physical index j + 2.
   const loop = n > 1
-  const carouselSlides = loop ? [PACKAGES[n - 1], ...PACKAGES, PACKAGES[0]] : PACKAGES
-  const [pos, setPos] = useState(loop ? popularIndex + 1 : 0)
+  const BASE = loop ? 2 : 0
+  const carouselSlides = loop
+    ? [PACKAGES[(n - 2 + n) % n], PACKAGES[(n - 1 + n) % n], ...PACKAGES, PACKAGES[0 % n], PACKAGES[1 % n]]
+    : PACKAGES
+  const [pos, setPos] = useState(BASE + popularIndex)
   const [noAnim, setNoAnim] = useState(false)
   const STEP = CAROUSEL_CARD + CAROUSEL_GAP
-  const logical = loop ? ((pos - 1) % n + n) % n : pos
+  const logical = loop ? (((pos - BASE) % n) + n) % n : pos
 
   // After an instant (no-animation) jump, re-enable animation on the next frame.
   useEffect(() => {
@@ -106,11 +112,12 @@ export default function Packages() {
     return () => cancelAnimationFrame(id)
   }, [noAnim])
 
-  // When the slide settles on a clone, jump to the matching real card instantly.
+  // When the slide settles on a first-level clone, jump (no animation) to the
+  // matching real card — both look identical, so the swap is invisible.
   const handleCarouselRest = () => {
     if (!loop) return
-    if (pos === 0) { setNoAnim(true); setPos(n) }
-    else if (pos === n + 1) { setNoAnim(true); setPos(1) }
+    if (pos === 1) { setNoAnim(true); setPos(n + 1) }      // clone(last)  → real last
+    else if (pos === n + 2) { setNoAnim(true); setPos(2) } // clone(first) → real first
   }
   // The parked plane is hidden while the click flight runs.
   const [flying, setFlying] = useState(false)
@@ -360,32 +367,34 @@ export default function Packages() {
             className="flex"
             style={{ gap: CAROUSEL_GAP, paddingLeft: `calc(50% - ${CAROUSEL_CARD / 2}px)`, paddingRight: `calc(50% - ${CAROUSEL_CARD / 2}px)` }}
             animate={{ x: -pos * STEP }}
-            transition={noAnim ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 32 }}
+            transition={noAnim ? { duration: 0 } : { type: 'spring', stiffness: 220, damping: 30 }}
             onAnimationComplete={handleCarouselRest}
             drag={loop ? 'x' : false}
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.12}
+            dragElastic={0.6}
             onDragEnd={(e, info) => {
-              const threshold = 45
-              if (info.offset.x < -threshold) setPos((q) => q + 1)
-              else if (info.offset.x > threshold) setPos((q) => q - 1)
+              // Step by a card on a decisive drag OR a flick (velocity).
+              const moved = info.offset.x
+              const flick = info.velocity.x
+              if (moved < -45 || flick < -350) setPos((q) => q + 1)
+              else if (moved > 45 || flick > 350) setPos((q) => q - 1)
             }}
           >
             {carouselSlides.map((p, phys) => {
-              const realIndex = loop ? ((phys - 1) % n + n) % n : phys
-              const isClone = loop && (phys === 0 || phys === n + 1)
+              const realIndex = loop ? (((phys - BASE) % n) + n) % n : phys
+              const isClone = loop && (phys < BASE || phys >= n + BASE)
               const isPopular = p.popular && n > 1
               const showCta = isPopular || n === 1
               const isCenter = phys === pos
               return (
                 <div
                   key={phys}
-                  className="shrink-0 flex justify-center origin-center"
+                  className="shrink-0 flex justify-center origin-top"
                   style={{
                     width: CAROUSEL_CARD,
                     minHeight: 430,
                     opacity: isCenter ? 1 : 0.45,
-                    transform: isCenter ? 'scale(1)' : 'translateY(24px) scale(0.84)',
+                    transform: isCenter ? 'scale(1)' : 'scale(0.86)',
                     transition: noAnim ? 'none' : 'opacity 0.3s ease, transform 0.3s ease',
                   }}
                 >
@@ -403,7 +412,7 @@ export default function Packages() {
                 key={p.tier}
                 type="button"
                 aria-label={`Go to ${p.tier}`}
-                onClick={() => setPos(loop ? i + 1 : i)}
+                onClick={() => setPos(BASE + i)}
                 className="rounded-full transition-all duration-300"
                 style={{ width: i === logical ? 26 : 8, height: 8, background: i === logical ? '#0918E5' : 'rgba(255,255,255,0.3)' }}
               />
