@@ -23,9 +23,14 @@ export const LABEL_GRADIENT = {
 
 export const CREATOR = {
   name: 'Sample.Creator',
+  username: 'sample.creator',
   tagline: "Here's what's happening with your creator business today.",
   bio: 'Mindful living for the modern gen. Brand deals open 🤍',
   niche: 'Lifestyle',
+  // Admin-managed badges. Off in the demo — they only show for real creators
+  // whose flags an admin has set (so testing reflects the actual data).
+  isFoundingCreator: false,
+  verified: false,
   // Headline pills shown next to the name.
   pills: [
     { value: '125K', label: 'Followers', color: '#89DFEC', labelColor: '#ffffff' },
@@ -39,9 +44,9 @@ export const CREATOR = {
     { value: '43,000', label: 'Total Views', icon: 'eye' },
     { value: '184', label: 'Total Post', icon: 'camera' },
     { value: '125K', label: 'Total Followers', icon: 'followers' },
-    { value: '17,000', label: 'Reach', icon: 'rocket' },
-    { value: '2.4M', label: 'Total Impressions', icon: 'heart' },
     { value: '87', label: 'Creasume Score', icon: 'score' },
+    { value: '2.4M', label: 'Total Impressions', icon: 'heart' },
+    { value: '17,000', label: 'Reach', icon: 'rocket' },
     { value: 'Mumbai', label: 'Top City', icon: 'pin' },
     { value: '12', label: 'Brand Deals Done', icon: 'handshake' },
   ],
@@ -62,21 +67,33 @@ export const AGE_GROUPS = [
   { label: '35+', value: 9, color: '#5D65DC' },
 ]
 
-export const TOP_LOCATIONS = ['Mumbai', 'Delhi', 'Bengaluru']
+// `full` shows on desktop, `short` (abbreviated state) on mobile.
+export const TOP_LOCATIONS = [
+  { full: 'Mumbai, Maharashtra', short: 'Mumbai, MH' },
+  { full: 'Delhi, Delhi', short: 'Delhi, DL' },
+  { full: 'Bengaluru, Karnataka', short: 'Bengaluru, KA' },
+]
+// Each country carries an ISO code so the Top Countries chips can show a flag
+// (https://flagcdn.com/w40/<code>.png). Cities stay plain text.
+export const TOP_COUNTRIES = [
+  { code: 'in', name: 'India' },
+  { code: 'us', name: 'United States' },
+  { code: 'gb', name: 'United Kingdom' },
+]
 export const GENDER_SPLIT = { female: 58, male: 42 }
 
 // Brand presence header.
 export const SOCIALS = [
   { name: 'YouTube', handle: '@sample.creator', status: 'Coming Soon', color: '#FF0000' },
   { name: 'Instagram', handle: '@sample.creator', status: '144k followers', color: '#E1306C' },
-  { name: 'X (formerly Twitter)', handle: '@sample.creator', status: 'Coming Soon', color: '#FFFFFF' },
+  { name: 'X (Twitter)', handle: '@sample.creator', status: 'Coming Soon', color: '#FFFFFF' },
 ]
 
 export const BRAND_SUMMARY = [
   { value: '8.1M', label: 'TOTAL REACH' },
-  { value: '5', label: 'BRANDS' },
+  { value: '3.46%', label: 'ENGAGEMENT %' },
   { value: '12+', label: 'CAMPAIGNS' },
-  { value: '100%', label: 'ON TIME' },
+  { value: '2.4M', label: 'ENGAGEMENT' },
 ]
 
 // Brand collaborations timeline (BrandReach section).
@@ -114,13 +131,14 @@ export const PHOTOS = ['1 (2).jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg']
   (f) => `/${encodeURIComponent(f)}`,
 )
 
-// Featured "Top Posts" carousel (TopPosts section). `likeCount`/`comments` back
-// the per-post stats on the left of the card; `likes` is the pre-formatted label.
+// Featured "Top Posts" carousel (TopPosts section). Each entry carries its OWN
+// per-post stats (views/likes/comments/saves/shares), shown beside that post.
 export const TOP_POSTS = [
-  { photo: PHOTOS[0], caption: 'A day in my creative routine', likes: '128K', type: 'REEL', likeCount: 128000, comments: 1900 },
-  { photo: PHOTOS[1], caption: 'Festive looks for the season', likes: '96K', type: 'POST', likeCount: 96000, comments: 1200 },
-  { photo: PHOTOS[5], caption: 'Mindful morning rituals ☀️', likes: '84K', type: 'REEL', likeCount: 84000, comments: 980 },
+  { photo: PHOTOS[0], caption: 'A day in my creative routine', type: 'REEL', views: '1.2M', likes: '128K', comments: '1.9K', saves: '24K', shares: '8.1K', likeCount: 128000 },
+  { photo: PHOTOS[1], caption: 'Festive looks for the season', type: 'POST', views: '540K', likes: '96K', comments: '1.2K', saves: '15K', shares: '4.3K', likeCount: 96000 },
+  { photo: PHOTOS[5], caption: 'Mindful morning rituals ☀️', type: 'REEL', views: '430K', likes: '84K', comments: '980', saves: '11K', shares: '3.2K', likeCount: 84000 },
 ]
 
-// Account-wide numbers shown beside the featured post (TopPosts hero metrics).
+// Account-wide numbers (kept for back-compat; the TopPosts card now uses
+// per-post stats from TOP_POSTS instead of these).
 export const FEATURED = { totalViews: '1.2M', reach: '540K', engage: '4.2%', interact: '32K' }

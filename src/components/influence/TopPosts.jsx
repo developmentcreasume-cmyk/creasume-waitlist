@@ -41,7 +41,7 @@ function MarqueeRow({ text, reverse = false, hollow = false, progress, className
 }
 
 export default function TopPosts() {
-  const { TOP_POSTS: POSTS, FEATURED } = useInfluence()
+  const { TOP_POSTS: POSTS } = useInfluence()
   const sectionRef = useRef(null)
   // Pinned section (like the home page's SensesSection): the panel is sticky
   // while you scroll the tall section, and scroll progress drives which featured
@@ -62,77 +62,99 @@ export default function TopPosts() {
 
   const post = POSTS[active]
 
+  // The card + progress dashes — reused by both the desktop (marquee behind) and
+  // mobile (marquee above/below) layouts. Responsive classes adapt each one.
+  const cardAndDashes = (
+    <div className="relative z-10 w-full flex flex-col items-center gap-5 pointer-events-none">
+      <div
+        className="pointer-events-auto relative rounded-[28px] flex flex-col md:flex-row items-center justify-between gap-10 md:gap-6 px-8 md:px-12 pt-6 pb-8 md:py-0 overflow-hidden h-auto md:h-[min(400px,56vh)] ml-0 md:ml-[clamp(0px,38vw,600px)]"
+        style={{
+          width: 'min(900px, 88vw)',
+          background:
+            'linear-gradient(150deg, rgba(20,21,30,0.92) 0%, rgba(8,9,16,0.9) 100%) padding-box, ' +
+            'linear-gradient(120deg, rgba(255,255,255,0.5) 0%, rgba(120,210,185,0.45) 38%, rgba(90,120,220,0.5) 70%, rgba(150,120,255,0.6) 100%) border-box',
+          border: '1.5px solid transparent',
+          boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
+        }}
+      >
+        {/* Left: this post's view count + its own supporting stats */}
+        <div className="flex flex-col justify-center gap-7 items-center md:items-start text-center md:text-left">
+          <div>
+            <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(40px, 5vw, 64px)' }}>{post.views}</div>
+            <div className="text-white/70 font-light text-sm tracking-widest uppercase mt-2" style={{ fontFamily: MONO }}>Views</div>
+          </div>
+          <div className="flex flex-wrap justify-center md:justify-start gap-x-5 gap-y-3 md:gap-7">
+            {[
+              { label: 'Likes', value: post.likes },
+              { label: 'Comments', value: post.comments },
+              { label: 'Saves', value: post.saves },
+              { label: 'Shares', value: post.shares },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(16px, 1.6vw, 22px)' }}>{value}</div>
+                <div className="text-white/70 font-light text-xs tracking-widest uppercase mt-1" style={{ fontFamily: MONO }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: the post photo only (no overlay), crossfading */}
+        <AnimatePresence mode="wait">
+          <motion.a
+            key={active}
+            href={post.permalink || undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            initial={{ opacity: 0, x: 40, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -40, scale: 0.96 }}
+            transition={{ duration: 0.45, ease: 'easeInOut' }}
+            title={post.permalink ? 'Open post on Instagram' : undefined}
+            className={`block no-underline relative rounded-2xl overflow-hidden shrink-0 h-[210px] md:h-[78%] transition-transform hover:scale-[1.02] ${post.permalink ? 'cursor-pointer' : ''}`}
+            style={{ aspectRatio: '4/5', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
+          >
+            <img src={post.photo} alt="Featured post" className="w-full h-full object-cover" />
+          </motion.a>
+        </AnimatePresence>
+      </div>
+
+      {/* Progress dashes — which post is active */}
+      <div className="flex items-center gap-2 ml-0 md:ml-[clamp(0px,38vw,600px)]">
+        {POSTS.map((_, i) => (
+          <span
+            key={i}
+            className="h-1 rounded-full transition-all duration-300"
+            style={{ width: i === active ? 32 : 18, backgroundColor: i === active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)' }}
+          />
+        ))}
+      </div>
+    </div>
+  )
+
   return (
     <section ref={sectionRef} className="relative z-10 mb-20 md:mb-32" style={{ height: `${POSTS.length * 140}vh` }}>
-      <div className="sticky top-0 h-screen overflow-hidden flex items-center">
-        {/* Background marquee band — drifts horizontally as the section scrolls */}
-        <div className="absolute inset-0 flex flex-col justify-center gap-10 md:gap-16 select-none pointer-events-none">
+      <div className="sticky top-0 h-screen overflow-hidden">
+        {/* Desktop: full marquee band sits BEHIND the centered card */}
+        <div className="hidden md:flex absolute inset-0 flex-col justify-center gap-16 select-none pointer-events-none">
           <MarqueeRow text="TOP POSTS" progress={marqueeProgress} />
           <MarqueeRow text="INFLUENCE" reverse hollow progress={marqueeProgress} />
           <MarqueeRow text="INFLUENCE" hollow progress={marqueeProgress} />
           <MarqueeRow text="TOP POSTS" reverse progress={marqueeProgress} />
         </div>
 
-        {/* Featured card — one wide glass card; the post image lives on the right
-            and crossfades from one post to the next as you scroll. */}
-        <div className="relative z-10 w-full flex items-center justify-center pointer-events-none">
-          <div
-            className="pointer-events-auto relative rounded-[28px] flex flex-col md:flex-row items-center justify-between gap-6 px-8 md:px-12 py-8 md:py-0 overflow-hidden h-auto md:h-[min(400px,56vh)] ml-0 md:ml-[clamp(0px,38vw,600px)]"
-            style={{
-              width: 'min(900px, 88vw)',
-              background:
-                'linear-gradient(150deg, rgba(20,21,30,0.92) 0%, rgba(8,9,16,0.9) 100%) padding-box, ' +
-                'linear-gradient(120deg, rgba(255,255,255,0.5) 0%, rgba(120,210,185,0.45) 38%, rgba(90,120,220,0.5) 70%, rgba(150,120,255,0.6) 100%) border-box',
-              border: '1.5px solid transparent',
-              boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
-            }}
-          >
-            {/* Left: one hero metric + a row of supporting stats (dummy numbers) */}
-            <div className="flex flex-col justify-center gap-7">
-              <div>
-                <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(40px, 5vw, 64px)' }}>{FEATURED.totalViews}</div>
-                <div className="text-white/70 font-light text-sm tracking-widest uppercase mt-2" style={{ fontFamily: MONO }}>Total Views</div>
-              </div>
-              <div className="flex flex-wrap gap-x-5 gap-y-3 md:gap-7">
-                {[
-                  { label: 'Likes', value: post.likes },
-                  { label: 'Reach', value: FEATURED.reach },
-                  { label: 'Engage', value: FEATURED.engage },
-                  { label: 'Interact', value: FEATURED.interact },
-                ].map(({ label, value }) => (
-                  <div key={label}>
-                    <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(16px, 1.6vw, 22px)' }}>{value}</div>
-                    <div className="text-white/70 font-light text-xs tracking-widest uppercase mt-1" style={{ fontFamily: MONO }}>{label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        <div className="relative z-10 h-full flex flex-col items-center justify-center gap-6">
+          {/* Mobile only: two marquee lines ABOVE the card */}
+          <div className="md:hidden w-full flex flex-col gap-6 select-none pointer-events-none">
+            <MarqueeRow text="TOP POSTS" progress={marqueeProgress} />
+            <MarqueeRow text="INFLUENCE" reverse hollow progress={marqueeProgress} />
+          </div>
 
-            {/* Right: the post photo only (no overlay), crossfading */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={active}
-                initial={{ opacity: 0, x: 40, scale: 0.96 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, x: -40, scale: 0.96 }}
-                transition={{ duration: 0.45, ease: 'easeInOut' }}
-                className="relative rounded-2xl overflow-hidden shrink-0 h-[240px] md:h-[78%]"
-                style={{ aspectRatio: '4/5', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
-              >
-                <img src={post.photo} alt="Featured post" className="w-full h-full object-cover" />
-              </motion.div>
-            </AnimatePresence>
+          {cardAndDashes}
 
-            {/* Progress dashes — which post is active */}
-            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex items-center gap-2">
-              {POSTS.map((_, i) => (
-                <span
-                  key={i}
-                  className="h-1 rounded-full transition-all duration-300"
-                  style={{ width: i === active ? 32 : 18, backgroundColor: i === active ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)' }}
-                />
-              ))}
-            </div>
+          {/* Mobile only: two marquee lines BELOW the card */}
+          <div className="md:hidden w-full flex flex-col gap-6 select-none pointer-events-none">
+            <MarqueeRow text="INFLUENCE" hollow progress={marqueeProgress} />
+            <MarqueeRow text="TOP POSTS" reverse progress={marqueeProgress} />
           </div>
         </div>
       </div>

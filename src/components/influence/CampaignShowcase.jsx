@@ -1,89 +1,183 @@
-import { useEffect, useRef, useState } from 'react'
-import gsap from 'gsap'
-import { MotionPathPlugin } from 'gsap/MotionPathPlugin'
+import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import { FONT, MONO } from './influenceData.js'
-import { useInfluence } from './InfluenceDataContext.jsx'
 
-gsap.registerPlugin(MotionPathPlugin)
-
-// ---- Editable card content. One entry per card (8 total). ----
+// ---- Editable card content. Showing the first 6. ----
+// `metric` is the headline reach shown on the carousel card. The remaining
+// fields (date, overview, stats, audience, deliverables) drive the detail modal.
 const DATA = [
-  { brand: 'Spotify', subtitle: 'Wrapped promotion campaign', metric: '3.1M', category: 'TECH' },
-  { brand: 'Nike', subtitle: 'Run club launch series', metric: '2.4M', category: 'SPORT' },
-  { brand: 'Glossier', subtitle: 'Skin-first product drop', metric: '1.8M', category: 'BEAUTY' },
-  { brand: 'Airbnb', subtitle: 'City weekender feature', metric: '2.0M', category: 'TRAVEL' },
-  { brand: 'Notion', subtitle: 'Creator workflow showcase', metric: '1.2M', category: 'TECH' },
-  { brand: 'Chipotle', subtitle: 'Limited menu teaser', metric: '3.6M', category: 'FOOD' },
-  { brand: 'Sephora', subtitle: 'Holiday GRWM edit', metric: '2.9M', category: 'BEAUTY' },
-  { brand: 'Adobe', subtitle: 'Express templates push', metric: '1.5M', category: 'TECH' },
-]
+  {
+    brand: 'Spotify', subtitle: 'Wrapped promotion campaign', metric: '3.1M', category: 'TECH',
+    date: 'Dec 2023',
+    overview: 'Partnered with Spotify to launch their year-end Wrapped campaign. Created a personality-driven Reel unpacking listening stats, followed by a carousel breaking down the data story.',
+    reach: '3.1M', engagement: '410K', engRate: '13.2%',
+    audience: '58% Female, 18–29 years old. Top cities: London, Berlin, Toronto.',
+    deliverables: ['Reel', 'Carousel', '4 Stories'],
+  },
+  {
+    brand: 'Nike', subtitle: 'Run club launch series', metric: '2.4M', category: 'SPORT',
+    date: 'Oct 2023',
+    overview: "Partnered with Nike to launch their new React Infinity Run shoes. Created a high-energy Reel showcasing the shoe's durability through a 10K run, followed by a 3-part Story series breaking down the technology.",
+    reach: '2.4M', engagement: '350K', engRate: '14.5%',
+    audience: '65% Female, 18–34 years old. Top cities: New York, London, Los Angeles.',
+    deliverables: ['Reel', '3 Stories'],
+  },
+  {
+    brand: 'Glossier', subtitle: 'Skin-first product drop', metric: '1.8M', category: 'BEAUTY',
+    date: 'Aug 2023',
+    overview: 'Collaborated with Glossier on a skin-first product drop. Produced an honest get-ready-with-me Reel and a tutorial carousel highlighting the dewy, low-effort routine.',
+    reach: '1.8M', engagement: '290K', engRate: '16.1%',
+    audience: '72% Female, 18–27 years old. Top cities: New York, Los Angeles, Miami.',
+    deliverables: ['Reel', 'Tutorial', '3 Stories'],
+  },
+  {
+    brand: 'Airbnb', subtitle: 'City weekender feature', metric: '2.0M', category: 'TRAVEL',
+    date: 'Jun 2023',
+    overview: 'Teamed up with Airbnb for a city-weekender feature. Filmed a cinematic travel Reel across three stays and a Story series with bookable links to each property.',
+    reach: '2.0M', engagement: '260K', engRate: '13.0%',
+    audience: '54% Female, 25–40 years old. Top cities: Paris, Lisbon, Barcelona.',
+    deliverables: ['Reel', '5 Stories'],
+  },
+  {
+    brand: 'Notion', subtitle: 'Creator workflow showcase', metric: '1.2M', category: 'TECH',
+    date: 'Apr 2023',
+    overview: 'Worked with Notion to showcase a creator workflow. Built a screen-recorded Reel walking through a content-planning template, paired with a post breaking down the setup.',
+    reach: '1.2M', engagement: '180K', engRate: '15.0%',
+    audience: '49% Female, 22–35 years old. Top cities: San Francisco, London, Bangalore.',
+    deliverables: ['Reel', 'Post', '2 Stories'],
+  },
+  {
+    brand: 'Chipotle', subtitle: 'Limited menu teaser', metric: '3.6M', category: 'FOOD',
+    date: 'Feb 2023',
+    overview: 'Partnered with Chipotle to tease a limited menu item. Created a fast-cut taste-test Reel and a post with a promo code that drove in-app orders during launch week.',
+    reach: '3.6M', engagement: '520K', engRate: '14.4%',
+    audience: '51% Male, 18–30 years old. Top cities: Austin, Chicago, Denver.',
+    deliverables: ['Reel', 'Post', '3 Stories'],
+  },
+].slice(0, 6)
 
-const N = DATA.length
-const R = 380 // ring radius — tightened so the cards hug the center image
-const PARK_DEG = [-90, -135, 180, 135, 90, 45, 0, -45]
+const CARD_W = 380
 
-// Uniform card size — all cards identical so the ring keeps a consistent shape
-// as it spins (per-position sizes made the outline wobble while rotating).
-const CARD_W = 270
-const CARD_H = 270
-const SIZES = Array.from({ length: N }, () => ({ w: CARD_W, h: CARD_H }))
-
-const LINE_Y = -440 // the horizontal line sits above the center (clear of the image)
-const LINE_SPACING = 70 // cards overlap slightly in the line
-const lineX = (i) => -LINE_SPACING * (N - 1) / 2 + LINE_SPACING * i // centered line
-
-// Build a motion path: start at the card's line position, bridge to the top of
-// the circle, then sweep ANTI-CLOCKWISE (decreasing angle) to its park angle.
-function uShapePath(fromX, fromY, parkDeg) {
-  const startDeg = -90 // top of circle
-  let endDeg = parkDeg
-  while (endDeg > startDeg) endDeg -= 360 // force anti-clockwise
-
-  const pts = [{ x: fromX, y: fromY }]
-  pts.push({ x: R * Math.cos(startDeg * Math.PI / 180), y: R * Math.sin(startDeg * Math.PI / 180) })
-
-  const steps = Math.max(2, Math.round(Math.abs(endDeg - startDeg) / 12))
-  for (let s = 1; s <= steps; s++) {
-    const deg = startDeg + (s / steps) * (endDeg - startDeg)
-    const rad = deg * Math.PI / 180
-    pts.push({ x: R * Math.cos(rad), y: R * Math.sin(rad) })
-  }
-  return pts
+// Frosted-glass surface shared by the card and the modal: a faint neutral
+// border ring on the outside, a translucent blurred panel inside.
+const GLASS_RING = {
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 100%)',
+}
+const GLASS_PANEL = {
+  // Genuinely see-through frosted glass: a very faint white film over a blurred,
+  // slightly saturated backdrop, so the card takes on whatever is behind it.
+  background: 'linear-gradient(150deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.015) 100%)',
+  backdropFilter: 'blur(16px) saturate(150%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(150%)',
 }
 
-// One campaign-highlight card. `hovered` brightens the border + adds a glow.
-function CampaignCard({ data, hovered = false }) {
+// One campaign-highlight glass card — now shows the full campaign layout
+// (overview, stats, audience, deliverables, CTA), the same content as the modal.
+// The cards live inside a CSS-transform marquee, where the browser's native
+// `click` event fires unreliably (the element shifts between pointerdown and
+// pointerup). We detect a tap manually: a pointerup close to where pointerdown
+// landed counts as a click, so it works whether the row is moving or paused.
+function CampaignCard({ data, onClick, sizeW = CARD_W }) {
+  const down = useRef({ x: 0, y: 0 })
+  const handleDown = (e) => { down.current = { x: e.clientX, y: e.clientY } }
+  const handleUp = (e) => {
+    if (!onClick) return
+    const moved = Math.hypot(e.clientX - down.current.x, e.clientY - down.current.y)
+    if (moved < 8) onClick()
+  }
   return (
     <div
-      className="w-full h-full rounded-2xl p-6 flex flex-col transition-transform duration-300"
-      style={{
-        transform: hovered ? 'scale(1.04)' : 'scale(1)',
-        // Dark glass fill with a plain, flat border (no glow). Hover brightens
-        // the border slightly but still no outer shadow.
-        background: hovered
-          ? 'linear-gradient(150deg, rgba(22,23,38,0.95) 0%, rgba(12,13,24,0.92) 100%)'
-          : 'linear-gradient(150deg, rgba(16,17,28,0.92) 0%, rgba(9,10,18,0.9) 100%)',
-        border: hovered ? '1px solid rgba(255,255,255,0.22)' : '1px solid rgba(255,255,255,0.08)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
-        boxShadow: 'none',
-      }}
+      onPointerDown={onClick ? handleDown : undefined}
+      onPointerUp={onClick ? handleUp : undefined}
+      className={`shrink-0 rounded-[20px] p-px transition-transform duration-300 ${onClick ? 'cursor-pointer hover:scale-[1.02]' : ''}`}
+      style={{ width: sizeW, ...GLASS_RING }}
     >
-      <div className="text-white font-bold leading-none mb-3" style={{ fontFamily: FONT, fontSize: 32 }}>{data.brand}</div>
-      <div className="text-white/60 leading-snug mb-4" style={{ fontFamily: MONO, fontSize: 14 }}>{data.subtitle}</div>
-      <div className="flex gap-2.5 mb-auto">
-        {['REEL', 'POST'].map((t) => (
-          <span key={t} className="tracking-[0.22em] px-3 py-1.5 rounded-md" style={{ fontFamily: MONO, fontSize: 11, color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.18)' }}>{t}</span>
+      <div className="rounded-[19px] p-6 flex flex-col h-full" style={GLASS_PANEL}>
+        <CampaignHeader data={data} />
+        <div className="mb-5" style={{ height: 1, background: 'rgba(255,255,255,0.1)' }} />
+        <CampaignBody data={data} ctaIcon={false} pinCta />
+      </div>
+    </div>
+  )
+}
+
+// Brand name + date header, shared by the card and the modal.
+function CampaignHeader({ data }) {
+  return (
+    <div className="mb-4">
+      <div className="text-white leading-none" style={{ fontFamily: FONT, fontSize: 40, fontWeight: 500 }}>{data.brand}</div>
+      <div className="text-white/45 mt-2" style={{ fontFamily: MONO, fontSize: 13, fontWeight: 300 }}>{data.date}</div>
+    </div>
+  )
+}
+
+// Overview → stats → audience → deliverables → CTA. Shared by card and modal.
+// `ctaIcon` shows the external-link glyph on the button (modal only).
+// `pinCta` pushes the button to the card's bottom so all cards' buttons align.
+function CampaignBody({ data, ctaIcon = true, pinCta = false, statColors = false }) {
+  const stats = [
+    { label: 'REACH', value: data.reach, color: '#FFFFFF' },
+    { label: 'ENGAGEMENT', value: data.engagement, color: statColors ? '#4DE0B0' : '#FFFFFF' },
+    { label: 'ENG. RATE', value: data.engRate, color: statColors ? '#A78BE8' : '#FFFFFF' },
+  ]
+  return (
+    <>
+      {/* Campaign overview */}
+      <SectionLabel>CAMPAIGN OVERVIEW</SectionLabel>
+      <p className="text-white/70 mb-6 leading-relaxed" style={{ fontFamily: FONT, fontSize: 14, fontWeight: 300 }}>{data.overview}</p>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-xl px-3 py-3.5" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="tracking-[0.12em] mb-1.5" style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 400, color: 'rgba(255,255,255,0.5)' }}>{s.label}</div>
+            <div className="leading-none" style={{ fontFamily: FONT, fontSize: 24, fontWeight: 500, color: s.color }}>{s.value}</div>
+          </div>
         ))}
       </div>
-      <div className="text-white font-bold leading-none mb-1.5" style={{ fontFamily: FONT, fontSize: 42 }}>{data.metric}</div>
-      <div
+
+      {/* Audience insights */}
+      <SectionLabel>AUDIENCE INSIGHTS</SectionLabel>
+      <div className="rounded-xl px-4 py-3.5 mb-6" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <p className="text-white/70 leading-relaxed" style={{ fontFamily: FONT, fontSize: 13.5, fontWeight: 300 }}>{data.audience}</p>
+      </div>
+
+      {/* Deliverables */}
+      <SectionLabel>DELIVERABLES</SectionLabel>
+      <div className="flex flex-wrap gap-2.5 mb-6">
+        {data.deliverables.map((d) => (
+          <span key={d} className="rounded-lg px-3.5 py-2" style={{ fontFamily: MONO, fontSize: 12, fontWeight: 300, color: 'rgba(255,255,255,0.85)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)' }}>{d}</span>
+        ))}
+      </div>
+
+      {/* CTA — mt-auto pins it to the card's bottom so every card's button lines
+          up on the same row (cards stretch to equal height in the marquee). */}
+      <button
+        className={`w-full rounded-xl text-white inline-flex items-center justify-center gap-2 py-3 transition-transform hover:scale-[1.02] ${pinCta ? 'mt-auto' : ''}`}
+        style={{ fontFamily: FONT, fontSize: 15, fontWeight: 500, background: 'linear-gradient(90deg, rgba(139,92,246,0.85) 0%, rgba(124,92,255,0.85) 100%)' }}
+      >
+        {ctaIcon && (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+          </svg>
+        )}
+        View Live Posts
+      </button>
+    </>
+  )
+}
+
+// Small "— LABEL" section heading with the page's purple gradient.
+function SectionLabel({ children }) {
+  return (
+    <div className="flex items-center gap-2 mb-2.5">
+      <span style={{ width: 14, height: 1.5, background: '#A35CE1', display: 'inline-block' }} />
+      <span
         className="tracking-[0.22em] font-semibold"
         style={{
-          display: 'inline-block',
-          width: 'fit-content',
           fontFamily: MONO,
-          fontSize: 14,
+          fontSize: 11,
           background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)',
           WebkitBackgroundClip: 'text',
           backgroundClip: 'text',
@@ -91,142 +185,114 @@ function CampaignCard({ data, hovered = false }) {
           color: 'transparent',
         }}
       >
-        {data.category}
+        {children}
+      </span>
+    </div>
+  )
+}
+
+// Expanded campaign detail shown when a card is tapped — same content, larger,
+// centered, with a close button.
+function CampaignDetail({ data, onClose }) {
+  return (
+    <div
+      className="relative rounded-2xl p-6 flex flex-col"
+      style={{
+        width: 'min(460px, 92vw)',
+        maxHeight: '88vh',
+        overflowY: 'auto',
+        background: '#0B0B14',
+        border: '1px solid #3B82F6',
+        boxShadow: '0 0 0 1px rgba(59,130,246,0.35), 0 24px 60px rgba(0,0,0,0.6)',
+      }}
+    >
+      {/* Header: avatar + brand + date, circular close */}
+      <div className="flex items-center gap-3 mb-5">
+        <div
+          className="shrink-0 rounded-lg flex items-center justify-center"
+          style={{ width: 48, height: 48, background: 'linear-gradient(135deg,#2a2f6b 0%,#16183c 100%)', border: '1px solid rgba(255,255,255,0.1)' }}
+        >
+          <span className="text-white font-bold" style={{ fontFamily: FONT, fontSize: 22, lineHeight: 1 }}>{data.brand.charAt(0)}</span>
+        </div>
+        <div className="min-w-0">
+          <div className="text-white font-bold leading-tight" style={{ fontFamily: FONT, fontSize: 22 }}>{data.brand}</div>
+          <div className="text-white/45" style={{ fontFamily: MONO, fontSize: 12 }}>{data.date}</div>
+        </div>
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          className="ml-auto shrink-0 flex items-center justify-center rounded-full text-white/55 hover:text-white hover:bg-white/10 transition-colors"
+          style={{ width: 32, height: 32, border: '1px solid rgba(255,255,255,0.18)' }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+        </button>
       </div>
+
+      <div className="mb-5" style={{ height: 1, background: 'rgba(255,255,255,0.1)' }} />
+      <CampaignBody data={data} statColors />
     </div>
   )
 }
 
 export default function CampaignShowcase() {
-  const { PHOTOS } = useInfluence()
-  const stageRef = useRef(null)
-  const tlRef = useRef(null)
-  const [hoverIdx, setHoverIdx] = useState(null)
+  // Pause the continuous left→right marquee while hovered (CSS play-state, so it
+  // freezes/resumes seamlessly). Tapping a card opens that card on its own.
+  const [paused, setPaused] = useState(false)
   const [openIdx, setOpenIdx] = useState(null)
 
-  useEffect(() => {
-    let tl
-    const ctx = gsap.context(() => {
-      tl = gsap.timeline({ paused: true })
-      tlRef.current = tl
-
-      // Initial states.
-      // Cards start off-screen to the RIGHT, on the line's height, ready to slide in.
-      tl.set('#centerImg', { x: 650, y: 0, opacity: 0, scale: 0.8 }, 0)
-      tl.set('#ring', { rotation: 0 }, 0)
-      tl.set('.card', { x: 850, y: LINE_Y, opacity: 0, rotation: 0, scale: 0.85 }, 0)
-
-      // STEP 1 — center image enters from the RIGHT.
-      tl.to('#centerImg', { x: 0, opacity: 1, scale: 1, duration: 0.6, ease: 'power3.out' }, 0)
-
-      // STEP 2 — cards slide in from the RIGHT, filling the line right-to-left.
-      for (let i = N - 1; i >= 0; i--) {
-        const order = (N - 1) - i
-        tl.to(`#c${i}`, {
-          x: lineX(i), y: LINE_Y, opacity: 1, scale: 1,
-          duration: 0.5, ease: 'power3.out',
-        }, 0.5 + order * 0.1)
-      }
-
-      // STEP 3 — curve the line ANTI-CLOCKWISE into the ring (down the left,
-      // across the bottom, up the right) once the line has settled.
-      const settleAt = 0.5 + (N - 1) * 0.1 + 0.5 + 0.4
-      tl.addLabel('curve', settleAt)
-      DATA.forEach((_, i) => {
-        const path = uShapePath(lineX(i), LINE_Y, PARK_DEG[i])
-        const dur = 0.6 + path.length * 0.045
-        tl.to(`#c${i}`, {
-          motionPath: { path, curviness: 1.3, autoRotate: false },
-          rotation: PARK_DEG[i] + 90, // face outward (radial arrangement)
-          duration: dur,
-          ease: 'power1.inOut',
-        }, `curve+=${i * 0.08}`)
-      })
-
-      // STEP 4 — spin the whole ring as one rigid unit (one turn / 16s, forever).
-      // Cards keep facing outward (radial) as the flower rotates.
-      tl.to('#ring', { rotation: '-=360', transformOrigin: '50% 50%', duration: 16, ease: 'none', repeat: -1 })
-    }, stageRef)
-
-    // Only play once the section scrolls into view (not on mount), then once.
-    const el = stageRef.current
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            tl && tl.play()
-            io.disconnect()
-          }
-        })
-      },
-      { threshold: 0.35 },
-    )
-    if (el) io.observe(el)
-
-    return () => {
-      io.disconnect()
-      ctx.revert()
-    }
-  }, [])
+  // Two copies of the cards so the row loops seamlessly.
+  const loop = [...DATA, ...DATA]
 
   return (
-    <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-8 md:pt-10 pb-32 md:pb-48 overflow-hidden" style={{ background: '#06060F' }}>
-      {/* Animation stage — full-width flex centers the oversized stage on the
-          viewport (mx-auto would pin it left and overflow right). */}
-      <div className="hidden md:flex justify-center">
-        <div ref={stageRef} className="relative" style={{ width: 1340, height: 1340 }}>
-          {/* Center image */}
-          <img
-            id="centerImg"
-            src={PHOTOS[0]}
-            alt="Creator"
-            className="absolute object-cover"
-            style={{
-              left: '50%', top: '50%', width: 294.26, height: 262.54, marginLeft: -147.13, marginTop: -131.27,
-              borderRadius: 18, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 60px rgba(0,0,0,0.6)', zIndex: 10,
-            }}
-          />
+    <section className="relative z-10 py-20 md:py-28 overflow-hidden" style={{ background: 'transparent' }}>
+      <style>{`@keyframes campaignMarquee { from { transform: translateX(-50%); } to { transform: translateX(0%); } }`}</style>
 
-          {/* 8 cards — wrapped in a ring group so they can spin around the
-              center together (the center image is a sibling, so it stays still). */}
-          <div id="ring" className="absolute" style={{ left: '50%', top: '50%', width: 0, height: 0 }}>
-            {DATA.map((data, i) => (
-              <div
-                key={i}
-                id={`c${i}`}
-                className="card absolute cursor-pointer"
-                style={{ left: 0, top: 0, width: SIZES[i].w, height: SIZES[i].h, marginLeft: -SIZES[i].w / 2, marginTop: -SIZES[i].h / 2 }}
-                onMouseEnter={() => setHoverIdx(i)}
-                onMouseLeave={() => setHoverIdx(null)}
-                onClick={() => setOpenIdx(i)}
-              >
-                <CampaignCard data={data} hovered={hoverIdx === i} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile fallback grid */}
-      <div className="max-w-[1180px] mx-auto grid grid-cols-1 sm:grid-cols-2 gap-5 md:hidden place-items-center">
-        {DATA.slice(0, 4).map((data, i) => (
-          <div key={i} className="cursor-pointer w-full max-w-[270px] aspect-square" onClick={() => setOpenIdx(i)}>
-            <CampaignCard data={data} />
-          </div>
-        ))}
-      </div>
-
-      {/* Click-to-open detail popover */}
-      {openIdx !== null && (
+      <div
+        className="relative w-full overflow-hidden"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center p-6"
-          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
-          onClick={() => setOpenIdx(null)}
+          className="flex gap-6 w-max"
+          style={{
+            animation: 'campaignMarquee 28s linear infinite',
+            animationPlayState: paused ? 'paused' : 'running',
+          }}
         >
-          <div style={{ width: 360, height: 360, maxWidth: '100%' }} onClick={(e) => e.stopPropagation()}>
-            <CampaignCard data={DATA[openIdx]} hovered />
-          </div>
+          {loop.map((data, i) => (
+            <CampaignCard key={i} data={data} onClick={() => setOpenIdx(i % DATA.length)} />
+          ))}
         </div>
+      </div>
+
+      {/* Tap-to-open detail of a single card. Rendered through a portal on
+          <body> so it escapes this section's `z-10` stacking context — otherwise
+          later page sections (paper plane, CTA) paint on top of the modal. */}
+      {createPortal(
+        <AnimatePresence>
+          {openIdx !== null && (
+            <motion.div
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-6"
+              style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setOpenIdx(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 12 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <CampaignDetail data={DATA[openIdx]} onClose={() => setOpenIdx(null)} />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
       )}
     </section>
   )

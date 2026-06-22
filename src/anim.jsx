@@ -74,6 +74,43 @@ export function RollUp({ text, delay = 0, duration = 0.6, className, style }) {
 }
 
 /* ============================================================
+   <CountUpText /> — like CountUp but takes a formatted STRING
+   (e.g. "8.1M", "12+", "100%", "43,000"). Parses the leading
+   number, counts 0 → it on scroll-in, and re-appends the suffix
+   and thousands-commas. Non-numeric strings render as-is.
+   ============================================================ */
+export function CountUpText({ text, delay = 0, duration = 1.2, className, style }) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: '-40px' })
+  const reduce = useReducedMotion()
+  const m = String(text).match(/^([\d.,]+)(.*)$/)
+  const numStr = m ? m[1].replace(/,/g, '') : null
+  const target = numStr != null ? parseFloat(numStr) : NaN
+  const decimals = numStr ? (numStr.split('.')[1] || '').length : 0
+  const suffix = m ? m[2] : ''
+  const animatable = m && !Number.isNaN(target) && !reduce
+  const fmt = (n) => (decimals > 0 ? n.toFixed(decimals) : Math.round(n).toLocaleString('en-US')) + suffix
+  const [display, setDisplay] = useState(animatable ? fmt(0) : text)
+
+  useEffect(() => {
+    if (!inView || !animatable) return
+    const controls = animate(0, target, {
+      duration,
+      delay,
+      ease: 'easeOut',
+      onUpdate: (latest) => setDisplay(fmt(latest)),
+    })
+    return () => controls.stop()
+  }, [inView]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <span ref={ref} className={className} style={style}>
+      {animatable ? display : text}
+    </span>
+  )
+}
+
+/* ============================================================
    <Typewriter /> — characters appear one-by-one on scroll-in.
    ~35ms per character (spec: 30–40ms), with an optional
    startDelay so the four stats stagger across each other.

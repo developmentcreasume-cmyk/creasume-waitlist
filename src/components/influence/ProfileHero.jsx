@@ -18,13 +18,9 @@ const ICONS = {
   handshake: (<svg {...ip}><path d="m11 17 2 2a1 1 0 1 0 3-3" /><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4" /><path d="m21 3 1 11h-2" /><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3" /><path d="M3 4h8" /></svg>),
 }
 
-// Spec §2 — deck-deal order, by tile index in CREATOR.tiles:
-// 0 EngRate(TL) 1 Views(TM) 2 Post(TR) 3 Followers(ML) 4 Reach(MM)
-// 5 Impr(MR) 6 Score(LL) 7 TopCity(LM) 8 BrandDeals(LR)
-// Cards are thrown TL→TM→TR→ML→MM→MR→LL→LR, and Top City (LM) lands LAST,
-// settling back onto the spot the deck was stacked on.
-const DEAL_ORDER = [0, 1, 2, 3, 4, 5, 6, 8, 7]
-const PILE_INDEX = 7 // Top City — where the whole deck rests before the deal
+// Deck-deal: the grid's cards stack on the "Top City" cell then deal out one by
+// one, with Top City landing LAST back on the pile spot. The deal order + pile
+// index are computed per-render from the actual tile list (below).
 
 // Flip-in (horizontal axis) used by the four stat pills and the two buttons.
 // Spec §1: 600ms ease-in-out, 120ms stagger, back-face → front-face.
@@ -44,8 +40,16 @@ const viewport = { once: true, margin: '-60px' }
 // 3×3 metric grid that "deals" each card from a stack resting on the Top City
 // cell out to its grid position. Offsets are measured from the real laid-out
 // grid so it works at any breakpoint (2 cols on mobile, 3 on desktop).
-function StatsGrid() {
+function StatsGrid({ includeScore = false }) {
   const { CREATOR } = useInfluence()
+  // Desktop shows every tile (incl. Creasume Score); mobile moves the score to
+  // the badge under the buttons, so it's filtered out of the mobile grid.
+  const tiles = includeScore
+    ? CREATOR.tiles
+    : CREATOR.tiles.filter((t) => t.label !== 'Creasume Score')
+  // The deck rests on the Top City cell; that card lands last in the deal.
+  const pileIndex = Math.max(0, tiles.findIndex((t) => t.label === 'Top City'))
+  const dealOrder = tiles.map((_, i) => i).filter((i) => i !== pileIndex).concat(pileIndex)
   const containerRef = useRef(null)
   const cardRefs = useRef([])
   const inView = useInView(containerRef, { once: true, margin: '-80px' })
@@ -58,7 +62,7 @@ function StatsGrid() {
   useLayoutEffect(() => {
     if (reduce) return
     const measure = () => {
-      const pile = cardRefs.current[PILE_INDEX]
+      const pile = cardRefs.current[pileIndex]
       if (!pile) return
       const pr = pile.getBoundingClientRect()
       setOffsets(
@@ -71,18 +75,25 @@ function StatsGrid() {
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
-  }, [reduce])
+  }, [reduce, pileIndex])
 
   useEffect(() => {
     if (reduce || !inView || !offsets) return
-    const t = setTimeout(() => setDealing(true), 300) // hold the pile, then deal
+    const t = setTimeout(() => setDealing(true), 120) // brief hold, then deal
     return () => clearTimeout(t)
   }, [reduce, inView, offsets])
 
   return (
     <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-3 gap-2.5 md:gap-3">
-      {CREATOR.tiles.map(({ value, label, icon, color }, i) => {
-        const dealPos = DEAL_ORDER.indexOf(i)
+      {tiles.map(({ value, label, icon, color }, i) => {
+        const dealPos = dealOrder.indexOf(i)
+        // Shrink the value font for long text (e.g. "Indore, Madhya Pradesh") so
+        // it fits the tile; numbers / short values keep the large size.
+        const valLen = String(value).length
+        const valueSize =
+          valLen > 14 ? 'clamp(16px, 2vw, 22px)'
+          : valLen > 8 ? 'clamp(20px, 2.8vw, 27px)'
+          : 'clamp(28px, 3.6vw, 36px)'
         // Before measuring, keep cards invisible so the resting layout (used to
         // measure) is never painted. Once measured they sit stacked on the pile;
         // after the hold, `dealing` throws each card out to its grid spot.
@@ -101,24 +112,28 @@ function StatsGrid() {
             animate={animate}
             // Sequential deal: each card flies 350ms and lands before the next
             // is thrown, with a 120ms gap between throws (spec §2).
-            transition={{ duration: 0.3, ease: 'easeOut', delay: dealing ? dealPos * 0.16 : 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut', delay: dealing ? dealPos * 0.05 : 0 }}
             whileHover={dealing ? { y: -4 } : undefined}
             className="relative rounded-2xl px-6 py-8 flex flex-col justify-center"
             style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)', zIndex: offsets && !dealing ? dealPos : undefined }}
           >
             <span className="absolute top-4 right-4 text-white">{ICONS[icon]}</span>
-            {/* Value + label roll up from a mask, staggered in the deal order. */}
-            <div className="mb-2">
+            {/* Value + label roll up from a mask. Each card triggers on its own
+                scroll-in, so the delay is keyed to the COLUMN (i % 3) — every row
+                rolls up the same quick way. */}
+            <div className="mb-2 pr-9">
               <RollUp
                 text={value}
-                delay={0.4 + dealPos * 0.12}
+                delay={0.05 + (i % 3) * 0.06}
+                duration={0.4}
                 className="font-semibold leading-none"
-                style={{ fontFamily: FONT, fontSize: 'clamp(28px, 3.6vw, 36px)', color: color || '#ffffff' }}
+                style={{ fontFamily: FONT, fontSize: valueSize, color: color || '#ffffff' }}
               />
             </div>
             <RollUp
               text={label}
-              delay={0.5 + dealPos * 0.12}
+              delay={0.11 + (i % 3) * 0.06}
+              duration={0.4}
               className="text-[15px] leading-tight font-semibold"
               style={{ fontFamily: MONO, ...LABEL_GRADIENT }}
             />
@@ -140,8 +155,17 @@ export default function ProfileHero() {
   const avatarSources = [CREATOR.avatar, CREATOR.avatarRaw].filter(Boolean)
   const [srcIdx, setSrcIdx] = useState(0)
   const avatarSrc = avatarSources[srcIdx]
+  // Creasume Score for the badge under the action buttons.
+  const score = CREATOR.tiles.find((t) => t.label === 'Creasume Score')?.value ?? '87'
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-24 pb-12 md:pt-32 md:pb-16 overflow-hidden">
+      {/* Creasume wordmark — top-left corner */}
+      <img
+        src="/creasumelogo.png"
+        alt="Creasume"
+        className="absolute top-6 left-6 md:top-4 md:left-4 h-7 md:h-9 w-auto z-20 pointer-events-none select-none"
+      />
+
       {/* Soft colored ellipse around the hero + stats — fades on all sides */}
       <div
         aria-hidden="true"
@@ -177,7 +201,7 @@ export default function ProfileHero() {
             viewport={viewport}
           >
             <div
-              className="rounded-full"
+              className="rounded-full relative"
               style={{ width: 140, height: 140, padding: 3, background: 'linear-gradient(135deg, #8B5CF6 0%, #C04DCC 50%, #EC4899 100%)' }}
             >
               <div
@@ -200,22 +224,51 @@ export default function ProfileHero() {
                   </span>
                 )}
               </div>
+
+              {/* Verified tick — bottom-right of the avatar (admin-managed) */}
+              {CREATOR.verified && (
+                <span
+                  className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded-full"
+                  style={{ width: 38, height: 38, background: '#1D9BF0', border: '3px solid #0b0b1e' }}
+                  title="Verified"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </span>
+              )}
             </div>
           </motion.div>
 
           {/* Name + pills + bio + actions */}
           <div className="flex-1 min-w-0 text-center lg:text-left">
-            <motion.h1
+            <motion.div
               custom={0}
               variants={textFade}
               initial="hidden"
               whileInView="show"
               viewport={viewport}
-              className="font-bold leading-none mb-2.5"
-              style={{ fontFamily: FONT, fontSize: 'clamp(32px, 5vw, 52px)' }}
+              className="flex flex-wrap items-center justify-center lg:justify-start gap-x-3 gap-y-2 mb-2.5"
             >
-              {CREATOR.name}
-            </motion.h1>
+              <h1 className="font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(32px, 5vw, 52px)' }}>
+                {CREATOR.username}
+              </h1>
+              {/* Founding Creator badge — admin-managed, next to the username */}
+              {CREATOR.isFoundingCreator && (
+                <span
+                  className="inline-flex items-center rounded-full px-3.5 py-1.5 text-xs md:text-sm font-semibold whitespace-nowrap"
+                  style={{
+                    fontFamily: FONT,
+                    color: '#ffffff',
+                    background: '#E3B23C',
+                    border: '1.5px solid #E8C56A',
+                  }}
+                  title="Founding Creator"
+                >
+                  Founding Creator
+                </span>
+              )}
+            </motion.div>
             <motion.p
               custom={1}
               variants={textFade}
@@ -228,9 +281,10 @@ export default function ProfileHero() {
               {CREATOR.tagline}
             </motion.p>
 
-            {/* Headline stat pills — flip in on a horizontal axis */}
+            {/* Headline stat pills — flip in on a horizontal axis. Two per row
+                (2×2) on small screens; a single flex row on large screens. */}
             <motion.div
-              className="flex flex-wrap justify-center lg:justify-start gap-2.5 mb-9 md:mb-11"
+              className="grid grid-cols-2 w-fit mx-auto justify-items-center gap-2 mb-9 md:mb-11 lg:flex lg:w-auto lg:mx-0 lg:flex-wrap lg:justify-start"
               initial="hidden"
               whileInView="show"
               viewport={viewport}
@@ -241,11 +295,11 @@ export default function ProfileHero() {
                   key={label}
                   custom={i}
                   variants={flipIn}
-                  className="inline-flex items-baseline gap-2.5 rounded-full px-7 py-3.5"
+                  className="inline-flex items-baseline gap-2 rounded-full px-5 py-2.5 whitespace-nowrap"
                   style={{ backgroundColor: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', transformOrigin: 'center', backfaceVisibility: 'hidden' }}
                 >
-                  <span className="font-bold text-2xl" style={{ color }}>{value}</span>
-                  <span className="text-base" style={{ color: labelColor || 'rgba(255,255,255,0.45)' }}>{label}</span>
+                  <span className="font-bold text-lg md:text-xl" style={{ color }}>{value}</span>
+                  <span className="text-sm md:text-base" style={{ color: labelColor || 'rgba(255,255,255,0.45)' }}>{label}</span>
                 </motion.span>
               ))}
             </motion.div>
@@ -257,14 +311,14 @@ export default function ProfileHero() {
               whileInView="show"
               viewport={viewport}
               className="text-white/90 text-lg mb-10 md:mb-12 leading-snug"
-              style={{ fontWeight: 300 }}
+              style={{ fontWeight: 300, whiteSpace: 'pre-line' }}
             >
               {CREATOR.bio}
             </motion.p>
 
             {/* Action buttons — same flip-in as the pills */}
             <motion.div
-              className="flex flex-wrap justify-center lg:justify-start gap-3 mb-10 md:mb-12"
+              className="flex flex-nowrap justify-center lg:justify-start gap-2 md:gap-3 mb-10 md:mb-12"
               initial="hidden"
               whileInView="show"
               viewport={viewport}
@@ -274,7 +328,7 @@ export default function ProfileHero() {
                 custom={4}
                 variants={flipIn}
                 href="#work-with-me"
-                className="no-underline inline-flex items-center gap-2.5 rounded-full bg-white text-[#11132f] font-bold text-base px-7 py-3.5 transition-transform hover:scale-[1.03]"
+                className="no-underline inline-flex items-center whitespace-nowrap gap-2.5 rounded-full bg-white text-[#11132f] font-bold text-sm md:text-base px-4 md:px-7 py-3 md:py-3.5 transition-transform hover:scale-[1.03]"
                 style={{ fontFamily: FONT, fontWeight: 700, transformOrigin: 'center' }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -286,7 +340,7 @@ export default function ProfileHero() {
                 custom={5}
                 variants={flipIn}
                 type="button"
-                className="inline-flex items-center gap-2.5 rounded-full text-white font-semibold text-base px-7 py-3.5 transition-colors hover:bg-white/5"
+                className="inline-flex items-center whitespace-nowrap gap-2.5 rounded-full text-white font-semibold text-sm md:text-base px-4 md:px-7 py-3 md:py-3.5 transition-colors hover:bg-white/5"
                 style={{ fontFamily: FONT, border: '1px solid rgba(255,255,255,0.18)', transformOrigin: 'center' }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -295,11 +349,49 @@ export default function ProfileHero() {
                 Download PDF
               </motion.button>
             </motion.div>
+
+            {/* Creasume Score badge — MOBILE ONLY (on desktop the score is a tile
+                in the grid). Dark card: score in a glass circle, gradient label. */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={viewport}
+              transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
+              className="md:hidden relative inline-flex items-center gap-4 rounded-2xl px-6 py-4 pr-14"
+              style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <img src="/creasume-c.png" alt="" aria-hidden="true" className="absolute top-3 right-3 h-6 w-6 object-contain select-none" />
+              <span
+                className="grid place-items-center rounded-full font-bold shrink-0 text-white"
+                style={{
+                  width: 48,
+                  height: 48,
+                  background: 'rgba(255,255,255,0.12)',
+                  backdropFilter: 'blur(8px)',
+                  WebkitBackdropFilter: 'blur(8px)',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)',
+                  fontFamily: FONT,
+                  fontSize: 20,
+                }}
+              >
+                {score}
+              </span>
+              <span className="font-semibold leading-none text-xl md:text-2xl whitespace-nowrap" style={{ fontFamily: FONT, ...LABEL_GRADIENT }}>
+                Creasume Score
+              </span>
+            </motion.div>
           </div>
         </div>
 
-        {/* Metric grid — deck-deal animation */}
-        <StatsGrid />
+        {/* Metric grid — deck-deal animation. Desktop includes the Creasume
+            Score tile; mobile drops it (shown as the badge above instead). */}
+        <div className="hidden md:block">
+          <StatsGrid includeScore />
+        </div>
+        <div className="md:hidden">
+          <StatsGrid />
+        </div>
       </div>
     </section>
   )

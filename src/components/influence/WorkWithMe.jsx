@@ -48,24 +48,25 @@ export default function WorkWithMe() {
   return (
     <section id="work-with-me" className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-24 md:pt-40 pb-0 overflow-hidden">
       <div className="relative max-w-[1196px] mx-auto">
-        {/* 5 solid blue orbs tucked around the card edges */}
+        {/* Glowing blue orbs tucked around every edge of the card */}
         {[
-          { top: '-105px', left: '-25px', width: '186.31px', height: '186.31px' },
-          { top: '-150px', right: '-25px', width: '275.86px', height: '275.86px' },
-          { bottom: '-75px', left: '-55px', width: '242.64px', height: '225.31px' },
-          { bottom: '-75px', right: '-55px', width: '241.2px', height: '241.2px' },
-          { bottom: '60px', left: '38%', transform: 'translateX(-50%)' },
-        ].map((pos, i) => (
+          { top: '-70px', left: '-55px', size: 170 },
+          { top: '-95px', right: '-50px', size: 205 },
+          { bottom: '-65px', left: '-45px', size: 185 },
+          { bottom: '-75px', right: '-45px', size: 195 },
+          { bottom: '-55px', left: '42%', transform: 'translateX(-50%)', size: 150 },
+        ].map(({ size, ...pos }, i) => (
           <div
             key={i}
             aria-hidden="true"
             className="hidden md:block absolute rounded-full pointer-events-none select-none"
             style={{
-              width: '128.19px',
-              height: '128.18px',
+              width: size,
+              height: size,
               zIndex: 0,
-              background: 'radial-gradient(circle, #3C48F7 0%, #212997 55%, #000320 100%)',
-              boxShadow: '0 0 40px rgba(70,100,255,0.28)',
+              background: 'radial-gradient(circle, #3C48F7 0%, #2230C4 52%, #0A1060 100%)',
+              boxShadow: '0 0 80px 22px rgba(60,95,255,0.5)',
+              filter: 'blur(2px)',
               ...pos,
             }}
           />

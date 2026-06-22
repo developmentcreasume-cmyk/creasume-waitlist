@@ -2,8 +2,8 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import {
   CREATOR, GROWTH, MONTHS, ENGAGEMENT_BARS, AGE_GROUPS, TOP_LOCATIONS,
-  GENDER_SPLIT, SOCIALS, BRAND_SUMMARY, BRAND_DEALS, PACKAGES, PHOTOS,
-  TOP_POSTS, FEATURED,
+  TOP_COUNTRIES, GENDER_SPLIT, SOCIALS, BRAND_SUMMARY, BRAND_DEALS, PACKAGES,
+  PHOTOS, TOP_POSTS, FEATURED,
 } from './influenceData.js'
 import { fetchInfluenceData, mapInfluenceData } from '../../services/influenceApi.js'
 
@@ -12,8 +12,8 @@ import { fetchInfluenceData, mapInfluenceData } from '../../services/influenceAp
 // unreachable or the creator isn't found.
 const DEFAULTS = {
   CREATOR, GROWTH, MONTHS, ENGAGEMENT_BARS, AGE_GROUPS, TOP_LOCATIONS,
-  GENDER_SPLIT, SOCIALS, BRAND_SUMMARY, BRAND_DEALS, PACKAGES, PHOTOS,
-  TOP_POSTS, FEATURED,
+  TOP_COUNTRIES, GENDER_SPLIT, SOCIALS, BRAND_SUMMARY, BRAND_DEALS, PACKAGES,
+  PHOTOS, TOP_POSTS, FEATURED,
 }
 
 const InfluenceContext = createContext(DEFAULTS)

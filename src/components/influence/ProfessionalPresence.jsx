@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { FONT, MONO } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
+import { RollUp, CountUpText } from '../../anim.jsx'
 
 // Spec §4: platform cards fade in (opacity only), 450ms ease-out, staggered.
 const fadeStagger = {
@@ -17,7 +18,7 @@ const fadeCard = {
 const PLATFORM_ICON = {
   YouTube: (<svg width="22" height="22" viewBox="0 0 24 24" fill="#FF0000"><path d="M23 12s0-3.8-.5-5.6a2.9 2.9 0 0 0-2-2C18.7 4 12 4 12 4s-6.7 0-8.5.4a2.9 2.9 0 0 0-2 2C1 8.2 1 12 1 12s0 3.8.5 5.6a2.9 2.9 0 0 0 2 2C5.3 20 12 20 12 20s6.7 0 8.5-.4a2.9 2.9 0 0 0 2-2C23 15.8 23 12 23 12ZM9.8 15.3V8.7l5.7 3.3-5.7 3.3Z" /></svg>),
   'Instagram': (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="#E1306C" stroke="none" /></svg>),
-  'X (formerly Twitter)': (<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M18.2 2H21l-6.5 7.4L22 22h-6.2l-4.8-6.3L5.5 22H2.7l7-8L2 2h6.3l4.4 5.8L18.2 2Zm-1.1 18h1.7L7 3.8H5.2L17.1 20Z" /></svg>),
+  'X (Twitter)': (<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M18.2 2H21l-6.5 7.4L22 22h-6.2l-4.8-6.3L5.5 22H2.7l7-8L2 2h6.3l4.4 5.8L18.2 2Zm-1.1 18h1.7L7 3.8H5.2L17.1 20Z" /></svg>),
 }
 
 export default function ProfessionalPresence() {
@@ -117,16 +118,17 @@ export default function ProfessionalPresence() {
                 width: '128.19px',
                 height: '128.18px',
                 top: '-45px',
-                right: '34px',
+                // Shifted further right on mobile, original 34px on md+.
+                cls: '-right-7 md:right-[34px]',
                 background: 'radial-gradient(circle, #3C48F7 0%, #212997 55%, #000320 100%)',
               },
-              { width: '112.75px', height: '104.7px', bottom: '-20px', left: '-50px', background: 'radial-gradient(circle, #3C48F7 0%, #212997 55%, #000320 100%)' },
-              { width: '65.61px', height: '65.61px', bottom: '-28px', right: '88px', background: 'radial-gradient(circle, #3C48F7 0%, #212997 55%, #000320 100%)' },
+              { width: '112.75px', height: '104.7px', bottom: '-20px', cls: '-left-6 md:-left-[50px]', background: 'radial-gradient(circle, #3C48F7 0%, #212997 55%, #000320 100%)' },
+              { width: '65.61px', height: '65.61px', bottom: '-28px', cls: '-right-2 md:right-[88px]', background: 'radial-gradient(circle, #3C48F7 0%, #212997 55%, #000320 100%)' },
               { width: '70.57px', height: '70.57px', bottom: '34px', left: '144px', background: 'radial-gradient(circle, #3C48F7 0%, #212997 55%, #000320 100%)' },
-            ].map(({ width, height, background, ...pos }, i) => (
+            ].map(({ width, height, background, cls = '', ...pos }, i) => (
               <div
                 key={i}
-                className="absolute rounded-full pointer-events-none select-none"
+                className={`absolute rounded-full pointer-events-none select-none ${cls}`}
                 style={{
                   width,
                   height,
@@ -159,13 +161,23 @@ export default function ProfessionalPresence() {
               {BRAND_SUMMARY.map((s, i) => (
                 <div key={s.label} className="flex-1 flex items-center gap-8">
                   <div className="flex-1 h-[2px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.12)' }}>
-                    <div
+                    <motion.div
                       className="h-full rounded-full"
-                      style={{ width: `${[100, 50, 75, 100][i]}%`, background: 'rgba(255,255,255,0.95)' }}
+                      style={{ background: 'rgba(255,255,255,0.95)' }}
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${[100, 50, 75, 100][i]}%` }}
+                      viewport={{ once: true, margin: '-60px' }}
+                      transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 + i * 0.12 }}
                     />
                   </div>
                   <div className="shrink-0 w-[92px] text-right">
-                    <div className="text-white font-bold text-2xl leading-none" style={{ fontFamily: FONT }}>{s.value}</div>
+                    <CountUpText
+                      text={s.value}
+                      delay={0.1 + i * 0.12}
+                      duration={1.1}
+                      className="block text-white font-bold text-2xl leading-none text-right"
+                      style={{ fontFamily: FONT }}
+                    />
                     <div className="text-white/40 text-[9px] tracking-widest mt-1" style={{ fontFamily: MONO }}>{s.label}</div>
                   </div>
                 </div>

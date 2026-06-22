@@ -128,6 +128,13 @@ const SLIDE_FROM = {
   up: { x: 0, y: 60 },
 }
 
+// Inner sub-card surface — a darker shade of the page theme so the two halves
+// of the Audience panel read as distinct cards (no light glass background).
+const SUBCARD = {
+  background: 'linear-gradient(155deg, #1b2052 0%, #10133C 60%)',
+  border: '1px solid rgba(255,255,255,0.08)',
+}
+
 function Panel({ title, children, from = 'up', className = '', bare = false, style }) {
   const off = SLIDE_FROM[from]
   return (
@@ -147,7 +154,7 @@ function Panel({ title, children, from = 'up', className = '', bare = false, sty
 
 export default function LiveAnalytics() {
   const {
-    GROWTH, MONTHS, ENGAGEMENT_BARS, AGE_GROUPS, TOP_LOCATIONS, GENDER_SPLIT,
+    GROWTH, MONTHS, ENGAGEMENT_BARS, AGE_GROUPS, TOP_LOCATIONS, TOP_COUNTRIES, GENDER_SPLIT,
   } = useInfluence()
   const [range, setRange] = useState('30D')
   const [hovered, setHovered] = useState(null)
@@ -220,8 +227,8 @@ export default function LiveAnalytics() {
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 1.1, ease: 'easeOut' }}
           >
-            {/* Left: Audience Insights — age distribution */}
-            <div>
+            {/* Left sub-card: Audience Insights — age distribution */}
+            <div className="rounded-2xl p-5 md:p-6" style={SUBCARD}>
             <div className="text-white font-semibold text-base mb-4" style={{ fontFamily: FONT }}>Audience Insights</div>
             <div className="text-[10px] tracking-widest text-white mb-4" style={{ fontFamily: MONO }}>AGE DISTRIBUTION</div>
             <div className="flex flex-col gap-5">
@@ -246,34 +253,89 @@ export default function LiveAnalytics() {
             </div>
             </div>
 
-            {/* Right: Top locations + gender split */}
-            <div className="flex flex-col gap-6 rounded-2xl p-6 md:p-7 w-full max-w-sm mx-auto" style={{ backgroundColor: '#23232E', border: '1.5px solid rgba(255,255,255,0.32)', boxShadow: '0 0 14px rgba(255,255,255,0.07)' }}>
-              <div>
-                <div className="text-sm tracking-widest text-white mb-3 pl-7" style={{ fontFamily: MONO }}>TOP LOCATIONS</div>
-                <div className="flex flex-wrap gap-2.5 pl-7">
-                  {TOP_LOCATIONS.map((loc) => (
-                    <span key={loc} className="rounded-full px-4 py-2 text-sm font-medium" style={{ backgroundColor: '#B9BAC0', color: '#11132f', border: '1px solid rgba(255,255,255,0.14)' }}>
-                      {loc}
-                    </span>
-                  ))}
+            {/* Right sub-card: Top Cities / Top Countries (flags) + gender split */}
+            <div className="relative overflow-hidden flex flex-col gap-6 rounded-2xl py-6 pl-4 pr-6 md:py-7 md:pl-5 md:pr-7 w-full max-w-md mx-auto" style={SUBCARD}>
+              {/* Faint glowing purple dots — subtle "global reach" hint */}
+              <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+                {[
+                  { top: '22%', left: '70%' },
+                  { top: '52%', left: '86%' },
+                  { top: '40%', left: '57%' },
+                  { bottom: '22%', left: '78%' },
+                  { top: '14%', right: '12%' },
+                ].map((pos, i) => (
+                  <span key={i} className="absolute rounded-full" style={{ width: 5, height: 5, background: '#8B6FFF', opacity: 0.5, filter: 'blur(1px)', boxShadow: '0 0 10px 2px rgba(139,111,255,0.5)', ...pos }} />
+                ))}
+              </div>
+
+              {/* Two columns with a thin vertical divider */}
+              <div className="relative z-10 grid grid-cols-2 gap-x-6 md:gap-x-10">
+                <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: 'rgba(255,255,255,0.09)' }} />
+
+                {/* Top Cities — plain text rows */}
+                <div>
+                  <div className="flex items-center gap-2 text-white font-semibold text-base mb-4 md:mb-6" style={{ fontFamily: FONT }}>
+                    <span aria-hidden="true">📍</span> Top Cities
+                  </div>
+                  <div className="flex flex-col gap-4 md:gap-5">
+                    {TOP_LOCATIONS.map((loc) => {
+                      const full = typeof loc === 'string' ? loc : loc.full
+                      const short = typeof loc === 'string' ? loc : loc.short
+                      // One line each — short "City, ST" on mobile, full name on
+                      // desktop (text-sm keeps the full name on a single row).
+                      return (
+                        <div key={full} className="text-sm font-semibold leading-snug whitespace-nowrap" style={{ fontFamily: FONT, color: 'rgba(255,255,255,0.88)' }}>
+                          <span className="md:hidden">{short}</span>
+                          <span className="hidden md:inline">{full}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Top Countries — small flag before each name */}
+                <div>
+                  <div className="flex items-center gap-2 whitespace-nowrap text-white font-semibold text-base mb-4 md:mb-6" style={{ fontFamily: FONT }}>
+                    <span aria-hidden="true">🌍</span> Top Countries
+                  </div>
+                  <div className="flex flex-col gap-4 md:gap-5">
+                    {TOP_COUNTRIES.map((c) => (
+                      <div key={c.code || c.name} className="flex items-center text-sm font-semibold" style={{ fontFamily: FONT, color: 'rgba(255,255,255,0.88)' }}>
+                        {c.code && (
+                          <img
+                            src={`https://flagcdn.com/w40/${c.code}.png`}
+                            alt={c.name}
+                            className="w-[18px] md:w-6 h-auto shrink-0"
+                            style={{ borderRadius: 3, border: '1px solid rgba(255,255,255,0.12)', marginRight: 8, verticalAlign: 'middle' }}
+                          />
+                        )}
+                        <span>{c.name}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 mt-auto rounded-2xl overflow-hidden w-full" style={{ background: '#7B45C9' }}>
-                {[
-                  { label: 'FEMALE', value: GENDER_SPLIT.female },
-                  { label: 'MALE', value: GENDER_SPLIT.male },
-                ].map(({ label, value }, i) => (
-                  <div
-                    key={label}
-                    className="flex flex-col items-center justify-center text-center"
-                    style={{ minHeight: 104, ...(i === 1 ? { borderLeft: '1px solid rgba(255,255,255,0.25)' } : {}) }}
-                  >
-                    <div className="text-white font-bold text-2xl leading-none mb-1.5" style={{ fontFamily: FONT }}>
-                      <CountUp value={Number(value)} suffix="%" />
+              <div className="relative z-10 mt-auto">
+                <div className="flex items-center justify-center gap-2 text-white font-semibold text-base mb-3" style={{ fontFamily: FONT }}>
+                  <span aria-hidden="true">👥</span> Gender Ratio
+                </div>
+                <div className="grid grid-cols-2 rounded-2xl overflow-hidden w-full" style={{ background: '#7B45C9' }}>
+                  {[
+                    { label: 'FEMALE', value: GENDER_SPLIT.female },
+                    { label: 'MALE', value: GENDER_SPLIT.male },
+                  ].map(({ label, value }, i) => (
+                    <div
+                      key={label}
+                      className="flex flex-col items-center justify-center text-center"
+                      style={{ minHeight: 104, ...(i === 1 ? { borderLeft: '1px solid rgba(255,255,255,0.25)' } : {}) }}
+                    >
+                      <div className="text-white font-bold text-2xl leading-none mb-1.5" style={{ fontFamily: FONT }}>
+                        <CountUp value={Number(value)} suffix="%" />
+                      </div>
+                      <div className="text-white/85 text-[11px] tracking-widest" style={{ fontFamily: MONO }}>{label}</div>
                     </div>
-                    <div className="text-white/85 text-[11px] tracking-widest" style={{ fontFamily: MONO }}>{label}</div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </motion.div>
