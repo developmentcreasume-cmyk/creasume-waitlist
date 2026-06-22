@@ -78,7 +78,7 @@ const STATE_ABBR = {
 
 // "City, State" → "City, ST" (known states get their code; otherwise the
 // state's word-initials). Strings without a comma are returned unchanged.
-function shortenLocation(loc) {
+export function shortenLocation(loc) {
   const parts = String(loc).split(',').map((s) => s.trim())
   if (parts.length < 2) return loc
   const city = parts[0]

@@ -30,8 +30,62 @@ function smoothScrollTo(y, duration = 900) {
   requestAnimationFrame(step)
 }
 
+// Mobile peek-carousel sizing: each slide is narrower than the screen so the
+// neighbouring cards peek in on both sides.
+const CAROUSEL_CARD = 280
+const CAROUSEL_GAP = 14
+
+// One package card — reused by the desktop row and the mobile carousel.
+function PackageCard({ p, i, isPopular, showCta }) {
+  return (
+    <div
+      id={i === 0 ? 'pkg-starter' : undefined}
+      className={`relative rounded-[22px] p-7 md:p-8 flex flex-col ${isPopular ? 'md:-mt-6' : ''}`}
+      style={{
+        width: 336,
+        height: isPopular ? 400.64 : 377.56,
+        maxWidth: '100%',
+        background: 'transparent',
+        border: '1px solid rgba(255,255,255,0.75)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
+      }}
+    >
+      {isPopular && (
+        <span
+          className="absolute -top-3 left-[72%] -translate-x-1/2 text-sm md:text-base font-semibold text-white px-2 py-0.5 rounded-full whitespace-nowrap"
+          style={{ background: '#0918E5', fontFamily: FONT }}
+        >
+          Most Popular
+        </span>
+      )}
+      <div className="text-sm tracking-widest mb-3" style={{ fontFamily: MONO, color: '#8F97FF' }}>{p.tier}</div>
+      <div className="text-white font-semibold leading-none mb-1" style={{ fontFamily: FONT, fontSize: 40 }}>{p.price}</div>
+      <div className="text-sm mb-6" style={{ fontFamily: MONO, color: '#8F97FF' }}>{p.sub}</div>
+      <ul className="flex flex-col gap-2.5 mb-6">
+        {p.features.map((f) => (
+          <li key={f} className="text-white text-base">{f}</li>
+        ))}
+      </ul>
+      {showCta && (
+        <a
+          id={isPopular ? 'pkg-book-now' : undefined}
+          href="#work-with-me"
+          className="no-underline mt-auto w-full rounded-full font-semibold text-sm py-3.5 text-center text-white"
+          style={{ fontFamily: FONT, background: '#0918E5' }}
+        >
+          Book Now
+        </a>
+      )}
+    </div>
+  )
+}
+
 export default function Packages() {
   const { PACKAGES } = useInfluence()
+  // Mobile carousel: start on the "Most Popular" package (front/center).
+  const popularIndex = Math.max(0, PACKAGES.findIndex((p) => p.popular))
+  const [active, setActive] = useState(popularIndex)
+  const n = PACKAGES.length
   // The parked plane is hidden while the click flight runs.
   const [flying, setFlying] = useState(false)
   // Mobile-only left→right fly-across, rendered in a fixed portal so it can't
@@ -252,64 +306,83 @@ export default function Packages() {
         <p className="text-white/45 text-sm" style={{ fontFamily: MONO }}>Standard services. Exact quotes provided after alignment.</p>
       </div>
 
-      {/* Static package cards — a centered row on desktop, stacked on mobile.
-          The popular card is lifted and is the only one with a Book Now CTA. */}
+      {/* Desktop: a centered row. The popular card is lifted and has the CTA. */}
       <motion.div
-        className="max-w-[1180px] mx-auto flex flex-col md:flex-row md:flex-wrap justify-center items-start gap-6 md:gap-5"
+        className="hidden md:flex max-w-[1180px] mx-auto md:flex-row md:flex-wrap justify-center items-start gap-5"
         variants={staggerParent}
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: '-80px' }}
       >
         {PACKAGES.map((p, i) => {
-          // "Most Popular" only when there's more than one package. A lone
-          // package keeps its Book Now CTA but never shows the badge.
-          const isPopular = p.popular && PACKAGES.length > 1
-          const showCta = isPopular || PACKAGES.length === 1
+          const isPopular = p.popular && n > 1
+          const showCta = isPopular || n === 1
           return (
-          <motion.div
-            key={p.tier}
-            id={i === 0 ? 'pkg-starter' : undefined}
-            variants={fadeUp}
-            className={`relative rounded-[22px] p-7 md:p-8 flex flex-col w-full ${isPopular ? 'md:-mt-6' : ''}`}
-            style={{
-              ...(isPopular
-                ? { width: 336, height: 400.64, maxWidth: '100%' }
-                : { width: 336, height: 377.56, maxWidth: '100%' }),
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.75)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
-            }}
-          >
-            {isPopular && (
-              <span
-                className="absolute -top-3 left-[72%] -translate-x-1/2 text-sm md:text-base font-semibold text-white px-2 py-0.5 rounded-full whitespace-nowrap"
-                style={{ background: '#0918E5', fontFamily: FONT }}
-              >
-                Most Popular
-              </span>
-            )}
-            <div className="text-sm tracking-widest mb-3" style={{ fontFamily: MONO, color: '#8F97FF' }}>{p.tier}</div>
-            <div className="text-white font-semibold leading-none mb-1" style={{ fontFamily: FONT, fontSize: 40 }}>{p.price}</div>
-            <div className="text-sm mb-6" style={{ fontFamily: MONO, color: '#8F97FF' }}>{p.sub}</div>
-            <ul className="flex flex-col gap-2.5 mb-6">
-              {p.features.map((f) => (
-                <li key={f} className="text-white text-base">{f}</li>
-              ))}
-            </ul>
-            {showCta && (
-              <a
-                id="pkg-book-now"
-                href="#work-with-me"
-                className="no-underline mt-auto w-full rounded-full font-semibold text-sm py-3.5 text-center text-white"
-                style={{ fontFamily: FONT, background: '#0918E5' }}
-              >
-                Book Now
-              </a>
-            )}
-          </motion.div>
+            <motion.div key={p.tier} variants={fadeUp}>
+              <PackageCard p={p} i={i} isPopular={isPopular} showCta={showCta} />
+            </motion.div>
           )
         })}
+      </motion.div>
+
+      {/* Mobile: a LOOPING coverflow — the centered package is big, the prev/next
+          peek smaller on each side. Swipe (or tap a dot) to rotate; it wraps. */}
+      <motion.div
+        className="md:hidden relative overflow-hidden"
+        drag={n > 1 ? 'x' : false}
+        dragConstraints={{ left: 0, right: 0 }}
+        dragSnapToOrigin
+        dragElastic={0.2}
+        onDragEnd={(e, info) => {
+          const threshold = 50
+          if (info.offset.x < -threshold) setActive((a) => (a + 1) % n)
+          else if (info.offset.x > threshold) setActive((a) => (a - 1 + n) % n)
+        }}
+        style={{ touchAction: 'pan-y' }}
+      >
+        <div className="relative flex items-center justify-center" style={{ height: 470 }}>
+          {PACKAGES.map((p, i) => {
+            // Shortest signed distance from the active card, so it loops both ways.
+            let off = i - active
+            if (off > n / 2) off -= n
+            if (off < -n / 2) off += n
+            const isCenter = off === 0
+            const isPopular = p.popular && n > 1
+            const showCta = isPopular || n === 1
+            return (
+              <motion.div
+                key={p.tier}
+                className="absolute"
+                style={{ width: CAROUSEL_CARD, pointerEvents: isCenter ? 'auto' : 'none' }}
+                animate={{
+                  x: off * 168,
+                  y: isCenter ? 0 : 26,
+                  scale: isCenter ? 1 : 0.82,
+                  opacity: Math.abs(off) <= 1 ? (isCenter ? 1 : 0.5) : 0,
+                  zIndex: isCenter ? 20 : 10 - Math.abs(off),
+                }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              >
+                <PackageCard p={p} i={i} isPopular={isPopular} showCta={showCta} />
+              </motion.div>
+            )
+          })}
+        </div>
+
+        {n > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-4">
+            {PACKAGES.map((p, i) => (
+              <button
+                key={p.tier}
+                type="button"
+                aria-label={`Go to ${p.tier}`}
+                onClick={() => setActive(i)}
+                className="rounded-full transition-all duration-300"
+                style={{ width: i === active ? 26 : 8, height: 8, background: i === active ? '#0918E5' : 'rgba(255,255,255,0.3)' }}
+              />
+            ))}
+          </div>
+        )}
       </motion.div>
     </section>
   )

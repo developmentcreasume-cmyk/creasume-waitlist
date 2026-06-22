@@ -2,7 +2,14 @@ import { useRef, useState, useEffect, useLayoutEffect } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
 import { FONT, MONO, LABEL_GRADIENT } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
+import { shortenLocation } from '../../services/influenceApi.js'
 import { RollUp } from '../../anim.jsx'
+
+// Value font size by text length — short numbers stay large; long text shrinks.
+const sizeForValue = (v) => {
+  const n = String(v).length
+  return n > 14 ? 'clamp(16px, 2vw, 22px)' : n > 8 ? 'clamp(20px, 2.8vw, 27px)' : 'clamp(28px, 3.6vw, 36px)'
+}
 
 // ---- Outline icons for the metric tiles (inherit stroke colour) ----
 const ip = { width: 32, height: 32, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.2, strokeLinecap: 'round', strokeLinejoin: 'round' }
@@ -89,11 +96,12 @@ function StatsGrid({ includeScore = false }) {
         const dealPos = dealOrder.indexOf(i)
         // Shrink the value font for long text (e.g. "Indore, Madhya Pradesh") so
         // it fits the tile; numbers / short values keep the large size.
-        const valLen = String(value).length
-        const valueSize =
-          valLen > 14 ? 'clamp(16px, 2vw, 22px)'
-          : valLen > 8 ? 'clamp(20px, 2.8vw, 27px)'
-          : 'clamp(28px, 3.6vw, 36px)'
+        const valueSize = sizeForValue(value)
+        // Mobile only: abbreviate the Top City state ("Indore, Madhya Pradesh" →
+        // "Indore, MP") so it fits one line and uses a larger size like the other
+        // tiles. Desktop keeps the full name.
+        const isTopCity = label === 'Top City'
+        const shortValue = isTopCity ? shortenLocation(value) : value
         // Before measuring, keep cards invisible so the resting layout (used to
         // measure) is never painted. Once measured they sit stacked on the pile;
         // after the hold, `dealing` throws each card out to its grid spot.
@@ -114,27 +122,52 @@ function StatsGrid({ includeScore = false }) {
             // is thrown, with a 120ms gap between throws (spec §2).
             transition={{ duration: 0.25, ease: 'easeOut', delay: dealing ? dealPos * 0.05 : 0 }}
             whileHover={dealing ? { y: -4 } : undefined}
-            className="relative rounded-2xl px-6 py-8 flex flex-col justify-center"
+            className="relative rounded-2xl px-4 py-6 md:px-6 md:py-8 flex flex-col justify-center"
             style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)', zIndex: offsets && !dealing ? dealPos : undefined }}
           >
-            <span className="absolute top-4 right-4 text-white">{ICONS[icon]}</span>
+            <span className="absolute top-3 right-3 md:top-4 md:right-4 text-white scale-[0.65] md:scale-100 origin-top-right">{ICONS[icon]}</span>
             {/* Value + label roll up from a mask. Each card triggers on its own
                 scroll-in, so the delay is keyed to the COLUMN (i % 3) — every row
                 rolls up the same quick way. */}
-            <div className="mb-2 pr-9">
-              <RollUp
-                text={value}
-                delay={0.05 + (i % 3) * 0.06}
-                duration={0.4}
-                className="font-semibold leading-none"
-                style={{ fontFamily: FONT, fontSize: valueSize, color: color || '#ffffff' }}
-              />
+            <div className="mb-2 pr-6 md:pr-9">
+              {isTopCity ? (
+                <>
+                  {/* Mobile: abbreviated state, sized like the other tiles. */}
+                  <div className="md:hidden">
+                    <RollUp
+                      text={shortValue}
+                      delay={0.05 + (i % 3) * 0.06}
+                      duration={0.4}
+                      className="font-semibold leading-none"
+                      style={{ fontFamily: FONT, fontSize: sizeForValue(shortValue), color: color || '#ffffff' }}
+                    />
+                  </div>
+                  {/* Desktop: full location. */}
+                  <div className="hidden md:block">
+                    <RollUp
+                      text={value}
+                      delay={0.05 + (i % 3) * 0.06}
+                      duration={0.4}
+                      className="font-semibold leading-none"
+                      style={{ fontFamily: FONT, fontSize: valueSize, color: color || '#ffffff' }}
+                    />
+                  </div>
+                </>
+              ) : (
+                <RollUp
+                  text={value}
+                  delay={0.05 + (i % 3) * 0.06}
+                  duration={0.4}
+                  className="font-semibold leading-none"
+                  style={{ fontFamily: FONT, fontSize: valueSize, color: color || '#ffffff' }}
+                />
+              )}
             </div>
             <RollUp
               text={label}
               delay={0.11 + (i % 3) * 0.06}
               duration={0.4}
-              className="text-[15px] leading-tight font-semibold"
+              className="text-[13px] md:text-[15px] leading-tight font-semibold"
               style={{ fontFamily: MONO, ...LABEL_GRADIENT }}
             />
           </motion.div>
@@ -257,7 +290,7 @@ export default function ProfileHero() {
                   around a dark interior, with a warm gold glow. */}
               {CREATOR.isFoundingCreator && (
                 <span
-                  className="inline-flex items-center justify-center rounded-full text-xs md:text-sm font-bold whitespace-nowrap order-first self-end lg:order-none lg:self-auto"
+                  className="inline-flex items-center justify-center rounded-full text-xs md:text-sm font-bold whitespace-nowrap order-first self-center lg:order-none lg:self-auto"
                   style={{
                     fontFamily: FONT,
                     color: '#F6E3A8',
