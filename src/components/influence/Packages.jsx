@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, useMotionValue, animate } from 'framer-motion'
 import { fadeUp, staggerParent } from '../../motion-variants.js'
@@ -45,9 +45,9 @@ function PackageCard({ p, i, isPopular, showCta, noId = false, carousel = false 
       className={`relative rounded-[22px] p-7 md:p-8 flex flex-col ${!carousel && isPopular ? 'md:-mt-6' : ''}`}
       style={{
         width: 336,
-        // Carousel cards share one (shorter) height so the side peeks line up;
-        // the desktop row keeps the lifted, slightly-taller popular card.
-        height: carousel ? 336 : isPopular ? 400.64 : 377.56,
+        // minHeight (not a fixed height) so the card grows with its content
+        // instead of letting a long feature list spill outside the box.
+        minHeight: carousel ? 336 : isPopular ? 400.64 : 377.56,
         maxWidth: '100%',
         background: 'transparent',
         border: '1px solid rgba(255,255,255,0.75)',
@@ -105,6 +105,14 @@ export default function Packages() {
     setPos(target)
     animate(x, -target * STEP, { type: 'spring', stiffness: 260, damping: 30 })
   }
+  // The carousel slides are absolutely positioned, so the track needs an explicit
+  // height. Measure the active (centre) card and size the track to it, so taller
+  // packages get a taller carousel instead of being clipped.
+  const centerRef = useRef(null)
+  const [trackH, setTrackH] = useState(360)
+  useLayoutEffect(() => {
+    if (centerRef.current) setTrackH(centerRef.current.offsetHeight + 30)
+  }, [pos, logical, PACKAGES])
   // The parked plane is hidden while the click flight runs.
   const [flying, setFlying] = useState(false)
   // Mobile-only left→right fly-across, rendered in a fixed portal so it can't
@@ -145,13 +153,13 @@ export default function Packages() {
     if (wwm) {
       // Leave the gap above Work With Me visible in the upper-middle of the view.
       const y = wwm.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.5
-      smoothScrollTo(y, 850)
+      smoothScrollTo(y, 550)
     }
     setTimeout(() => {
       // Cross at a row that's always on-screen (the gap region the plane enters).
       setFlyTop(window.innerHeight * 0.53)
       setFlyPhase('left')
-    }, 880)
+    }, 650)
   }
 
   // Phase 2 done (plane left the left edge): scroll down a bit more to reveal the
@@ -161,7 +169,7 @@ export default function Packages() {
     const btn = document.querySelector('#work-with-me button[type="submit"]')
     if (btn) {
       const y = btn.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.55
-      smoothScrollTo(y, 850)
+      smoothScrollTo(y, 550)
     }
     setTimeout(() => {
       // Target the icon slot (the <span>), not just the <svg>: after the first
@@ -176,7 +184,7 @@ export default function Packages() {
         setFlyLeft(r.left + r.width / 2)
       }
       setFlyPhase('land')
-    }, 880)
+    }, 650)
   }
 
   // Phase 3 done (plane reached the arrow): swap the button's arrow for the plane
@@ -202,9 +210,13 @@ export default function Packages() {
       left: flyLeft,
       scaleX: 1,
       // Curve up-and-away with a slight bank instead of a flat horizontal slide.
-      initial: { x: 0, y: 0, rotate: 42, opacity: 1 },
-      animate: { x: FLY_W - flyLeft + 80, y: [0, -30, -16], rotate: [42, 32, 36], opacity: [1, 1, 0] },
-      transition: { duration: 1.45, ease: [0.33, 0, 0.3, 1], times: [0, 0.85, 1] },
+      // Start at the parked plane's size (~2.3× the 56px flight plane) and shrink
+      // gradually over the flight so the hand-off from the big parked plane is a
+      // smooth shrink, not an instant size drop on click. Phase 1 flies straight
+      // (level, no vertical arc) off the right edge.
+      initial: { x: 0, y: 0, rotate: 35, opacity: 1, scale: 2.3 },
+      animate: { x: FLY_W - flyLeft + 80, y: 0, rotate: 35, opacity: [1, 1, 0], scale: [2.3, 1.3, 1] },
+      transition: { duration: 1.2, ease: [0.33, 0, 0.3, 1], times: [0, 0.85, 1] },
       onDone: onFlyRightDone,
     },
     left: {
@@ -214,7 +226,7 @@ export default function Packages() {
       // rather than a constant-speed straight line.
       initial: { x: FLY_W + 80, y: 0, rotate: 42, opacity: 0 },
       animate: { x: -100, y: [0, -16, -28, 0], rotate: [42, 38, 46, 42], opacity: [0, 1, 1, 0] },
-      transition: { duration: 1.5, ease: [0.42, 0, 0.58, 1], times: [0, 0.12, 0.85, 1] },
+      transition: { duration: 1.7, ease: [0.42, 0, 0.58, 1], times: [0, 0.12, 0.85, 1] },
       onDone: onFlyLeftDone,
     },
     land: {
@@ -224,14 +236,14 @@ export default function Packages() {
       // Shrink from full size (56px) toward the button arrow's plane (~26px) so
       // the hand-off to the static button image is seamless, not an instant jump.
       initial: { x: -(flyLeft + 100), y: 0, rotate: 42, opacity: 0, scale: 1 },
-      animate: { x: 0, y: [0, -12, 0], rotate: [42, 38, 42], opacity: [0, 1, 1], scale: [1, 1, 0.46] },
-      transition: { duration: 1.3, ease: [0.16, 1, 0.3, 1], times: [0, 0.15, 1] },
+      animate: { x: 0, y: [0, -12, 0], rotate: [42, 38, 42], opacity: [0, 1, 1], scale: [1, 1, 0.57] },
+      transition: { duration: 2.5, ease: [0.16, 1, 0.3, 1], times: [0, 0.15, 1] },
       onDone: onFlyLandDone,
     },
   }[flyPhase]
 
   return (
-    <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-32 md:pt-52 pb-12 md:pb-20 overflow-x-clip">
+    <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-10 md:pt-52 pb-12 md:pb-20 overflow-x-clip">
 
       {/* Parked plane — static decoration. Takes off when the CTA is clicked.
           Hidden on mobile (too large; the flight is a desktop interaction). */}
@@ -245,30 +257,32 @@ export default function Packages() {
       />
       {/* Paper-plane CTA banner — shifted right only on desktop, centered on mobile */}
       <div id="cta-banner" className="max-w-[1180px] mx-auto text-center mb-20 md:mb-28 lg:translate-x-[230px] lg:-translate-y-[60px]">
+        {/* Mobile-only decorative plane filling the space above the heading.
+            Also the launch origin for the click fly-across. Hidden while it flies. */}
+        <motion.img
+          id="cta-plane-mobile"
+          src="/PLANE.png"
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          initial={{ opacity: 0, y: 16, rotate: 35 }}
+          whileInView={{ opacity: flyMobile ? 0 : 1, y: 0, rotate: 35 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="md:hidden mx-auto mb-6 w-40 h-32 object-contain select-none pointer-events-none transition-opacity duration-300"
+          style={{ opacity: flyMobile ? 0 : 1, filter: 'drop-shadow(0 12px 26px rgba(0,0,0,0.5))' }}
+        />
         <motion.p
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-60px' }}
           transition={{ duration: 0.45, ease: 'easeOut' }}
-          className="text-[clamp(13px,4.5vw,24px)] md:text-3xl lg:text-4xl font-light mb-6 whitespace-nowrap md:whitespace-normal"
+          className="text-[clamp(22px,6.5vw,30px)] md:text-3xl lg:text-4xl font-light mb-6 md:whitespace-normal"
           style={{ fontFamily: FONT }}
         >
           Open to new Collaborations in 2026.
         </motion.p>
-        {/* CTA button with a small plane tucked at its top-left — mobile only
-            (desktop keeps the large parked plane). */}
         <div className="relative inline-block">
-          {/* Mobile only: parked decoration. Hidden while the fly-across runs.
-              Desktop hides this and uses parked-plane. */}
-          <img
-            id="cta-plane-mobile"
-            src="/PLANE.png"
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            className="md:hidden absolute -top-10 -left-3 w-14 h-14 object-contain select-none pointer-events-none z-10 transition-opacity duration-300"
-            style={{ transform: 'rotate(42deg)', opacity: flyMobile ? 0 : 1, filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.5))' }}
-          />
           <motion.button
             id="cta-button"
             type="button"
@@ -350,10 +364,10 @@ export default function Packages() {
           centred card pops up, the neighbours peek smaller on each side.
           Full-bleed (-mx) so the side peeks aren't clipped. */}
       <div className="md:hidden relative -mx-8 sm:-mx-12">
-        <div className="overflow-hidden pt-12">
+        <div className="overflow-x-clip pt-12">
           <motion.div
             className="relative"
-            style={{ x, height: 360 }}
+            style={{ x, height: trackH }}
             drag={loop ? 'x' : false}
             dragElastic={0.16}
             dragMomentum={false}
@@ -374,6 +388,7 @@ export default function Packages() {
               return (
                 <div
                   key={k}
+                  ref={isCenter ? centerRef : undefined}
                   className="absolute top-0 left-1/2 flex justify-center origin-top"
                   style={{
                     width: CAROUSEL_CARD,

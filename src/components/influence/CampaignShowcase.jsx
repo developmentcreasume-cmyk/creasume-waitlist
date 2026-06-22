@@ -1,61 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FONT, MONO } from './influenceData.js'
+import { FONT, MONO, CAMPAIGNS } from './influenceData.js'
 
-// ---- Editable card content. Showing the first 6. ----
-// `metric` is the headline reach shown on the carousel card. The remaining
-// fields (date, overview, stats, audience, deliverables) drive the detail modal.
-const DATA = [
-  {
-    brand: 'Spotify', subtitle: 'Wrapped promotion campaign', metric: '3.1M', category: 'TECH',
-    date: 'Dec 2023',
-    overview: 'Partnered with Spotify to launch their year-end Wrapped campaign. Created a personality-driven Reel unpacking listening stats, followed by a carousel breaking down the data story.',
-    reach: '3.1M', engagement: '410K', engRate: '13.2%',
-    audience: '58% Female, 18–29 years old. Top cities: London, Berlin, Toronto.',
-    deliverables: ['Reel', 'Carousel', '4 Stories'],
-  },
-  {
-    brand: 'Nike', subtitle: 'Run club launch series', metric: '2.4M', category: 'SPORT',
-    date: 'Oct 2023',
-    overview: "Partnered with Nike to launch their new React Infinity Run shoes. Created a high-energy Reel showcasing the shoe's durability through a 10K run, followed by a 3-part Story series breaking down the technology.",
-    reach: '2.4M', engagement: '350K', engRate: '14.5%',
-    audience: '65% Female, 18–34 years old. Top cities: New York, London, Los Angeles.',
-    deliverables: ['Reel', '3 Stories'],
-  },
-  {
-    brand: 'Glossier', subtitle: 'Skin-first product drop', metric: '1.8M', category: 'BEAUTY',
-    date: 'Aug 2023',
-    overview: 'Collaborated with Glossier on a skin-first product drop. Produced an honest get-ready-with-me Reel and a tutorial carousel highlighting the dewy, low-effort routine.',
-    reach: '1.8M', engagement: '290K', engRate: '16.1%',
-    audience: '72% Female, 18–27 years old. Top cities: New York, Los Angeles, Miami.',
-    deliverables: ['Reel', 'Tutorial', '3 Stories'],
-  },
-  {
-    brand: 'Airbnb', subtitle: 'City weekender feature', metric: '2.0M', category: 'TRAVEL',
-    date: 'Jun 2023',
-    overview: 'Teamed up with Airbnb for a city-weekender feature. Filmed a cinematic travel Reel across three stays and a Story series with bookable links to each property.',
-    reach: '2.0M', engagement: '260K', engRate: '13.0%',
-    audience: '54% Female, 25–40 years old. Top cities: Paris, Lisbon, Barcelona.',
-    deliverables: ['Reel', '5 Stories'],
-  },
-  {
-    brand: 'Notion', subtitle: 'Creator workflow showcase', metric: '1.2M', category: 'TECH',
-    date: 'Apr 2023',
-    overview: 'Worked with Notion to showcase a creator workflow. Built a screen-recorded Reel walking through a content-planning template, paired with a post breaking down the setup.',
-    reach: '1.2M', engagement: '180K', engRate: '15.0%',
-    audience: '49% Female, 22–35 years old. Top cities: San Francisco, London, Bangalore.',
-    deliverables: ['Reel', 'Post', '2 Stories'],
-  },
-  {
-    brand: 'Chipotle', subtitle: 'Limited menu teaser', metric: '3.6M', category: 'FOOD',
-    date: 'Feb 2023',
-    overview: 'Partnered with Chipotle to tease a limited menu item. Created a fast-cut taste-test Reel and a post with a promo code that drove in-app orders during launch week.',
-    reach: '3.6M', engagement: '520K', engRate: '14.4%',
-    audience: '51% Male, 18–30 years old. Top cities: Austin, Chicago, Denver.',
-    deliverables: ['Reel', 'Post', '3 Stories'],
-  },
-].slice(0, 6)
+// Campaign cards live in influenceData so the brand-summary card can aggregate
+// the same list. Showing the first 6.
+const DATA = CAMPAIGNS.slice(0, 6)
 
 const CARD_W = 380
 

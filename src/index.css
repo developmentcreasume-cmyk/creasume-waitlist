@@ -21,8 +21,11 @@ html, body, #root {
   font-family: 'Gelion', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-body {
+/* Clip horizontal overflow on every scroll ancestor (Lenis can make <html> the
+   scroller, so clipping only <body> leaves a stray sideways strip on mobile). */
+html, body, #root {
   overflow-x: clip;
+  max-width: 100%;
 }
 
 /* Lenis smooth scroll — recommended base styles. Note: native CSS

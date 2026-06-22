@@ -138,9 +138,9 @@ export default function WorkWithMe() {
               {!sent && !sending && (
                 // Fixed-size icon slot so swapping the arrow for the plane on
                 // landing never changes the button's width.
-                <span className="inline-flex items-center justify-center shrink-0" style={{ width: 24, height: 24 }}>
+                <span className="inline-flex items-center justify-center shrink-0" style={{ width: 34, height: 34 }}>
                   {landed ? (
-                    <img src="/PLANE.png" alt="" draggable={false} style={{ width: 22, height: 22, objectFit: 'contain', transform: 'rotate(42deg)' }} />
+                    <img src="/PLANE.png" alt="" draggable={false} style={{ width: 32, height: 32, objectFit: 'contain', transform: 'rotate(42deg)' }} />
                   ) : (
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 12h14M13 6l6 6-6 6" />

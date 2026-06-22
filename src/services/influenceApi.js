@@ -240,18 +240,10 @@ export function mapInfluenceData(api, d) {
   })
 
   // ---- Brand collaboration summary + deal list ----
-  // Total engagement across the fetched posts (likes + comments + saves + shares).
-  const totalEngagement = media.reduce(
-    (sum, m) =>
-      sum + (m.like_count || 0) + (m.comments_count || 0) + (m.saved || 0) + (m.shares || 0),
-    0,
-  )
-  const BRAND_SUMMARY = [
-    { value: s.reach ? fc0(s.reach) : d.BRAND_SUMMARY[0].value, label: 'TOTAL REACH' },
-    { value: eng, label: 'ENGAGEMENT %' },
-    { value: collabs.length ? String(collabs.length) : d.BRAND_SUMMARY[2].value, label: 'CAMPAIGNS' },
-    { value: media.length ? fc0(totalEngagement) : d.BRAND_SUMMARY[3].value, label: 'ENGAGEMENT' },
-  ]
+  // The brand-summary card aggregates the campaign showcase cards (TOTAL REACH /
+  // ENGAGEMENT % / CAMPAIGNS / ENGAGEMENT), so keep the campaign-derived default
+  // rather than recomputing it from live account stats.
+  const BRAND_SUMMARY = d.BRAND_SUMMARY
   let BRAND_DEALS = d.BRAND_DEALS
   if (collabs.length) {
     BRAND_DEALS = collabs.map((x) => ({

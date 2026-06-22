@@ -3,6 +3,7 @@ import { motion, useInView, useReducedMotion } from 'framer-motion'
 import { FONT, MONO, LABEL_GRADIENT } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
 import { shortenLocation } from '../../services/influenceApi.js'
+import { goToPath } from '../../router.js'
 import { RollUp } from '../../anim.jsx'
 
 // Value font size by text length — short numbers stay large; long text shrinks.
@@ -220,12 +221,20 @@ export default function ProfileHero() {
   const score = CREATOR.tiles.find((t) => t.label === 'Creasume Score')?.value ?? '87'
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-24 pb-12 md:pt-32 md:pb-16 overflow-hidden">
-      {/* Creasume wordmark — top-left corner */}
-      <img
-        src="/creasumelogo.png"
-        alt="Creasume"
-        className="absolute top-6 left-6 md:top-4 md:left-4 h-7 md:h-9 w-auto z-20 pointer-events-none select-none"
-      />
+      {/* Creasume wordmark — top-left corner. Clicking it returns to the
+          home / waitlist page. */}
+      <button
+        type="button"
+        onClick={() => goToPath('/')}
+        aria-label="Go to Creasume home"
+        className="absolute top-6 left-6 md:top-4 md:left-4 z-20 cursor-pointer"
+      >
+        <img
+          src="/creasumelogo.png"
+          alt="Creasume"
+          className="h-7 md:h-9 w-auto select-none"
+        />
+      </button>
 
       {/* Soft colored ellipse around the hero + stats — fades on all sides */}
       <div
