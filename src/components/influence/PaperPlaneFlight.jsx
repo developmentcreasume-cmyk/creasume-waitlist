@@ -53,8 +53,10 @@ export default function PaperPlaneFlight() {
   useEffect(() => {
     const onLaunch = () => {
       if (busy.current) return
-      // On mobile the desktop flight is skipped (Packages runs its own mobile
-      // fly-across sequence); do nothing here — no auto-scroll.
+      // On mobile the parked plane is hidden and Packages runs its own
+      // fly-across sequence, which owns the page scroll. Skip the desktop
+      // S-flight entirely — otherwise this scrollIntoView jumps straight to the
+      // form and fights the animated scroll.
       if (window.innerWidth < 768) return
       const parkedEl = document.getElementById('parked-plane')
       const ctaEl = document.getElementById('cta-banner')
@@ -67,9 +69,12 @@ export default function PaperPlaneFlight() {
       const cr = ctaEl.getBoundingClientRect()
       const ctaTop = cr.top + window.scrollY
       const ctaRight = cr.right + window.scrollX // right edge — past the 2026 text
-      // Land on the button's arrow icon (right side), so it swaps to the plane
-      // exactly where the plane lands — not at the button centre.
-      const arrowEl = endEl.querySelector('svg')
+      // Land on the button's icon slot (right side), so the plane lands exactly
+      // where the static icon sits — not at the button centre. Target the icon
+      // <span> (it precedes its child in tree order, so this matches it whether
+      // it holds the arrow <svg> or, after the first flight, the swapped-in plane
+      // <img>). Without this the second flight finds no <svg> and lands centre.
+      const arrowEl = endEl.querySelector('span, svg, img')
       const endC = centerOf(arrowEl || endEl)
       const end = { x: endC.x, y: endC.y }
       const dy = end.y - start.y

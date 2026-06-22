@@ -164,7 +164,12 @@ export default function Packages() {
       smoothScrollTo(y, 850)
     }
     setTimeout(() => {
-      const arrow = document.querySelector('#work-with-me button[type="submit"] svg')
+      // Target the icon slot (the <span>), not just the <svg>: after the first
+      // landing the arrow <svg> is swapped for a plane <img>, so on a second
+      // flight a `svg` query returns null and the plane lands on the button
+      // centre. The <span> precedes its child in tree order, so it matches the
+      // slot whether it holds the arrow or the swapped-in plane.
+      const arrow = document.querySelector('#work-with-me button[type="submit"] span, #work-with-me button[type="submit"] svg')
       const r = (arrow || btn)?.getBoundingClientRect()
       if (r) {
         setFlyTop(r.top + r.height / 2)
