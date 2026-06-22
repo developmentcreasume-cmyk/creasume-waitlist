@@ -118,20 +118,15 @@ export function mapInfluenceData(api, d) {
 
   // ---- 3×3 metric grid (override by label, keep icons/colors) ----
   const topCity = demo.city?.[0]?.key
-  // Likes / comments / shares totalled across the fetched posts (the lifetime
-  // aggregate isn't in the Graph API, so this is the sum of the available media).
-  const sumMedia = (key) => media.reduce((a, m) => a + (m[key] || 0), 0)
-  // Likes / comments / shares totalled across the fetched posts (no lifetime
-  // aggregate exists in the Graph API), so the figure tracks live post likes.
+  // /me/media returns feed posts AND Reels combined. Count only feed posts
+  // toward the likes / impressions totals (exclude Reels). Items without a
+  // product type (e.g. before the backend sends `media_product_type`) are kept
+  // so the totals never collapse to 0.
+  const posts = media.filter((m) => m.media_product_type !== 'REELS')
+  // Likes / comments / shares totalled across the feed posts, so the figure
+  // tracks live post likes (no lifetime aggregate exists in the Graph API).
+  const sumMedia = (key) => posts.reduce((a, m) => a + (m[key] || 0), 0)
   const likeT = sumMedia('like_count')
-  // Dev-only: log how many posts the API returned and each one's likes, so the
-  // likes total can be reconciled against the real account. Remove when done.
-  if (import.meta.env.DEV) {
-    console.log(
-      `[influence] media posts: ${media.length}, likes sum: ${likeT}`,
-      media.map((m) => ({ id: m.id, type: m.media_type, product: m.media_product_type, like_count: m.like_count })),
-    )
-  }
   const commentT = sumMedia('comments_count')
   const shareT = sumMedia('shares')
   const tileValues = {
@@ -139,9 +134,9 @@ export function mapInfluenceData(api, d) {
     'Total Views': fc0(s.views),
     'Total Post': fc0(s.mediaCount),
     'Total Followers': fc0(s.followersCount),
-    // Real impressions metric if present, otherwise the likes total across the
-    // fetched posts (comments + shares are shown separately in the mini-row).
-    'Total Impressions': fc0(s.impressions || likeT),
+    // Real impressions metric if present, otherwise the combined likes +
+    // comments + shares total (each is also shown in the mini-row below).
+    'Total Impressions': fc0(s.impressions || likeT + commentT + shareT),
     Reach: fc0(s.reach),
     'Top City': topCity || null,
     'Brand Deals Done': String(collabs.length),
