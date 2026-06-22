@@ -188,17 +188,17 @@ function StatsGrid({ includeScore = false }) {
               text={label}
               delay={0.11 + (i % 3) * 0.06}
               duration={0.4}
-              className="text-[13px] md:text-[15px] leading-tight font-semibold"
+              className="text-[11px] md:text-[18px] leading-tight font-semibold whitespace-nowrap"
               style={{ fontFamily: MONO, ...LABEL_GRADIENT }}
             />
             {/* Mini-row of likes / comments / shares (Impressions tile only) —
                 pinned to the bottom, kept on a single line on every screen. */}
             {details && (
-              <div className="absolute inset-x-0 bottom-3 md:bottom-4 flex items-center justify-center gap-2 whitespace-nowrap">
+              <div className="absolute inset-x-0 bottom-3.5 md:bottom-4 flex items-center justify-center gap-2 md:gap-3.5 whitespace-nowrap">
                 {details.map((d) => (
-                  <span key={d.icon} className="inline-flex items-center gap-1 text-white/65">
-                    <span className="inline-flex items-center justify-center text-white/55 [&>svg]:w-3 [&>svg]:h-3 md:[&>svg]:w-[13px] md:[&>svg]:h-[13px]">{ICONS[d.icon]}</span>
-                    <span className="font-semibold leading-none" style={{ fontFamily: FONT, fontSize: 11 }}>{d.value}</span>
+                  <span key={d.icon} className="inline-flex items-center gap-1 md:gap-1.5 text-white/65">
+                    <span className="inline-flex items-center justify-center text-white/55 [&>svg]:w-3 [&>svg]:h-3 md:[&>svg]:w-[17px] md:[&>svg]:h-[17px]">{ICONS[d.icon]}</span>
+                    <span className="font-semibold leading-none text-[11px] md:text-[15px]" style={{ fontFamily: FONT }}>{d.value}</span>
                   </span>
                 ))}
               </div>

@@ -131,9 +131,9 @@ export function mapInfluenceData(api, d) {
     'Total Views': fc0(s.views),
     'Total Post': fc0(s.mediaCount),
     'Total Followers': fc0(s.followersCount),
-    // Real impressions metric if present, otherwise the combined total of
-    // likes + comments + shares so the tile never reads a bare "0".
-    'Total Impressions': fc0(s.impressions || likeT + commentT + shareT),
+    // Real impressions metric if present, otherwise the likes total across the
+    // fetched posts (comments + shares are shown separately in the mini-row).
+    'Total Impressions': fc0(s.impressions || likeT),
     Reach: fc0(s.reach),
     'Top City': topCity || null,
     'Brand Deals Done': String(collabs.length),
@@ -179,6 +179,21 @@ export function mapInfluenceData(api, d) {
     const pts = growth.slice(-7)
     GROWTH = pts.map((g) => Math.max(1, Math.round(g.followers / 1000)))
     MONTHS = pts.map((g) => new Date(g.date).toLocaleString('en-US', { month: 'short' }))
+  }
+
+  // ---- Engagement-rate bars: each post's (likes+comments+saves+shares) as a %
+  // of that post's views, for the last up-to-6 posts (oldest→newest). This fits
+  // the chart's percentage axis and is real per-post engagement.
+  let ENGAGEMENT_BARS = d.ENGAGEMENT_BARS
+  let ENG_MONTHS = MONTHS
+  if (media.length) {
+    const recent = media.slice(0, 6).reverse() // API returns newest-first
+    ENGAGEMENT_BARS = recent.map((m) => {
+      const e = (m.like_count || 0) + (m.comments_count || 0) + (m.saved || 0) + (m.shares || 0)
+      const denom = m.views || s.reach || s.followersCount || 1
+      return Math.round((e / denom) * 1000) / 10 // one-decimal %
+    })
+    ENG_MONTHS = recent.map((m) => new Date(m.timestamp).toLocaleString('en-US', { month: 'short' }))
   }
 
   // ---- Audience: age distribution, top cities, gender split ----
@@ -345,6 +360,8 @@ export function mapInfluenceData(api, d) {
     CREATOR,
     GROWTH,
     MONTHS,
+    ENGAGEMENT_BARS,
+    ENG_MONTHS,
     AGE_GROUPS,
     TOP_LOCATIONS,
     TOP_COUNTRIES,

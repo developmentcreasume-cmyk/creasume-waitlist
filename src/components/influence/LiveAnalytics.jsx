@@ -76,36 +76,43 @@ function FollowerGrowthChart({ points, months }) {
   )
 }
 
-// Engagement Rate: percentage Y-axis (0–8%), dashed gridlines, and a short
-// rounded bar cap per month sitting on the 0% baseline. Gradient caps, with the
-// latest month highlighted in cyan.
-const E_AXIS_MAX = 8
-const E_TICKS = [8, 6, 4, 2, 0]
+// Engagement Rate: percentage Y-axis with dashed gridlines, and a vertical bar
+// per post whose HEIGHT reflects that post's engagement rate. The axis auto-
+// scales (min 8%) so the bars actually fill the chart instead of sitting flat on
+// the baseline. Latest post highlighted in cyan.
+const niceCeil = (v) => {
+  if (v <= 8) return 8
+  const step = v <= 20 ? 5 : v <= 50 ? 10 : 25
+  return Math.ceil(v / step) * step
+}
 
 function EngagementChart({ bars, months }) {
+  const axisMax = niceCeil(Math.max(0, ...bars))
+  const ticks = [1, 0.75, 0.5, 0.25, 0].map((f) => Math.round(axisMax * f * 10) / 10)
   return (
     <div>
       <div className="relative" style={{ height: CHART_H }}>
-        {E_TICKS.map((v) => (
+        {ticks.map((v) => (
           <div
             key={v}
             className="absolute left-0 right-0 flex items-center"
-            style={{ top: `${(1 - v / E_AXIS_MAX) * 100}%`, transform: 'translateY(-50%)' }}
+            style={{ top: `${(1 - v / axisMax) * 100}%`, transform: 'translateY(-50%)' }}
           >
             <span className="text-white text-[11px]" style={{ fontFamily: MONO, width: AXIS_W }}>{v}%</span>
             <span className="flex-1 border-t border-dashed" style={{ borderColor: 'rgba(255,255,255,0.45)' }} />
           </div>
         ))}
-        <div className="absolute bottom-0 flex items-end justify-between gap-3" style={{ left: AXIS_W, right: 6 }}>
+        <div className="absolute bottom-0 flex items-end justify-between gap-3" style={{ left: AXIS_W, right: 6, height: '100%' }}>
           {bars.map((b, i) => {
             const last = i === bars.length - 1
+            const h = Math.max(3, Math.min(100, (b / axisMax) * 100))
             return (
               <motion.div
                 key={i}
-                className="flex-1 rounded-full origin-center"
-                style={{ height: 7, background: last ? '#89DFEC' : 'linear-gradient(90deg,#A35CE1 0%,#C04DCC 50%,#E731A2 100%)' }}
-                initial={{ scaleX: 0, opacity: 0 }}
-                whileInView={{ scaleX: 1, opacity: 1 }}
+                className="flex-1 rounded-t-md origin-bottom"
+                style={{ height: `${h}%`, background: last ? '#89DFEC' : 'linear-gradient(180deg,#E731A2 0%,#C04DCC 50%,#A35CE1 100%)' }}
+                initial={{ scaleY: 0, opacity: 0 }}
+                whileInView={{ scaleY: 1, opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, ease: 'easeOut', delay: 1.15 + i * 0.08 }}
               />
@@ -154,7 +161,7 @@ function Panel({ title, children, from = 'up', className = '', bare = false, sty
 
 export default function LiveAnalytics() {
   const {
-    GROWTH, MONTHS, ENGAGEMENT_BARS, AGE_GROUPS, TOP_LOCATIONS, TOP_COUNTRIES, GENDER_SPLIT,
+    GROWTH, MONTHS, ENGAGEMENT_BARS, ENG_MONTHS, AGE_GROUPS, TOP_LOCATIONS, TOP_COUNTRIES, GENDER_SPLIT,
   } = useInfluence()
   const [range, setRange] = useState('30D')
   const [hovered, setHovered] = useState(null)
@@ -215,7 +222,7 @@ export default function LiveAnalytics() {
           </Panel>
 
           <Panel title="Engagement Rate" from="right" style={{ background: 'linear-gradient(155deg, #1b2052 0%, #10133C 60%)' }}>
-            <EngagementChart bars={ENGAGEMENT_BARS} months={MONTHS} />
+            <EngagementChart bars={ENGAGEMENT_BARS} months={ENG_MONTHS || MONTHS} />
           </Panel>
 
           {/* Audience Insights + Top Locations / gender — combined card */}
