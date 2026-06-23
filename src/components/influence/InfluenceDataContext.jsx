@@ -15,7 +15,7 @@ const DEFAULTS = {
   FEATURED: {},
 }
 
-const InfluenceContext = createContext(DEFAULTS)
+const InfluenceContext = createContext({ ...DEFAULTS, ready: false })
 
 // Every influence section reads its data through this hook, so swapping demo
 // data for the live creator is a single fetch at the provider.
@@ -25,6 +25,9 @@ export function useInfluence() {
 
 export function InfluenceDataProvider({ children }) {
   const [value, setValue] = useState(DEFAULTS)
+  // `ready` stays false until the FIRST fetch resolves, so the page can wait and
+  // never flash the empty/placeholder hero before real data lands.
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -33,7 +36,8 @@ export function InfluenceDataProvider({ children }) {
         .then((api) => {
           if (api && alive) setValue(mapInfluenceData(api, DEFAULTS))
         })
-        .catch(() => {}) // keep the demo data on any failure
+        .catch(() => {}) // keep the current data on any failure
+        .finally(() => { if (alive) setReady(true) })
 
     load()
 
@@ -49,5 +53,5 @@ export function InfluenceDataProvider({ children }) {
     }
   }, [])
 
-  return <InfluenceContext.Provider value={value}>{children}</InfluenceContext.Provider>
+  return <InfluenceContext.Provider value={{ ...value, ready }}>{children}</InfluenceContext.Provider>
 }
