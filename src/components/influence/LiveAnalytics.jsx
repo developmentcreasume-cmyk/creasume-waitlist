@@ -196,6 +196,18 @@ function FollowerGrowthChart({ points, xLabels = [] }) {
   const d = smoothPath(linePts)
   const dFlat = smoothPath(linePts.map((p) => ({ x: p.x, y: BASELINE_Y })))
   const fmtCount = (c) => (c >= 1000 ? `${(c / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(Math.round(c)))
+  // Snap the highlighted point to the nearest snapshot under the cursor/finger.
+  const scrubAt = (clientX, el) => {
+    const rect = el.getBoundingClientRect()
+    const pct = ((clientX - rect.left) / rect.width) * 100
+    let nearest = 0
+    let best = Infinity
+    points.forEach((p, i) => {
+      const dd = Math.abs(p.x - pct)
+      if (dd < best) { best = dd; nearest = i }
+    })
+    setHi(nearest)
+  }
   return (
     <div className="pt-3">
       <div className="relative" style={{ height: CHART_H }}>
@@ -238,31 +250,30 @@ function FollowerGrowthChart({ points, xLabels = [] }) {
         {/* Hover layer over the plot area: a hit column + dot per snapshot.
             Width must match the SVG exactly (left AXIS_W → right 0) or the dots
             drift off the line, increasingly toward the right edge. */}
-        <div className="absolute top-0 bottom-0" style={{ left: AXIS_W, right: 0 }}>
-          {points.map((p, i) => (
-            <div
-              key={i}
-              className="absolute top-0 bottom-0 -translate-x-1/2"
-              style={{ left: `${p.x}%`, width: '9%', cursor: 'pointer' }}
-              onMouseEnter={() => setHi(i)}
-              onMouseLeave={() => setHi((h) => (h === i ? null : h))}
-              onTouchStart={() => setHi(i)}
-            >
-              {/* Dot is shown only on hover — the line itself stays clean. */}
-              {hi === i && (
-                <span
-                  className="absolute rounded-full"
-                  style={{
-                    left: '50%', top: `${yFor(p.value)}%`,
-                    width: 11, height: 11,
-                    transform: 'translate(-50%, -50%)',
-                    background: '#fff',
-                    boxShadow: '0 0 0 4px rgba(255,255,255,0.18)',
-                  }}
-                />
-              )}
-            </div>
-          ))}
+        <div
+          className="absolute top-0 bottom-0"
+          style={{ left: AXIS_W, right: 0, cursor: 'pointer', touchAction: 'pan-y' }}
+          onMouseMove={(e) => scrubAt(e.clientX, e.currentTarget)}
+          onMouseLeave={() => setHi(null)}
+          onTouchStart={(e) => scrubAt(e.touches[0].clientX, e.currentTarget)}
+          onTouchMove={(e) => scrubAt(e.touches[0].clientX, e.currentTarget)}
+          onTouchEnd={() => setHi(null)}
+        >
+          {/* One dot that transitions its position between points on hover. */}
+          {hi != null && points[hi] && (
+            <span
+              className="absolute rounded-full pointer-events-none"
+              style={{
+                left: `${points[hi].x}%`,
+                top: `${yFor(points[hi].value)}%`,
+                width: 11, height: 11,
+                transform: 'translate(-50%, -50%)',
+                background: '#fff',
+                boxShadow: '0 0 0 4px rgba(255,255,255,0.18)',
+                transition: 'left 160ms ease-out, top 160ms ease-out',
+              }}
+            />
+          )}
 
           {hi != null && points[hi] && (
             <div
@@ -274,6 +285,7 @@ function FollowerGrowthChart({ points, xLabels = [] }) {
                 background: 'rgba(10,12,30,0.96)',
                 border: '1px solid rgba(255,255,255,0.18)',
                 boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                transition: 'left 160ms ease-out, top 160ms ease-out',
               }}
             >
               <div className="text-white/55 text-[10px]" style={{ fontFamily: MONO }}>{points[hi].label}</div>
@@ -474,10 +486,7 @@ export default function LiveAnalytics() {
   // line is carried flat from the window start / to "now" (in the chart) so it
   // stays visible even when the real snapshots only cover part of the window.
   const totalDays = range === '1Y' ? 365 : range === '90D' ? 90 : 30
-  const winEnd = Date.now()
-  const winStart = winEnd - totalDays * 86400000
-  const winSpan = winEnd - winStart || 1
-  const xOf = (t) => Math.max(0, Math.min(100, ((t - winStart) / winSpan) * 100))
+  const winStart = Date.now() - totalDays * 86400000
   const realGrowth = (GROWTH_POINTS || [])
     .map((p) => ({ t: new Date(p.date).getTime(), f: Number(p.followers) }))
     .filter((p) => !Number.isNaN(p.t) && p.t >= winStart && Number.isFinite(p.f))
@@ -486,28 +495,29 @@ export default function LiveAnalytics() {
   let growthPoints
   let growthXLabels
   if (realGrowth.length) {
+    // Spread the snapshots EVENLY across the chart width (not by exact date) so
+    // the trend reads as a clean line. Positioning by real date crams a new
+    // creator's recent snapshots into the right edge with a long flat carry —
+    // the "flat then sharp spike" look. Even spacing uses the whole width.
+    const gn = realGrowth.length
+    const xEven = (i) => (gn < 2 ? 50 : (i / (gn - 1)) * 100)
     growthPoints = realGrowth.map((p, i) => ({
-      x: realGrowth.length < 2 ? xOf(p.t) : xOf(p.t),
+      x: xEven(i),
       label: new Date(p.t).toLocaleString('en-US', { day: 'numeric', month: 'short' }),
       value: p.f / 1000, // plotting unit (thousands) — matches the axis ticks
       count: p.f, // exact follower count for the tooltip
       delta: i ? p.f - realGrowth[i - 1].f : 0,
     }))
-    if (range === '30D') {
-      growthXLabels = []
-      for (let t = winStart; t <= winEnd + 1; t += 7 * 86400000) {
-        growthXLabels.push({ x: xOf(t), label: new Date(t).toLocaleString('en-US', { day: 'numeric', month: 'short' }) })
-      }
-    } else {
-      growthXLabels = []
-      const m = new Date(winStart)
-      m.setDate(1)
-      m.setHours(0, 0, 0, 0)
-      if (m.getTime() < winStart) m.setMonth(m.getMonth() + 1)
-      for (; m.getTime() <= winEnd; m.setMonth(m.getMonth() + 1)) {
-        growthXLabels.push({ x: xOf(m.getTime()), label: m.toLocaleString('en-US', { month: 'short' }) })
-      }
-    }
+    // ~6 date labels max, evenly sampled from the real snapshots, aligned to the
+    // points so the x-axis shows the actual dates the data covers.
+    const labelStep = Math.max(1, Math.ceil(gn / 6))
+    growthXLabels = realGrowth
+      .map((p, i) => ({
+        x: xEven(i),
+        label: new Date(p.t).toLocaleString('en-US', { day: 'numeric', month: 'short' }),
+        keep: i % labelStep === 0 || i === gn - 1,
+      }))
+      .filter((l) => l.keep)
   } else {
     growthPoints = GROWTH.map((v, i) => ({
       x: GROWTH.length < 2 ? 50 : (i / (GROWTH.length - 1)) * 100,

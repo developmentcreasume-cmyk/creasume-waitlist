@@ -344,6 +344,8 @@ export default function ProfileHero() {
   // The "Learn more" detail shown in a shared modal (tiles flip cards + the
   // mobile score badge both open it).
   const [learnMore, setLearnMore] = useState(null)
+  // Mobile score badge flip state (front = score, back = description + learn more).
+  const [scoreFlipped, setScoreFlipped] = useState(false)
 
   // "Download PDF" — generated server-side by headless Chrome (backend renders
   // the real page → faithful gradients/charts/glass) and streamed back as a
@@ -590,45 +592,73 @@ export default function ProfileHero() {
             </motion.div>
 
             {/* Creasume Score badge — MOBILE ONLY (on desktop the score is a tile
-                in the grid). Dark card: score in a glass circle, gradient label. */}
+                in the grid). Tap to flip → description + Learn more, mirroring the
+                desktop flip tile. */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={viewport}
               transition={{ duration: 0.5, ease: 'easeOut', delay: 0.2 }}
-              onClick={() => scoreMore && setLearnMore(scoreMore)}
-              role={scoreMore ? 'button' : undefined}
-              className={`md:hidden relative inline-flex items-center gap-4 rounded-2xl px-6 py-4 pr-14 ${scoreMore ? 'cursor-pointer' : ''}`}
-              style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)' }}
+              className="md:hidden inline-block"
+              style={{ perspective: 1000 }}
             >
-              <img src="/creasume-c.png" alt="" aria-hidden="true" className="absolute top-3 right-3 h-6 w-6 object-contain select-none" />
-              <span
-                className="grid place-items-center rounded-full font-bold shrink-0 text-white"
-                style={{
-                  width: 48,
-                  height: 48,
-                  background: 'rgba(255,255,255,0.12)',
-                  backdropFilter: 'blur(8px)',
-                  WebkitBackdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)',
-                  fontFamily: FONT,
-                  // Shrink for longer scores (e.g. "52.02") so they fit the circle.
-                  fontSize: String(score).length >= 5 ? 13 : String(score).length === 4 ? 15 : String(score).length === 3 ? 17 : 20,
-                  lineHeight: 1,
-                  padding: '0 2px',
-                }}
+              <motion.div
+                onClick={() => setScoreFlipped((v) => !v)}
+                className="relative cursor-pointer"
+                style={{ transformStyle: 'preserve-3d', minHeight: 96 }}
+                animate={{ rotateY: scoreFlipped ? 180 : 0 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               >
-                {score}
-              </span>
-              <div className="flex flex-col gap-1">
-                <span className="font-semibold leading-none text-xl md:text-2xl whitespace-nowrap" style={{ fontFamily: FONT, ...LABEL_GRADIENT }}>
-                  Creasume Score
-                </span>
-                {scoreMore && (
-                  <span className="text-[11px] leading-none text-white/45" style={{ fontFamily: MONO }}>~ Learn more</span>
-                )}
-              </div>
+                {/* FRONT — score circle + label */}
+                <div
+                  className="relative flex items-center gap-4 rounded-2xl px-6 py-4 pr-14"
+                  style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', minHeight: 96 }}
+                >
+                  <img src="/creasume-c.png" alt="" aria-hidden="true" className="absolute top-3 right-3 h-6 w-6 object-contain select-none" />
+                  <span
+                    className="grid place-items-center rounded-full font-bold shrink-0 text-white"
+                    style={{
+                      width: 48,
+                      height: 48,
+                      background: 'rgba(255,255,255,0.12)',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)',
+                      fontFamily: FONT,
+                      // Shrink for longer scores (e.g. "52.02") so they fit the circle.
+                      fontSize: String(score).length >= 5 ? 13 : String(score).length === 4 ? 15 : String(score).length === 3 ? 17 : 20,
+                      lineHeight: 1,
+                      padding: '0 2px',
+                    }}
+                  >
+                    {score}
+                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-semibold leading-none text-xl whitespace-nowrap" style={{ fontFamily: FONT, ...LABEL_GRADIENT }}>
+                      Creasume Score
+                    </span>
+                  </div>
+                </div>
+
+                {/* BACK — description + Learn more */}
+                <div
+                  className="absolute inset-0 rounded-2xl px-5 py-3.5 flex flex-col justify-center text-left"
+                  style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+                >
+                  <p className="text-[11px] leading-snug text-white/70" style={{ fontFamily: FONT }}>{scoreTile?.source?.text}</p>
+                  {scoreMore && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setLearnMore(scoreMore) }}
+                      className="mt-2 self-start text-[11px] font-semibold hover:underline"
+                      style={{ color: '#5AA9FF' }}
+                    >
+                      ~ Learn more
+                    </button>
+                  )}
+                </div>
+              </motion.div>
             </motion.div>
           </div>
         </div>
