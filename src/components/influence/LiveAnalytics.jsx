@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FONT, MONO, PANEL } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
@@ -13,22 +13,40 @@ const AXIS_W = 46
 const BASELINE_Y = 97
 const LINE_AMP = 9
 
-function niceFollowerAxisScale(maxK) {
-  // Always render 5–6 gridlines. Aim for 5 steps, with the step rounded up to a
-  // "nice" number (1 / 2 / 2.5 / 5 × 10ⁿ) so the k-labels stay tidy. No 1k floor
-  // — sub-1k creators (a few hundred followers) need the axis to scale to their
-  // real numbers instead of collapsing to a flat "1k".
-  const value = maxK > 0 ? maxK : 1
-  const rawStep = value / 5
-  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)))
-  const norm = rawStep / mag
-  const niceNorm = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10
-  const interval = niceNorm * mag
-  let axisMax = Math.ceil(value / interval) * interval
-  const tickCount = Math.round(axisMax / interval)
-  if (tickCount < 5) axisMax = interval * 5
-  else if (tickCount > 6) axisMax = interval * 6
-  return { axisMax, interval }
+const niceStep = (raw) => {
+  const mag = Math.pow(10, Math.floor(Math.log10(raw || 1)))
+  const n = (raw || 1) / mag
+  const nice = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10
+  return nice * mag
+}
+
+// Windowed Y-axis for the follower line. Always exactly TICKS evenly-spaced
+// gridlines, so labels never crowd/overlap no matter how small the real growth
+// band is. The join-time value sits near the BOTTOM; growth flows upward.
+function followerAxisScale(points) {
+  const TICKS = 5
+  const dataMin = Math.min(...points)
+  const dataMax = Math.max(...points)
+  const band = dataMax - dataMin > 0 ? dataMax - dataMin : Math.max(dataMax * 0.2, 0.001)
+  // No pad below the lowest point — the join-time / lowest value should sit on
+  // the BOTTOM gridline (a brand-new creator starts at the floor, then grows up).
+  const lo = Math.max(0, dataMin)
+  const hi = dataMax + band * 0.6
+  // Values are in thousands, so 0.001 = 1 follower. Never step by less than a
+  // whole follower — otherwise tiny ranges produce fractional ticks that round
+  // to duplicate labels (159, 159, 158, …).
+  let step = Math.max(0.001, niceStep((hi - lo) / (TICKS - 1)))
+  let axisMin = Math.max(0, Math.floor(lo / step) * step)
+  let axisMax = axisMin + step * (TICKS - 1)
+  // Make sure the top of the axis clears the highest data point.
+  let guard = 0
+  while (axisMax < dataMax && guard++ < 6) {
+    step = niceStep(step * 1.5)
+    axisMin = Math.max(0, Math.floor(lo / step) * step)
+    axisMax = axisMin + step * (TICKS - 1)
+  }
+  const ticks = Array.from({ length: TICKS }, (_, i) => +(axisMin + step * i).toFixed(4))
+  return { axisMin, axisMax, ticks }
 }
 
 function formatFollowerTick(v) {
@@ -103,6 +121,40 @@ function buildTimeSeries(points, range, valueKey, transform) {
   return { values, labels }
 }
 
+// Engagement series with EXACT per-period values (no carry-forward): each
+// month/week shows its own rate, or 0 if there were no posts. Keeps the chart
+// honest — empty periods read 0 instead of repeating the previous value.
+function monthlyEngSeries(points, count) {
+  const map = new Map(points.map((p) => [String(p.date).slice(0, 7), p.rate]))
+  const now = new Date()
+  const values = []
+  const labels = []
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    labels.push(d.toLocaleString('en-US', { month: 'short' }))
+    values.push(Math.round((map.get(key) ?? 0) * 10) / 10)
+  }
+  return { values, labels }
+}
+
+function weeklyEngSeries(points, count = 5) {
+  const map = new Map(points.map((p) => [String(p.date).slice(0, 10), p.rate]))
+  const monday = new Date()
+  monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7))
+  monday.setUTCHours(0, 0, 0, 0)
+  const values = []
+  const labels = []
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const d = new Date(monday)
+    d.setUTCDate(monday.getUTCDate() - i * 7)
+    const key = d.toISOString().slice(0, 10)
+    labels.push(d.toLocaleString('en-US', { day: 'numeric', month: 'short' }))
+    values.push(Math.round((map.get(key) ?? 0) * 10) / 10)
+  }
+  return { values, labels }
+}
+
 // Catmull-Rom → cubic-bézier so the follower line reads as a smooth curve
 // through every point instead of straight zig-zag segments.
 function smoothPath(pts) {
@@ -121,54 +173,49 @@ function smoothPath(pts) {
   return d
 }
 
-function FollowerGrowthChart({ points, months }) {
-  const maxK = Math.max(...points)
-  const { axisMax, interval } = niceFollowerAxisScale(maxK)
-  const tickCount = Math.max(2, Math.ceil(axisMax / interval))
-  const ticks = Array.from({ length: tickCount }, (_, i) => +(interval * (i + 1)).toFixed(2))
-
-  // Plot the REAL follower trend as a smooth curve, scaled to the same axis as
-  // the gridlines so it sits exactly on its values. We also build a flat version
-  // along the baseline so the curve can animate up from the bottom into place.
+// `points`: [{ label, value (thousands, for plotting), count (real followers),
+// delta (vs previous point) }]. Renders the exact trend through every snapshot,
+// with a hover dot + tooltip (date, count, increase/decrease).
+function FollowerGrowthChart({ points }) {
+  const [hi, setHi] = useState(null)
+  const values = points.map((p) => p.value)
+  const { axisMin, axisMax, ticks } = followerAxisScale(values.length ? values : [0])
+  const span = axisMax - axisMin || 1
   const n = points.length
-  const yFor = (v) => +(Math.min(BASELINE_Y, Math.max(0, 1 - v / axisMax) * 100)).toFixed(2)
-  const realPts = n < 2
-    ? [{ x: 0, y: yFor(points[0] ?? 0) }, { x: 100, y: yFor(points[0] ?? 0) }]
-    : points.map((p, i) => ({ x: (i / (n - 1)) * 100, y: yFor(p) }))
-  const flatPts = realPts.map((p) => ({ x: p.x, y: BASELINE_Y }))
-  const d = smoothPath(realPts)
-  const dFlat = smoothPath(flatPts)
+  const yFor = (v) => +(Math.min(BASELINE_Y, Math.max(0, (axisMax - v) / span) * BASELINE_Y).toFixed(2))
+  const xFor = (i) => (n < 2 ? 50 : (i / (n - 1)) * 100)
+  const linePts = n < 2
+    ? [{ x: 0, y: yFor(values[0] ?? axisMin) }, { x: 100, y: yFor(values[0] ?? axisMin) }]
+    : points.map((p, i) => ({ x: xFor(i), y: yFor(p.value) }))
+  const d = smoothPath(linePts)
+  const dFlat = smoothPath(linePts.map((p) => ({ x: p.x, y: BASELINE_Y })))
+  const fmtCount = (c) => (c >= 1000 ? `${(c / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(Math.round(c)))
+  // Show ~6 x-axis labels max so daily snapshots don't crowd; dots stay for all.
+  const labelStep = Math.max(1, Math.ceil(n / 6))
   return (
-    <div>
+    <div className="pt-3">
       <div className="relative" style={{ height: CHART_H }}>
         {ticks.map((v) => (
           <div
             key={v}
             className="absolute left-0 right-0 flex items-center"
-            style={{ top: `${(1 - v / axisMax) * 100}%`, transform: 'translateY(-50%)' }}
+            style={{ top: `${((axisMax - v) / span) * BASELINE_Y}%`, transform: 'translateY(-50%)' }}
           >
             <span className="text-white text-[11px]" style={{ fontFamily: MONO, width: AXIS_W }}>{formatFollowerTick(v)}</span>
             <span className="flex-1 border-t border-dashed" style={{ borderColor: 'rgba(255,255,255,0.45)' }} />
           </div>
         ))}
-        {/* Baseline dotted line just above the months */}
-        <div
-          className="absolute left-0 right-0 flex items-center"
-          style={{ top: `${BASELINE_Y}%`, transform: 'translateY(-50%)' }}
-        >
+        <div className="absolute left-0 right-0 flex items-center" style={{ top: `${BASELINE_Y}%`, transform: 'translateY(-50%)' }}>
           <span style={{ width: AXIS_W }} />
           <span className="flex-1 border-t border-dashed" style={{ borderColor: 'rgba(255,255,255,0.45)' }} />
         </div>
+
         <svg
           className="absolute top-0"
           style={{ left: AXIS_W, width: `calc(100% - ${AXIS_W}px)`, height: '100%' }}
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
         >
-          {/* The curve rises up from the baseline into its real shape by
-              interpolating the path `d` from the flat baseline to the trend.
-              non-scaling-stroke keeps the 2.5px width crisp under the stretched
-              viewBox. */}
           <motion.path
             d={d}
             fill="none"
@@ -183,30 +230,116 @@ function FollowerGrowthChart({ points, months }) {
             transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
           />
         </svg>
+
+        {/* Hover layer over the plot area: a hit column + dot per snapshot.
+            Width must match the SVG exactly (left AXIS_W → right 0) or the dots
+            drift off the line, increasingly toward the right edge. */}
+        <div className="absolute top-0 bottom-0" style={{ left: AXIS_W, right: 0 }}>
+          {points.map((p, i) => (
+            <div
+              key={i}
+              className="absolute top-0 bottom-0 -translate-x-1/2"
+              style={{ left: `${xFor(i)}%`, width: `${Math.max(8, 100 / Math.max(n, 1))}%`, cursor: 'pointer' }}
+              onMouseEnter={() => setHi(i)}
+              onMouseLeave={() => setHi((h) => (h === i ? null : h))}
+              onTouchStart={() => setHi(i)}
+            >
+              <span
+                className="absolute rounded-full"
+                style={{
+                  left: '50%', top: `${yFor(p.value)}%`,
+                  width: hi === i ? 11 : 6, height: hi === i ? 11 : 6,
+                  transform: 'translate(-50%, -50%)',
+                  background: '#fff',
+                  boxShadow: hi === i ? '0 0 0 4px rgba(255,255,255,0.18)' : 'none',
+                  transition: 'width 120ms, height 120ms',
+                }}
+              />
+            </div>
+          ))}
+
+          {hi != null && points[hi] && (
+            <div
+              className="absolute z-20 rounded-lg px-3 py-2 pointer-events-none whitespace-nowrap"
+              style={{
+                left: `${xFor(hi)}%`,
+                top: `${yFor(points[hi].value)}%`,
+                transform: 'translate(-50%, calc(-100% - 12px))',
+                background: 'rgba(10,12,30,0.96)',
+                border: '1px solid rgba(255,255,255,0.18)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              }}
+            >
+              <div className="text-white/55 text-[10px]" style={{ fontFamily: MONO }}>{points[hi].label}</div>
+              <div className="text-white font-semibold text-sm" style={{ fontFamily: FONT }}>{fmtCount(points[hi].count)} followers</div>
+              {hi > 0 && (
+                <div className="text-[11px] font-semibold" style={{ fontFamily: MONO, color: points[hi].delta >= 0 ? '#4DE0B0' : '#FF8FB0' }}>
+                  {points[hi].delta >= 0 ? `▲ +${points[hi].delta}` : `▼ ${points[hi].delta}`} vs {points[hi - 1].label}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-      <div className="flex justify-between mt-2 text-white text-[10px]" style={{ fontFamily: MONO, marginLeft: AXIS_W }}>
-        {months.map((m, i) => <span key={`${m}-${i}`}>{m}</span>)}
+
+      {/* X-axis labels — subsampled so they never crowd. */}
+      <div className="relative mt-2 h-4" style={{ marginLeft: AXIS_W, marginRight: 0 }}>
+        {points.map((p, i) =>
+          (i % labelStep === 0 || i === n - 1) ? (
+            <span
+              key={i}
+              className="absolute -translate-x-1/2 text-white text-[10px] whitespace-nowrap"
+              style={{ left: `${xFor(i)}%`, fontFamily: MONO }}
+            >
+              {p.label}
+            </span>
+          ) : null,
+        )}
       </div>
     </div>
   )
 }
 
-// Engagement Rate: fixed 20% step Y-axis with dashed gridlines, and a vertical bar
-// per post whose HEIGHT reflects that post's engagement rate. Latest post
-// highlighted in cyan.
-const axisMaxEngagement = 100
+// Engagement Rate: Y-axis scaled to the data (with headroom) so typical low
+// rates (~3%) fill the chart instead of sitting squashed at the bottom of a
+// fixed 0–100% axis. A vertical bar per period; latest highlighted in cyan.
+function engagementAxis(bars) {
+  const max = Math.max(0, ...bars)
+  if (!(max > 0)) return { axisMax: 5, ticks: [0, 1, 2, 3, 4, 5] }
+  const rawStep = (max * 1.15) / 5 // aim for ~5 ticks with ~15% headroom
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)))
+  const norm = rawStep / mag
+  const niceNorm = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10
+  const interval = niceNorm * mag
+  // Engagement is capped at 100%, so the axis never exceeds 100 (no 125% tick).
+  const axisMax = Math.min(100, Math.ceil((max * 1.05) / interval) * interval)
+  const ticks = []
+  for (let v = 0; v <= axisMax + interval * 1e-6; v += interval) ticks.push(+v.toFixed(2))
+  return { axisMax, ticks }
+}
 
 function EngagementChart({ bars, months }) {
-  const step = 20
-  const ticks = Array.from({ length: axisMaxEngagement / step + 1 }, (_, i) => i * step)
+  const { axisMax, ticks } = engagementAxis(bars)
+  // The long 1.15s base delay + 0.08s stagger is for the initial scroll-in
+  // reveal only. Once the chart has revealed, range switches (e.g. 1Y, which
+  // adds more bars) should animate the new bars in quickly instead of replaying
+  // that staggered delay — otherwise later months pop in up to ~2s late.
+  const [revealed, setRevealed] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setRevealed(true), 2200)
+    return () => clearTimeout(t)
+  }, [])
+  const baseDelay = revealed ? 0.05 : 1.15
+  const stagger = revealed ? 0.03 : 0.08
+  const [hi, setHi] = useState(null)
   return (
-    <div>
+    <div className="pt-3">
       <div className="relative" style={{ height: CHART_H }}>
         {ticks.map((v) => (
           <div
             key={v}
             className="absolute left-0 right-0 flex items-center"
-            style={{ top: `${(1 - v / axisMaxEngagement) * 100}%`, transform: 'translateY(-50%)' }}
+            style={{ top: `${(1 - v / axisMax) * 100}%`, transform: 'translateY(-50%)' }}
           >
             <span className="text-white text-[11px]" style={{ fontFamily: MONO, width: AXIS_W }}>{v}%</span>
             <span className="flex-1 border-t border-dashed" style={{ borderColor: 'rgba(255,255,255,0.45)' }} />
@@ -215,23 +348,35 @@ function EngagementChart({ bars, months }) {
         <div className="absolute bottom-0 flex items-end justify-between gap-3" style={{ left: AXIS_W, right: 6, height: '100%' }}>
           {bars.map((b, i) => {
             const last = i === bars.length - 1
-            const h = Math.max(3, Math.min(100, (b / axisMaxEngagement) * 100))
+            const h = Math.max(3, Math.min(100, (b / axisMax) * 100))
             return (
               <motion.div
                 key={i}
-                className="flex-1 rounded-t-md origin-bottom"
-                style={{ height: `${h}%`, background: last ? '#89DFEC' : 'linear-gradient(180deg,#E731A2 0%,#C04DCC 50%,#A35CE1 100%)' }}
+                className="relative flex-1 rounded-t-md origin-bottom cursor-default"
+                style={{ height: `${h}%`, background: last ? '#89DFEC' : 'linear-gradient(180deg,#E731A2 0%,#C04DCC 50%,#A35CE1 100%)', opacity: hi !== null && hi !== i ? 0.55 : 1 }}
                 initial={{ scaleY: 0, opacity: 0 }}
                 whileInView={{ scaleY: 1, opacity: 1 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, ease: 'easeOut', delay: 1.15 + i * 0.08 }}
-              />
+                transition={{ duration: 0.5, ease: 'easeOut', delay: baseDelay + i * stagger }}
+                onMouseEnter={() => setHi(i)}
+                onMouseLeave={() => setHi(null)}
+              >
+                {hi === i && (
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 -top-1.5 -translate-y-full px-2.5 py-1.5 rounded-lg whitespace-nowrap pointer-events-none z-20 text-center"
+                    style={{ background: '#0B0B27', border: '1px solid rgba(255,255,255,0.15)', fontFamily: MONO, boxShadow: '0 6px 18px rgba(0,0,0,0.5)' }}
+                  >
+                    <div className="text-white/55 text-[10px]">{months[i]}</div>
+                    <div className="text-white font-semibold text-[12px]">{b}%</div>
+                  </div>
+                )}
+              </motion.div>
             )
           })}
         </div>
       </div>
       <div className="flex gap-3 mt-2 text-white text-[10px]" style={{ fontFamily: MONO, marginLeft: AXIS_W, marginRight: 6 }}>
-        {months.slice(0, 6).map((m, i) => <span key={`${m}-${i}`} className="flex-1 text-center">{m}</span>)}
+        {months.slice(0, bars.length).map((m, i) => <span key={`${m}-${i}`} className="flex-1 text-center">{m}</span>)}
       </div>
     </div>
   )
@@ -271,21 +416,46 @@ function Panel({ title, children, from = 'up', className = '', bare = false, sty
 
 export default function LiveAnalytics() {
   const {
-    GROWTH, MONTHS, ENGAGEMENT_BARS, ENG_MONTHS, GROWTH_POINTS, ENG_POINTS,
+    GROWTH, MONTHS, ENGAGEMENT_BARS, ENG_MONTHS, GROWTH_POINTS, ENG_POINTS, ENG_POINTS_WEEKLY, ENG_FROM_POSTS,
     AGE_GROUPS, TOP_LOCATIONS, TOP_COUNTRIES, GENDER_SPLIT,
   } = useInfluence()
   const [range, setRange] = useState('30D')
 
-  // Filter the dated series by the selected window so 30D / 90D / 1Y actually
-  // change the charts. Falls back to the precomputed arrays (demo / no dates).
-  // Keep followers as exact thousands (e.g. 233 → 0.233) so small creators show
-  // their real numbers; the axis + tick formatter render the actual counts.
-  const growthSeries = buildTimeSeries(GROWTH_POINTS || [], range, 'followers', (value) => value / 1000)
-  const engSeries = buildTimeSeries(ENG_POINTS || [], range, 'rate', (value) => Math.round(value * 10) / 10)
+  // Engagement: with real per-post data, show each period's EXACT value (0 where
+  // there were no posts) — 30D by week, 90D/1Y by month — so empty periods read
+  // 0 instead of carrying the previous value forward (which made every month
+  // look identical). Without real data, fall back to the carry-forward series.
+  const engSeries = ENG_FROM_POSTS
+    ? (range === '30D'
+        ? weeklyEngSeries(ENG_POINTS_WEEKLY || [])
+        : monthlyEngSeries(ENG_POINTS || [], range === '1Y' ? 12 : 3))
+    : buildTimeSeries(ENG_POINTS || [], range, 'rate', (value) => Math.round(value * 10) / 10)
   const engBars = engSeries.values.length ? engSeries.values : ENGAGEMENT_BARS
   const engMonths = engSeries.labels.length ? engSeries.labels : (ENG_MONTHS || MONTHS)
-  const growthVals = growthSeries.values.length ? growthSeries.values : GROWTH
-  const growthMonths = growthSeries.labels.length ? growthSeries.labels : MONTHS
+
+  // Follower growth: plot the ACTUAL dated snapshots in the window (no
+  // carry-forward resampling) so the trend is exact. Each point carries its real
+  // follower count + day-over-day delta for the hover tooltip.
+  const totalDays = range === '1Y' ? 365 : range === '90D' ? 90 : 30
+  const growthCutoff = Date.now() - totalDays * 86400000
+  const realGrowth = (GROWTH_POINTS || [])
+    .map((p) => ({ t: new Date(p.date).getTime(), f: Number(p.followers) }))
+    .filter((p) => !Number.isNaN(p.t) && p.t >= growthCutoff && Number.isFinite(p.f))
+    .sort((a, b) => a.t - b.t)
+  const dFmt = range === '30D' ? { day: 'numeric', month: 'short' } : { month: 'short' }
+  const growthPoints = realGrowth.length
+    ? realGrowth.map((p, i) => ({
+        label: new Date(p.t).toLocaleString('en-US', dFmt),
+        value: p.f / 1000, // plotting unit (thousands) — matches the axis ticks
+        count: p.f, // exact follower count for the tooltip
+        delta: i ? p.f - realGrowth[i - 1].f : 0,
+      }))
+    : GROWTH.map((v, i) => ({
+        label: MONTHS[i] || '',
+        value: v,
+        count: Math.round(v * 1000),
+        delta: i ? Math.round((v - GROWTH[i - 1]) * 1000) : 0,
+      }))
   const [hovered, setHovered] = useState(null)
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-12 md:py-20 overflow-hidden">
@@ -340,9 +510,9 @@ export default function LiveAnalytics() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pl-4 md:pl-8">
           <Panel title="Follower Growth" from="left" style={{ background: 'linear-gradient(155deg, #1b2052 0%, #10133C 60%)' }}>
-            <FollowerGrowthChart points={growthVals} months={growthMonths} />
-            <p className="mt-3 text-[11px] text-white/60" style={{ fontFamily: MONO }}>
-              This chart only shows the follower growth of the creator after joining Creasume.
+            <FollowerGrowthChart points={growthPoints} />
+            <p className="mt-3 ml-3 text-[11px] italic text-white/60" style={{ fontFamily: MONO }}>
+              &ldquo;This chart only shows the follower growth of the creator after joining Creasume.&rdquo;
             </p>
           </Panel>
 
@@ -350,7 +520,10 @@ export default function LiveAnalytics() {
             <EngagementChart bars={engBars} months={engMonths} />
           </Panel>
 
-          {/* Audience Insights + Top Locations / gender — combined card */}
+          {/* Audience Insights + Top Locations / gender — combined card.
+              Hidden entirely when no demographics are available (under 100
+              followers, or Instagram hasn't returned them yet). */}
+          {(AGE_GROUPS.length > 0 || TOP_LOCATIONS.length > 0 || TOP_COUNTRIES.length > 0 || GENDER_SPLIT) && (
           <motion.div
             className="lg:col-span-2 rounded-2xl p-5 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10"
             style={PANEL}
@@ -447,6 +620,7 @@ export default function LiveAnalytics() {
                   </div>
                 </div>
               </div>
+              {GENDER_SPLIT && (
               <div className="relative z-10 mt-auto">
                 <div className="flex items-center justify-center gap-2 text-white font-semibold text-base mb-3" style={{ fontFamily: FONT }}>
                   <span aria-hidden="true">👥</span> Gender Ratio
@@ -469,8 +643,10 @@ export default function LiveAnalytics() {
                   ))}
                 </div>
               </div>
+              )}
             </div>
           </motion.div>
+          )}
         </div>
       </div>
     </section>

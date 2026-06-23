@@ -29,6 +29,18 @@ const ICONS = {
   handshake: (<svg {...ip}><path d="m11 17 2 2a1 1 0 1 0 3-3" /><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4" /><path d="m21 3 1 11h-2" /><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3" /><path d="M3 4h8" /></svg>),
 }
 
+// Flip-card back face: where each metric comes from. Small source-type badge.
+const SOURCE_ICONS = {
+  instagram: (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.6" cy="6.4" r="1.1" fill="currentColor" stroke="none" /></svg>),
+  calculated: (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4.5" y="2.5" width="15" height="19" rx="2.5" /><path d="M8 6.5h8" /><path d="M8.2 11h.01M12 11h.01M15.8 11h.01M8.2 14.5h.01M12 14.5h.01M15.8 14.5h3.8M8.2 18h.01M12 18h.01M15.8 18h.01" /></svg>),
+  creasume: (<img src="/creasume-c.png" alt="" width="13" height="13" style={{ display: 'block', objectFit: 'contain' }} />),
+}
+const SOURCE_META = {
+  instagram: { label: 'From Instagram', color: '#E1306C' },
+  calculated: { label: 'Calculated', color: '#A78BFA' },
+  creasume: { label: 'Creasume', color: '#5AA9FF' },
+}
+
 // Scalloped "verified seal" outline (a 24-bump star around a 24×24 circle),
 // computed once. Filled blue with a white check, it reads as the classic
 // verified badge instead of a plain circle.
@@ -83,6 +95,8 @@ function StatsGrid({ includeScore = false }) {
   // `dealing` flips on after a short hold so the stacked pile is actually
   // visible ("a deck of cards held in hand") before the cards are thrown out.
   const [dealing, setDealing] = useState(false)
+  // Which tile is flipped to its "data source" back face (one at a time).
+  const [flippedIdx, setFlippedIdx] = useState(null)
 
   useLayoutEffect(() => {
     if (reduce) return
@@ -110,7 +124,7 @@ function StatsGrid({ includeScore = false }) {
 
   return (
     <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-3 auto-rows-fr gap-2.5 md:gap-3">
-      {tiles.map(({ value, label, icon, color, details }, i) => {
+      {tiles.map(({ value, label, icon, color, details, source }, i) => {
         const dealPos = dealOrder.indexOf(i)
         // Shrink the value font for long text (e.g. "Indore, Madhya Pradesh") so
         // it fits the tile; numbers / short values keep the large size.
@@ -130,6 +144,10 @@ function StatsGrid({ includeScore = false }) {
             : offsets
               ? { x: offsets[i].x, y: offsets[i].y, scale: 0.92, opacity: 1 }
               : { opacity: 0 }
+        const isFlipped = flippedIdx === i
+        const src = source ? SOURCE_META[source.type] : null
+        const faceCard = 'rounded-2xl px-4 py-6 md:px-6 md:py-8 flex flex-col justify-center items-center text-center'
+        const faceStyle = { backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', minHeight: details ? 150 : undefined }
         return (
           <motion.div
             key={label}
@@ -139,32 +157,49 @@ function StatsGrid({ includeScore = false }) {
             // Sequential deal: each card flies 350ms and lands before the next
             // is thrown, with a 120ms gap between throws (spec §2).
             transition={{ duration: 0.25, ease: 'easeOut', delay: dealing ? dealPos * 0.05 : 0 }}
-            whileHover={dealing ? { y: -4 } : undefined}
-            className="relative rounded-2xl px-4 py-6 md:px-6 md:py-8 flex flex-col justify-center items-center text-center"
+            whileHover={dealing && !isFlipped ? { y: -4 } : undefined}
+            onClick={() => { if (source && (dealing || reduce)) setFlippedIdx(isFlipped ? null : i) }}
+            className={`relative rounded-2xl ${source ? 'cursor-pointer' : ''}`}
             // Tiles with a details row get extra height (and every tile matches it
-            // via auto-rows-fr) so the value still centres like the other tiles
-            // while the details pin to the bottom.
-            style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)', minHeight: details ? 150 : undefined, zIndex: offsets && !dealing ? dealPos : undefined }}
+            // via auto-rows-fr). `perspective` powers the 3D flip of the inner.
+            style={{ minHeight: details ? 150 : undefined, zIndex: offsets && !dealing ? dealPos : undefined, perspective: 1000 }}
           >
-            <span className="absolute top-3 right-3 md:top-4 md:right-4 text-white scale-[0.65] md:scale-100 origin-top-right">{ICONS[icon]}</span>
-            {/* Value + label roll up from a mask. Each card triggers on its own
-                scroll-in, so the delay is keyed to the COLUMN (i % 3) — every row
-                rolls up the same quick way. */}
-            <div className="mb-2">
-              {isTopCity ? (
-                <>
-                  {/* Mobile: abbreviated state, sized like the other tiles. */}
-                  <div className="md:hidden">
-                    <RollUp
-                      text={shortValue}
-                      delay={0.05 + (i % 3) * 0.06}
-                      duration={0.4}
-                      className="font-semibold leading-none"
-                      style={{ fontFamily: FONT, fontSize: sizeForValue(shortValue), color: color || '#ffffff' }}
-                    />
-                  </div>
-                  {/* Desktop: full location. */}
-                  <div className="hidden md:block">
+            <motion.div
+              className="relative w-full h-full"
+              style={{ transformStyle: 'preserve-3d', minHeight: details ? 150 : undefined }}
+              animate={{ rotateY: isFlipped ? 180 : 0 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {/* FRONT — the metric */}
+              <div className={`relative h-full ${faceCard}`} style={faceStyle}>
+                <span className="absolute top-3 right-3 md:top-4 md:right-4 text-white scale-[0.65] md:scale-100 origin-top-right">{ICONS[icon]}</span>
+                {/* Value + label roll up from a mask. Each card triggers on its
+                    own scroll-in, keyed to the COLUMN (i % 3). */}
+                <div className="mb-2">
+                  {isTopCity ? (
+                    <>
+                      {/* Mobile: abbreviated state, sized like the other tiles. */}
+                      <div className="md:hidden">
+                        <RollUp
+                          text={shortValue}
+                          delay={0.05 + (i % 3) * 0.06}
+                          duration={0.4}
+                          className="font-semibold leading-none"
+                          style={{ fontFamily: FONT, fontSize: sizeForValue(shortValue), color: color || '#ffffff' }}
+                        />
+                      </div>
+                      {/* Desktop: full location. */}
+                      <div className="hidden md:block">
+                        <RollUp
+                          text={value}
+                          delay={0.05 + (i % 3) * 0.06}
+                          duration={0.4}
+                          className="font-semibold leading-none"
+                          style={{ fontFamily: FONT, fontSize: valueSize, color: color || '#ffffff' }}
+                        />
+                      </div>
+                    </>
+                  ) : (
                     <RollUp
                       text={value}
                       delay={0.05 + (i % 3) * 0.06}
@@ -172,37 +207,43 @@ function StatsGrid({ includeScore = false }) {
                       className="font-semibold leading-none"
                       style={{ fontFamily: FONT, fontSize: valueSize, color: color || '#ffffff' }}
                     />
-                  </div>
-                </>
-              ) : (
+                  )}
+                </div>
                 <RollUp
-                  text={value}
-                  delay={0.05 + (i % 3) * 0.06}
+                  text={label}
+                  delay={0.11 + (i % 3) * 0.06}
                   duration={0.4}
-                  className="font-semibold leading-none"
-                  style={{ fontFamily: FONT, fontSize: valueSize, color: color || '#ffffff' }}
+                  className="text-[11px] md:text-[18px] leading-tight font-semibold whitespace-nowrap"
+                  style={{ fontFamily: MONO, ...LABEL_GRADIENT }}
                 />
-              )}
-            </div>
-            <RollUp
-              text={label}
-              delay={0.11 + (i % 3) * 0.06}
-              duration={0.4}
-              className="text-[11px] md:text-[18px] leading-tight font-semibold whitespace-nowrap"
-              style={{ fontFamily: MONO, ...LABEL_GRADIENT }}
-            />
-            {/* Mini-row of likes / comments / shares (Impressions tile only) —
-                pinned to the bottom, kept on a single line on every screen. */}
-            {details && (
-              <div className="absolute inset-x-0 bottom-3.5 md:bottom-4 flex items-center justify-center gap-2 md:gap-3.5 whitespace-nowrap">
-                {details.map((d) => (
-                  <span key={d.icon} className="inline-flex items-center gap-1 md:gap-1.5 text-white/65">
-                    <span className="inline-flex items-center justify-center text-white/55 [&>svg]:w-3 [&>svg]:h-3 md:[&>svg]:w-[17px] md:[&>svg]:h-[17px]">{ICONS[d.icon]}</span>
-                    <span className="font-semibold leading-none text-[11px] md:text-[15px]" style={{ fontFamily: FONT }}>{d.value}</span>
-                  </span>
-                ))}
+                {/* Mini-row of likes / comments / shares (Impressions tile only). */}
+                {details && (
+                  <div className="absolute inset-x-0 bottom-3.5 md:bottom-4 flex items-center justify-center gap-2 md:gap-3.5 whitespace-nowrap">
+                    {details.map((d) => (
+                      <span key={d.icon} className="inline-flex items-center gap-1 md:gap-1.5 text-white/65">
+                        <span className="inline-flex items-center justify-center text-white/55 [&>svg]:w-3 [&>svg]:h-3 md:[&>svg]:w-[17px] md:[&>svg]:h-[17px]">{ICONS[d.icon]}</span>
+                        <span className="font-semibold leading-none text-[11px] md:text-[15px]" style={{ fontFamily: FONT }}>{d.value}</span>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* BACK — where the data comes from */}
+              <div className={`absolute inset-0 ${faceCard}`} style={{ ...faceStyle, transform: 'rotateY(180deg)' }}>
+                {src && (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 mb-3"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}
+                  >
+                    <span className="inline-flex items-center" style={{ color: src.color }}>{SOURCE_ICONS[source.type]}</span>
+                    <span className="text-[9px] md:text-[10.5px] font-semibold uppercase tracking-[0.14em] whitespace-nowrap text-white/80" style={{ fontFamily: MONO }}>{src.label}</span>
+                  </span>
+                )}
+                <p className="text-[10px] md:text-[12.5px] leading-snug text-white/70 max-w-[94%]" style={{ fontFamily: FONT, whiteSpace: 'pre-line' }}>{source?.text}</p>
+                <span className="absolute bottom-2 right-3 text-[8px] md:text-[9px] text-white/30" style={{ fontFamily: MONO }}>tap to flip back</span>
+              </div>
+            </motion.div>
           </motion.div>
         )
       })}

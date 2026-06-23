@@ -88,8 +88,11 @@ function PackageCard({ p, i, isPopular, showCta, noId = false, carousel = false 
 }
 
 export default function Packages() {
-  const { PACKAGES } = useInfluence()
+  const { PACKAGES, PACKAGES_ACTIVE = true } = useInfluence()
   const n = PACKAGES.length
+  // Admin turned the section off (or there are simply no packages) → render
+  // nothing for the cards/heading. The CTA banner + flight live elsewhere.
+  const showPackages = PACKAGES_ACTIVE && n > 0
   const loop = n > 1
   const STEP = CAROUSEL_CARD + CAROUSEL_GAP
   // Mobile carousel: start on the "Most Popular" package (front/center).
@@ -152,27 +155,41 @@ export default function Packages() {
   // Me sits in the upper-middle of the screen, let it settle, then launch phase 2
   // (a plane in from the right, crossing that visible gap).
   const onFlyRightDone = () => {
+    // Only scroll if Work With Me isn't already near the upper-middle (e.g. when
+    // there are no package cards the page is short and no scroll is needed). Skip
+    // the long settle wait too, so the next phase starts right away.
+    let wait = 150
     const wwm = document.getElementById('work-with-me')
     if (wwm) {
-      // Leave the gap above Work With Me visible in the upper-middle of the view.
-      const y = wwm.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.5
-      smoothScrollTo(y, 550)
+      const dist = wwm.getBoundingClientRect().top - window.innerHeight * 0.5
+      if (Math.abs(dist) > 24) {
+        const startY = window.__lenis ? window.__lenis.scroll : window.scrollY
+        smoothScrollTo(startY + dist, 550)
+        wait = 650
+      }
     }
     setTimeout(() => {
       // Cross at a row that's always on-screen (the gap region the plane enters).
       setFlyTop(window.innerHeight * 0.53)
       setFlyPhase('left')
-    }, 650)
+    }, wait)
   }
 
   // Phase 2 done (plane left the left edge): scroll down a bit more to reveal the
   // Send Inquiry button, settle, then launch phase 3 (a plane in from the left
   // that lands on the button's arrow).
   const onFlyLeftDone = () => {
+    // Same here: only scroll to reveal the Send Inquiry button if it isn't
+    // already on screen, and shorten the wait when no scroll happened.
+    let wait = 150
     const btn = document.querySelector('#work-with-me button[type="submit"]')
     if (btn) {
-      const y = btn.getBoundingClientRect().top + window.scrollY - window.innerHeight * 0.55
-      smoothScrollTo(y, 550)
+      const dist = btn.getBoundingClientRect().top - window.innerHeight * 0.55
+      if (Math.abs(dist) > 24) {
+        const startY = window.__lenis ? window.__lenis.scroll : window.scrollY
+        smoothScrollTo(startY + dist, 550)
+        wait = 650
+      }
     }
     setTimeout(() => {
       // Target the icon slot (the <span>), not just the <svg>: after the first
@@ -187,7 +204,7 @@ export default function Packages() {
         setFlyLeft(r.left + r.width / 2)
       }
       setFlyPhase('land')
-    }, 650)
+    }, wait)
   }
 
   // Phase 3 done (plane reached the arrow): swap the button's arrow for the plane
@@ -256,7 +273,7 @@ export default function Packages() {
         alt=""
         draggable={false}
         className="hidden md:block"
-        style={{ position: 'absolute', left: 180, top: 60, width: 500, height: 500, objectFit: 'contain', opacity: flying ? 0 : 0.9, transform: 'rotate(8deg)', pointerEvents: 'none', filter: 'drop-shadow(0 12px 30px rgba(0,0,0,0.5))', zIndex: -1 }}
+        style={{ position: 'absolute', left: 180, top: -70, width: 500, height: 500, objectFit: 'contain', opacity: flying ? 0 : 0.9, transform: 'rotate(8deg)', pointerEvents: 'none', filter: 'drop-shadow(0 12px 30px rgba(0,0,0,0.5))', zIndex: -1 }}
       />
       {/* Paper-plane CTA banner — shifted right only on desktop, centered on mobile */}
       <div id="cta-banner" className="max-w-[1180px] mx-auto text-center mb-20 md:mb-28 lg:translate-x-[230px] lg:-translate-y-[60px]">
@@ -336,11 +353,14 @@ export default function Packages() {
           document.body,
         )}
 
+      {showPackages && (
       <div className="max-w-[1180px] mx-auto text-center mb-12 md:mb-16">
         <h2 className="text-5xl md:text-6xl font-medium mb-3" style={{ fontFamily: FONT }}>Collaboration Packages</h2>
         <p className="text-white/45 text-sm" style={{ fontFamily: MONO }}>Standard services. Exact quotes provided after alignment.</p>
       </div>
+      )}
 
+      {showPackages && (<>
       {/* Desktop: a centered row. The popular card is lifted and has the CTA. */}
       <motion.div
         className="hidden md:flex max-w-[1180px] mx-auto md:flex-row md:flex-wrap justify-center items-start gap-5"
@@ -422,6 +442,7 @@ export default function Packages() {
           </div>
         )}
       </div>
+      </>)}
     </section>
   )
 }

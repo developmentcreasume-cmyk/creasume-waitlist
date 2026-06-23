@@ -3,6 +3,8 @@
 // works with zero backend (it falls back to the bundled Sample.Creator demo),
 // so every mapper here degrades gracefully when a field is missing.
 
+import { summariseCampaigns } from '../components/influence/influenceData.js'
+
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 // Which creator the page loads — taken ONLY from a clean `/influence/<username>`
@@ -34,7 +36,7 @@ export function formatCount(n) {
 export async function fetchInfluenceData() {
   const username = resolveUsername()
   if (!username) return null
-  const res = await fetch(`${API_BASE}/public/${encodeURIComponent(username)}`)
+  const res = await fetch(`${API_BASE}/public/${encodeURIComponent(username)}`, { cache: 'no-store' })
   const data = await res.json().catch(() => null)
   if (!data?.success || !data.creator) return null
   return data
@@ -62,6 +64,71 @@ export async function sendInquiry({ brand, agency, email, campaignType, brief })
 }
 
 const AGE_PALETTE = ['#8B5CF6', '#4DE0B0', '#F4C13B', '#5D65DC', '#E731A2']
+
+// Normalise an admin-entered platform name to the display label the Professional
+// Presence section uses for its icon + heading.
+const PLATFORM_DISPLAY = {
+  instagram: 'Instagram',
+  youtube: 'YouTube',
+  'twitter / x': 'X (Twitter)', 'twitter/x': 'X (Twitter)', twitter: 'X (Twitter)', x: 'X (Twitter)',
+  tiktok: 'TikTok',
+  website: 'Website',
+  linkedin: 'LinkedIn',
+}
+export const displayPlatform = (p) =>
+  PLATFORM_DISPLAY[String(p || '').trim().toLowerCase()] || (p || 'Link')
+
+// Short label shown under the platform name. For social profiles that's the
+// "@handle" (last path segment); for a website it's the bare domain. Kept short
+// and decoded so a pasted blob / over-long path can't blow out the card.
+const clampHandle = (s, max = 24) => (s.length > max ? `${s.slice(0, max - 1)}…` : s)
+export function socialHandle(url) {
+  const raw = String(url || '').trim()
+  let label
+  let isPath = false
+  try {
+    const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`)
+    const seg = u.pathname.split('/').filter(Boolean).pop()
+    if (seg) { label = seg; isPath = true }
+    else label = u.hostname.replace(/^www\./, '')
+  } catch {
+    label = raw
+  }
+  // Decode %20 etc., then keep just the first token — real handles/domains have
+  // no spaces, so a pasted description (or junk URL) can't leak its whole text.
+  try { label = decodeURIComponent(label) } catch { /* keep as-is */ }
+  label = label.trim().split(/\s+/)[0].replace(/^@/, '')
+  return clampHandle(isPath ? `@${label}` : label)
+}
+
+// "2024-08-01T..." → "Aug 2024". Empty for missing/invalid dates.
+function campaignDate(d) {
+  if (!d) return ''
+  const dt = new Date(d)
+  if (Number.isNaN(dt.getTime())) return ''
+  return dt.toLocaleString('en-US', { month: 'short', year: 'numeric' })
+}
+
+// A short audience line for a campaign card, derived from the creator's
+// account-level demographics (Instagram has no per-post city/gender breakdown).
+function campaignAudience(demo) {
+  const parts = []
+  const g = {}
+  ;(demo.gender || []).forEach((x) => { g[x.key] = x.value })
+  const f = g.F || 0
+  const m = g.M || 0
+  if (f + m > 0) {
+    const femalePct = Math.round((f / (f + m)) * 100)
+    parts.push(femalePct >= 50 ? `${femalePct}% Female` : `${100 - femalePct}% Male`)
+  }
+  const cities = (demo.city || []).slice(0, 3).map((c) => String(c.key).split(',')[0])
+  if (cities.length) parts.push(`Top cities: ${cities.join(', ')}`)
+  return parts.join('. ') || 'Audience insights available on request.'
+}
+
+// Linked-post media type → a human deliverable label.
+const deliverableLabel = (mediaType) =>
+  mediaType === 'VIDEO' ? 'Reel' : mediaType === 'CAROUSEL_ALBUM' ? 'Carousel' : 'Post'
 
 // Indian state / UT → short code, so "Indore, Madhya Pradesh" → "Indore, MP".
 const STATE_ABBR = {
@@ -138,6 +205,8 @@ export function mapInfluenceData(api, d) {
   }
   const tileValues = {
     'Engagement Rate': eng,
+    // Key must match the tile/pill label exactly ('Total Views'), else the
+    // override never applies and the demo 43,000 shows.
     'Total Views': fc0(s.views),
     'Total Post': fc0(s.mediaCount),
     'Total Followers': fc0(s.followersCount),
@@ -186,50 +255,55 @@ export function mapInfluenceData(api, d) {
   }
 
   // ---- Follower growth line (need ≥2 daily points to draw a trend) ----
-  let GROWTH = d.GROWTH
-  let MONTHS = d.MONTHS
+  // Real data only — empty until the creator has snapshots.
+  let GROWTH = []
+  let MONTHS = []
   if (growth.length >= 2) {
     const pts = growth.slice(-7)
     GROWTH = pts.map((g) => g.followers / 1000)
     MONTHS = pts.map((g) => new Date(g.date).toLocaleString('en-US', { month: 'short' }))
   }
 
-  // ---- Engagement-rate bars: each post's (likes+comments+saves+shares) as a %
-  // of that post's views, for the last up-to-6 posts (oldest→newest). This fits
-  // the chart's percentage axis and is real per-post engagement.
-  let ENGAGEMENT_BARS = d.ENGAGEMENT_BARS
-  let ENG_MONTHS = MONTHS
-  if (media.length) {
-    const recent = media.slice(0, 6).reverse() // API returns newest-first
-    ENGAGEMENT_BARS = recent.map((m) => {
-      const e = (m.like_count || 0) + (m.comments_count || 0) + (m.saved || 0) + (m.shares || 0)
-      const denom = m.views || s.reach || s.followersCount || 1
-      return Math.round((e / denom) * 1000) / 10 // one-decimal %
-    })
-    ENG_MONTHS = recent.map((m) => new Date(m.timestamp).toLocaleString('en-US', { month: 'short' }))
-  }
+  // ---- Engagement-rate chart is WHOLE-PROFILE only (never per-post). Real
+  // series built below from snapshots; empty until data exists.
+  const ENGAGEMENT_BARS = []
+  const ENG_MONTHS = MONTHS
 
   // Dated raw series so the 30D / 90D / 1Y toggle can filter by time window in
   // the component. Followers + engagement come from the backend's daily
   // snapshots (growth[]), so both charts read the SAME real history.
   const GROWTH_POINTS = growth.map((g) => ({ date: g.date, followers: g.followers }))
-  // Prefer the real daily engagement-rate history; until enough daily snapshots
-  // exist, fall back to per-post engagement from the recent media.
-  const ENG_POINTS = growth.some((g) => g.engagement > 0)
-    ? growth
-        .filter((g) => g.engagement > 0)
-        .map((g) => ({ date: g.date, rate: g.engagement }))
-    : media
-        .filter((m) => m.timestamp)
-        .map((m) => {
-          const e = (m.like_count || 0) + (m.comments_count || 0) + (m.saved || 0) + (m.shares || 0)
-          const denom = m.views || s.reach || s.followersCount || 1
-          return { date: m.timestamp, rate: Math.round((e / denom) * 1000) / 10 }
-        })
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
+  // Whole-profile engagement rate over time, bucketed by month by the backend
+  // (avg interactions per post that month ÷ followers × 100). This varies month
+  // to month and is available immediately. Falls back to daily snapshot history,
+  // then to the current whole-profile rate flat — never per-post.
+  const engHistory = Array.isArray(api.engagementHistory) ? api.engagementHistory : []
+  const ENG_POINTS = engHistory.length
+    ? engHistory.map((e) => ({ date: e.date, rate: e.rate }))
+    : growth.some((g) => g.engagement > 0)
+      ? growth
+          .filter((g) => g.engagement > 0)
+          .map((g) => ({ date: g.date, rate: g.engagement }))
+      : s.engagementRate != null
+        ? [
+            { date: new Date(Date.now() - 365 * 86400000).toISOString(), rate: s.engagementRate },
+            { date: new Date().toISOString(), rate: s.engagementRate },
+          ]
+        : []
+  // Weekly buckets so the 30-day view varies week-to-week; falls back to the
+  // monthly series when the backend doesn't supply weekly data.
+  const engWeekly = Array.isArray(api.engagementWeekly) ? api.engagementWeekly : []
+  const ENG_POINTS_WEEKLY = engWeekly.length
+    ? engWeekly.map((e) => ({ date: e.date, rate: e.rate }))
+    : ENG_POINTS
+  // True when the series is real per-post-month/week data (so the chart should
+  // show each period's actual value — 0 where there were no posts — instead of
+  // carrying the previous value forward and looking falsely flat).
+  const ENG_FROM_POSTS = engHistory.length > 0
 
   // ---- Audience: age distribution, top cities, gender split ----
-  let AGE_GROUPS = d.AGE_GROUPS
+  // Real data only — each stays empty until Instagram demographics arrive.
+  let AGE_GROUPS = []
   if (demo.age?.length) {
     const total = demo.age.reduce((a, x) => a + (x.value || 0), 0) || 1
     AGE_GROUPS = demo.age.slice(0, 5).map((x, i) => ({
@@ -239,14 +313,14 @@ export function mapInfluenceData(api, d) {
     }))
   }
 
-  let TOP_LOCATIONS = d.TOP_LOCATIONS
+  let TOP_LOCATIONS = []
   if (demo.city?.length) {
     TOP_LOCATIONS = demo.city.slice(0, 3).map((x) => ({ full: x.key, short: shortenLocation(x.key) }))
   }
 
   // Country breakdown comes back as ISO codes (IN, US, …) — turn them into
   // readable names ("India", "United States") via Intl, falling back to the code.
-  let TOP_COUNTRIES = d.TOP_COUNTRIES
+  let TOP_COUNTRIES = []
   if (demo.country?.length) {
     let regionNames = null
     try { regionNames = new Intl.DisplayNames(['en'], { type: 'region' }) } catch { regionNames = null }
@@ -257,7 +331,7 @@ export function mapInfluenceData(api, d) {
     })
   }
 
-  let GENDER_SPLIT = d.GENDER_SPLIT
+  let GENDER_SPLIT = null
   if (demo.gender?.length) {
     const g = {}
     demo.gender.forEach((x) => { g[x.key] = x.value })
@@ -272,38 +346,95 @@ export function mapInfluenceData(api, d) {
   }
 
   // ---- Professional presence rows ----
-  const SOCIALS = d.SOCIALS.map((soc) => {
-    if (soc.name === 'Instagram') {
-      return {
-        ...soc,
-        handle: c.username ? `@${c.username}` : soc.handle,
-        status: s.followersCount != null ? `${formatCount(s.followersCount)} followers` : soc.status,
-      }
-    }
-    if (soc.name === 'YouTube' && c.socials?.youtube) {
-      return { ...soc, handle: c.socials.youtube, status: 'Active' }
-    }
-    return soc
+  // Instagram is the connected account, so it's ALWAYS shown and pinned to the
+  // CENTRE. Admin-managed social links (any platform except Instagram) flank it,
+  // split evenly to its left and right.
+  // At most 5 admin-added links flank Instagram.
+  const otherRows = (Array.isArray(c.socialLinks) ? c.socialLinks : [])
+    .filter((l) => l && l.platform && l.url && displayPlatform(l.platform) !== 'Instagram')
+    .slice(0, 5)
+    .map((l) => ({
+      name: displayPlatform(l.platform),
+      handle: socialHandle(l.url),
+      status: '',
+      url: l.url,
+    }))
+  const instagramRow = {
+    name: 'Instagram',
+    handle: c.username ? `@${c.username}` : (d.SOCIALS.find((x) => x.name === 'Instagram')?.handle || ''),
+    // Show the follower count ONLY when Instagram is the sole card; once other
+    // links are added, drop it so the row stays clean.
+    status: otherRows.length === 0 && s.followersCount != null
+      ? `${formatCount(s.followersCount)} followers`
+      : '',
+    url: c.username
+      ? `https://instagram.com/${c.username}`
+      : c.socials?.instagram || undefined,
+  }
+  // Flank the centred Instagram: 1st extra link → right, 2nd → left, 3rd →
+  // right, … so it stays balanced around the middle as more are added.
+  const leftRows = []
+  const rightRows = []
+  otherRows.forEach((row, i) => {
+    if (i % 2 === 0) rightRows.push(row)
+    else leftRows.unshift(row)
   })
+  const SOCIALS = [...leftRows, instagramRow, ...rightRows]
 
   // ---- Brand collaboration summary + deal list ----
   // The brand-summary card aggregates the campaign showcase cards (TOTAL REACH /
   // ENGAGEMENT % / CAMPAIGNS / ENGAGEMENT), so keep the campaign-derived default
   // rather than recomputing it from live account stats.
-  const BRAND_SUMMARY = d.BRAND_SUMMARY
-  let BRAND_DEALS = d.BRAND_DEALS
+  // Campaign showcase cards are built from the admin's collaborations — each
+  // carries the per-post metrics fetched from the creator's linked IG post.
+  // Real creator with no collaborations → hide the whole Brand Collaborations
+  // section (heading + summary card + showcase cards). No demo fallback here:
+  // the demo only shows on a bare `/influence` (which never reaches this mapper).
+  let CAMPAIGNS = []
+  let BRAND_SUMMARY = []
+  let BRAND_DEALS = []
   if (collabs.length) {
+    CAMPAIGNS = collabs.map((x) => {
+      const interactions = (x.likes || 0) + (x.comments || 0) + (x.saves || 0) + (x.shares || 0)
+      const deliverables = [deliverableLabel(x.mediaType)]
+      if (x.category) deliverables.push(x.category)
+      return {
+        brand: x.brandName || 'Brand',
+        subtitle: x.campaignTitle || '',
+        category: (x.category || '').toUpperCase(),
+        metric: fc0(x.reach),
+        date: campaignDate(x.metricsFetchedAt || x.createdAt),
+        // Manual overview written in admin (not the post caption).
+        overview: x.description || '',
+        reach: fc0(x.reach),
+        engagement: fc0(interactions),
+        views: fc0(x.views),
+        engRate: `${x.engagementRate || 0}%`,
+        audience: campaignAudience(demo),
+        thumbnail: x.postImage || x.campaignImage || x.logo || '',
+        // Uploaded brand logo/photo — used as the modal header avatar.
+        logo: x.logo || x.campaignImage || x.postImage || '',
+        deliverables,
+        link: x.link || x.instagramUrl || '',
+      }
+    })
+    // Keep the brand-summary aggregate in sync with the live campaign cards.
+    BRAND_SUMMARY = summariseCampaigns(CAMPAIGNS)
     BRAND_DEALS = collabs.map((x) => ({
       brand: x.brandName || 'Brand',
       campaign: x.campaignTitle || x.description || '',
-      reach: '',
-      tag: (x.niche || '').toUpperCase(),
+      reach: fc0(x.reach),
+      tag: (x.category || '').toUpperCase(),
     }))
   }
 
   // ---- Collaboration packages (page lays out up to 3 side by side) ----
-  let PACKAGES = d.PACKAGES
-  if (packages.length) {
+  // For a REAL creator we never show the demo placeholders: the section appears
+  // only when the admin has the toggle on AND has actually added packages.
+  // Empty → [] → the Packages component auto-hides the whole section.
+  const packagesActive = api.packagesActive !== false
+  let PACKAGES = []
+  if (packagesActive && packages.length) {
     const sliced = packages.slice(0, 3)
     // Honour the admin's "Most Popular" choice (isPopular from the backend).
     // Only fall back to a default (middle, or the sole card) if none is flagged.
@@ -330,9 +461,9 @@ export function mapInfluenceData(api, d) {
     }
   }
 
-  // ---- Top posts + photo pool ----
-  let PHOTOS = d.PHOTOS
-  let TOP_POSTS = d.TOP_POSTS
+  // ---- Top posts + photo pool ---- (real data only)
+  let PHOTOS = []
+  let TOP_POSTS = []
   const postImg = (m) =>
     m.media_type === 'VIDEO' ? m.thumbnail_url || m.media_url : m.media_url
   if (media.length) {
@@ -396,14 +527,18 @@ export function mapInfluenceData(api, d) {
     ENG_MONTHS,
     GROWTH_POINTS,
     ENG_POINTS,
+    ENG_POINTS_WEEKLY,
+    ENG_FROM_POSTS,
     AGE_GROUPS,
     TOP_LOCATIONS,
     TOP_COUNTRIES,
     GENDER_SPLIT,
     SOCIALS,
+    CAMPAIGNS,
     BRAND_SUMMARY,
     BRAND_DEALS,
     PACKAGES,
+    PACKAGES_ACTIVE: packagesActive,
     PHOTOS,
     TOP_POSTS,
     FEATURED,

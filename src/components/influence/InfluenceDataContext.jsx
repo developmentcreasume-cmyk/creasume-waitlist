@@ -1,19 +1,18 @@
 /* eslint-disable react-refresh/only-export-components -- context module intentionally exports the provider component and its hook together */
 import { createContext, useContext, useEffect, useState } from 'react'
-import {
-  CREATOR, GROWTH, MONTHS, ENGAGEMENT_BARS, AGE_GROUPS, TOP_LOCATIONS,
-  TOP_COUNTRIES, GENDER_SPLIT, SOCIALS, BRAND_SUMMARY, BRAND_DEALS, PACKAGES,
-  PHOTOS, TOP_POSTS, FEATURED,
-} from './influenceData.js'
+import { CREATOR } from './influenceData.js'
 import { fetchInfluenceData, mapInfluenceData } from '../../services/influenceApi.js'
 
-// The bundled Sample.Creator dataset. Shown immediately on load, on a bare
-// `/influence` (no username in the URL), and as the fallback if the backend is
-// unreachable or the creator isn't found.
+// Real data only — no demo placeholders. Every section starts EMPTY and is
+// filled by mapInfluenceData() once the backend returns the creator; sections
+// with no data hide themselves. CREATOR keeps the pills/tiles SHAPE so the hero
+// renders, but its values are overridden with real numbers (or 0) by the mapper.
 const DEFAULTS = {
-  CREATOR, GROWTH, MONTHS, ENGAGEMENT_BARS, AGE_GROUPS, TOP_LOCATIONS,
-  TOP_COUNTRIES, GENDER_SPLIT, SOCIALS, BRAND_SUMMARY, BRAND_DEALS, PACKAGES,
-  PHOTOS, TOP_POSTS, FEATURED,
+  CREATOR,
+  GROWTH: [], MONTHS: [], ENGAGEMENT_BARS: [], AGE_GROUPS: [], TOP_LOCATIONS: [],
+  TOP_COUNTRIES: [], GENDER_SPLIT: null, SOCIALS: [], CAMPAIGNS: [],
+  BRAND_SUMMARY: [], BRAND_DEALS: [], PACKAGES: [], PHOTOS: [], TOP_POSTS: [],
+  FEATURED: {},
 }
 
 const InfluenceContext = createContext(DEFAULTS)
@@ -29,12 +28,25 @@ export function InfluenceDataProvider({ children }) {
 
   useEffect(() => {
     let alive = true
-    fetchInfluenceData()
-      .then((api) => {
-        if (api && alive) setValue(mapInfluenceData(api, DEFAULTS))
-      })
-      .catch(() => {}) // keep the demo data on any failure
-    return () => { alive = false }
+    const load = () =>
+      fetchInfluenceData()
+        .then((api) => {
+          if (api && alive) setValue(mapInfluenceData(api, DEFAULTS))
+        })
+        .catch(() => {}) // keep the demo data on any failure
+
+    load()
+
+    // Refetch when the page regains focus (e.g. switching back from the admin
+    // after editing social links) so changes show without a manual reload.
+    const onFocus = () => { if (document.visibilityState !== 'hidden') load() }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      alive = false
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
   }, [])
 
   return <InfluenceContext.Provider value={value}>{children}</InfluenceContext.Provider>

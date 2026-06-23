@@ -1,11 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FONT, MONO, CAMPAIGNS } from './influenceData.js'
-
-// Campaign cards live in influenceData so the brand-summary card can aggregate
-// the same list. Showing the first 6.
-const DATA = CAMPAIGNS.slice(0, 6)
+import { FONT, MONO } from './influenceData.js'
+import { useInfluence } from './InfluenceDataContext.jsx'
 
 const CARD_W = 380
 
@@ -36,10 +33,11 @@ function CampaignCard({ data, onClick, sizeW = CARD_W }) {
     const moved = Math.hypot(e.clientX - down.current.x, e.clientY - down.current.y)
     if (moved < 8) onClick()
   }
+  // Outer card shows three stats (no eng. rate — that's in the detail modal).
   const stats = [
     { label: 'REACH', value: data.reach },
-    { label: 'ENGAGE', value: data.engagement },
-    { label: 'ENG. RATE', value: data.engRate },
+    { label: 'VIEWS', value: data.views ?? '0' },
+    { label: 'IMPRESSIONS', value: data.engagement },
   ]
   return (
     <div
@@ -60,7 +58,7 @@ function CampaignCard({ data, onClick, sizeW = CARD_W }) {
         <div className="grid grid-cols-3 gap-2.5 mt-7">
           {stats.map((s) => (
             <div key={s.label} className="rounded-xl px-3 py-3.5" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <div className="tracking-[0.12em] mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, fontWeight: 400, color: 'rgba(255,255,255,0.42)' }}>{s.label}</div>
+              <div className="tracking-[0.12em] mb-2 uppercase" style={{ fontFamily: MONO, fontSize: 9, fontWeight: 400, color: 'rgba(255,255,255,0.42)', whiteSpace: 'nowrap' }}>{s.label}</div>
               <div className="leading-none" style={{ fontFamily: FONT, fontSize: 23, fontWeight: 700, color: '#fff' }}>{s.value}</div>
             </div>
           ))}
@@ -96,30 +94,59 @@ function CampaignCard({ data, onClick, sizeW = CARD_W }) {
 function CampaignBody({ data, ctaIcon = true, pinCta = false, statColors = false }) {
   const stats = [
     { label: 'REACH', value: data.reach, color: '#FFFFFF' },
-    { label: 'ENGAGEMENT', value: data.engagement, color: statColors ? '#4DE0B0' : '#FFFFFF' },
+    { label: 'IMPRESSIONS', value: data.engagement, color: '#FFFFFF' },
+    { label: 'VIEWS', value: data.views ?? '0', color: '#FFFFFF' },
     { label: 'ENG. RATE', value: data.engRate, color: statColors ? '#A78BE8' : '#FFFFFF' },
   ]
+  // If the thumbnail fails to load (expired CDN URL), fall back to the audience
+  // line instead of an empty black box.
+  const [imgError, setImgError] = useState(false)
+  useEffect(() => { setImgError(false) }, [data.thumbnail])
+  const showThumb = data.thumbnail && !imgError
   return (
     <>
-      {/* Campaign overview */}
-      <SectionLabel>CAMPAIGN OVERVIEW</SectionLabel>
-      <p className="text-white/70 mb-6 leading-relaxed" style={{ fontFamily: FONT, fontSize: 14, fontWeight: 300 }}>{data.overview}</p>
+      {/* Campaign overview (manual, from admin) */}
+      {data.overview && (
+        <>
+          <SectionLabel>CAMPAIGN OVERVIEW</SectionLabel>
+          <p className="text-white/70 mb-6 leading-relaxed break-words" style={{ fontFamily: FONT, fontSize: 14, fontWeight: 300, overflowWrap: 'anywhere' }}>{data.overview}</p>
+        </>
+      )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      {/* Stats — one row of 4 */}
+      <div className="grid grid-cols-4 gap-2 mb-6">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-xl px-3 py-3.5" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div className="tracking-[0.12em] mb-1.5" style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 400, color: 'rgba(255,255,255,0.5)' }}>{s.label}</div>
-            <div className="leading-none" style={{ fontFamily: FONT, fontSize: 24, fontWeight: 500, color: s.color }}>{s.value}</div>
+          <div key={s.label} className="rounded-xl px-2.5 py-3" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="tracking-[0.08em] mb-1.5" style={{ fontFamily: MONO, fontSize: 8, fontWeight: 400, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>{s.label}</div>
+            <div className="leading-none" style={{ fontFamily: FONT, fontSize: 18, fontWeight: 500, color: s.color }}>{s.value}</div>
           </div>
         ))}
       </div>
 
-      {/* Audience insights */}
-      <SectionLabel>AUDIENCE INSIGHTS</SectionLabel>
-      <div className="rounded-xl px-4 py-3.5 mb-6" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <p className="text-white/70 leading-relaxed" style={{ fontFamily: FONT, fontSize: 13.5, fontWeight: 300 }}>{data.audience}</p>
-      </div>
+      {/* Linked post thumbnail (falls back to the audience line when a campaign
+          has no linked post — e.g. the bundled demo cards). */}
+      {showThumb ? (
+        <>
+          <SectionLabel>CONTENT</SectionLabel>
+          <div className="rounded-xl overflow-hidden mb-6" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+            <img
+              src={data.thumbnail}
+              alt={data.brand}
+              referrerPolicy="no-referrer"
+              onError={() => setImgError(true)}
+              className="w-full object-cover"
+              style={{ maxHeight: 150, display: 'block' }}
+            />
+          </div>
+        </>
+      ) : (
+        <>
+          <SectionLabel>AUDIENCE INSIGHTS</SectionLabel>
+          <div className="rounded-xl px-4 py-3.5 mb-6" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <p className="text-white/70 leading-relaxed" style={{ fontFamily: FONT, fontSize: 13.5, fontWeight: 300 }}>{data.audience}</p>
+          </div>
+        </>
+      )}
 
       {/* Deliverables */}
       <SectionLabel>DELIVERABLES</SectionLabel>
@@ -129,10 +156,14 @@ function CampaignBody({ data, ctaIcon = true, pinCta = false, statColors = false
         ))}
       </div>
 
-      {/* CTA — mt-auto pins it to the card's bottom so every card's button lines
-          up on the same row (cards stretch to equal height in the marquee). */}
-      <button
-        className={`w-full rounded-xl text-white inline-flex items-center justify-center gap-2 py-3 transition-transform hover:scale-[1.02] ${pinCta ? 'mt-auto' : ''}`}
+      {/* CTA — opens the linked Instagram post in a new tab. mt-auto pins it to
+          the card's bottom so every card's button lines up on the same row. */}
+      <a
+        href={data.link || undefined}
+        target="_blank"
+        rel="noreferrer"
+        onClick={(e) => { if (!data.link) e.preventDefault() }}
+        className={`no-underline w-full rounded-xl text-white inline-flex items-center justify-center gap-2 py-3 transition-transform hover:scale-[1.02] ${pinCta ? 'mt-auto' : ''} ${data.link ? '' : 'opacity-60 cursor-default'}`}
         style={{ fontFamily: FONT, fontSize: 15, fontWeight: 500, background: 'linear-gradient(90deg, rgba(139,92,246,0.85) 0%, rgba(124,92,255,0.85) 100%)' }}
       >
         {ctaIcon && (
@@ -141,7 +172,7 @@ function CampaignBody({ data, ctaIcon = true, pinCta = false, statColors = false
           </svg>
         )}
         View Live Posts
-      </button>
+      </a>
     </>
   )
 }
@@ -174,11 +205,13 @@ function SectionLabel({ children }) {
 function CampaignDetail({ data, onClose }) {
   return (
     <div
-      className="relative rounded-2xl p-6 flex flex-col"
+      className="relative rounded-2xl p-6 flex flex-col [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       style={{
         width: 'min(460px, 92vw)',
         maxHeight: '88vh',
         overflowY: 'auto',
+        overflowX: 'hidden',
+        overscrollBehavior: 'contain',
         background: '#0B0B14',
         border: '1px solid #3B82F6',
         boxShadow: '0 0 0 1px rgba(59,130,246,0.35), 0 24px 60px rgba(0,0,0,0.6)',
@@ -187,10 +220,14 @@ function CampaignDetail({ data, onClose }) {
       {/* Header: avatar + brand + date, circular close */}
       <div className="flex items-center gap-3 mb-5">
         <div
-          className="shrink-0 rounded-lg flex items-center justify-center"
+          className="shrink-0 rounded-lg flex items-center justify-center overflow-hidden"
           style={{ width: 48, height: 48, background: 'linear-gradient(135deg,#2a2f6b 0%,#16183c 100%)', border: '1px solid rgba(255,255,255,0.1)' }}
         >
-          <span className="text-white font-bold" style={{ fontFamily: FONT, fontSize: 22, lineHeight: 1 }}>{data.brand.charAt(0)}</span>
+          {data.logo ? (
+            <img src={data.logo} alt={data.brand} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-white font-bold" style={{ fontFamily: FONT, fontSize: 22, lineHeight: 1 }}>{data.brand.charAt(0)}</span>
+          )}
         </div>
         <div className="min-w-0">
           <div className="text-white font-bold leading-tight" style={{ fontFamily: FONT, fontSize: 22 }}>{data.brand}</div>
@@ -213,8 +250,35 @@ function CampaignDetail({ data, onClose }) {
 }
 
 export default function CampaignShowcase() {
+  // Live campaign cards (built from the admin's collaborations). Empty for a real
+  // creator with no collaborations (section hidden); the bundled demo set only
+  // shows on a bare `/influence`. Showing the first 6.
+  const { CAMPAIGNS = [] } = useInfluence()
+  const DATA = CAMPAIGNS.slice(0, 6)
+
+  // No collaborations → render nothing. The heading/summary card in
+  // ProfessionalPresence is hidden the same way, so the whole Brand
+  // Collaborations section disappears for creators with no portfolio.
+  if (!DATA.length) return null
+
   const [openIdx, setOpenIdx] = useState(null)
   const scrollerRef = useRef(null)
+
+  // Lock page scroll while the detail modal is open so scrolling inside it
+  // doesn't bleed through to the page behind. Lenis owns the scroll, so we stop
+  // it too (just hiding body overflow wouldn't stop Lenis's rAF loop).
+  useEffect(() => {
+    if (openIdx === null) return
+    const lenis = typeof window !== 'undefined' ? window.__lenis : null
+    lenis?.stop()
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      lenis?.start()
+      document.body.style.overflow = prevOverflow
+    }
+  }, [openIdx])
+
   // Pause the auto-advance while interacting: hover on desktop, finger-down
   // (tap/hold) on mobile. A ref (not state) so the rAF loop reads it live
   // without re-rendering.
@@ -228,6 +292,7 @@ export default function CampaignShowcase() {
   // manually; auto-scroll pauses while a finger is down. Cards are duplicated,
   // so we wrap back at the halfway point for a seamless loop.
   useEffect(() => {
+    if (DATA.length <= 1) return // need 2+ cards to scroll
     const el = scrollerRef.current
     if (!el) return
     let raf = 0
@@ -236,6 +301,8 @@ export default function CampaignShowcase() {
     const step = (now) => {
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
+      // scrollWidth is 0 when the marquee is hidden (desktop, 2–3 cards) — the
+      // half>0 guard makes the loop a harmless no-op until it becomes visible.
       if (!pausedRef.current) {
         el.scrollLeft += SPEED * dt
         const half = el.scrollWidth / 2
@@ -245,7 +312,7 @@ export default function CampaignShowcase() {
     }
     raf = requestAnimationFrame(step)
     return () => cancelAnimationFrame(raf)
-  }, [])
+  }, [DATA.length])
 
   // When the row stops, snap to the nearest card boundary so it never rests
   // with a card sliced off at the edge. Cards are CARD_W wide with a 24px
@@ -255,29 +322,54 @@ export default function CampaignShowcase() {
     const el = scrollerRef.current
     if (!el) return
     const step = CARD_W + 24
-    el.scrollTo({ left: Math.round(el.scrollLeft / step) * step, behavior: 'smooth' })
+    // Centre the nearest card in the viewport on narrow (mobile/tablet) screens
+    // so it stops with a margin instead of jammed against the faded left edge;
+    // left-align on wide desktops (where several cards show at once).
+    const peek = el.clientWidth < 700 ? Math.max(0, (el.clientWidth - CARD_W) / 2) : 0
+    const i = Math.round((el.scrollLeft + peek) / step)
+    el.scrollTo({ left: i * step - peek, behavior: 'smooth' })
   }
   const resume = () => { pausedRef.current = false }
 
   return (
     <section className="relative z-10 py-20 md:py-28 overflow-hidden" style={{ background: 'transparent' }}>
-      <div
-        ref={scrollerRef}
-        className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{ WebkitOverflowScrolling: 'touch' }}
-        // Pointer events unify mouse + touch: on desktop these are hover
-        // enter/leave (pause while hovering); on touch they fire on finger
-        // down/up (pause while dragging). Using only these avoids the synthetic
-        // `mouseenter`-with-no-`mouseleave` that left the row stuck paused after
-        // a tap on mobile.
-        onPointerEnter={pause}
-        onPointerLeave={resume}
-        onPointerCancel={resume}
-      >
-        {loop.map((data, i) => (
-          <CampaignCard key={i} data={data} onClick={() => setOpenIdx(i % DATA.length)} />
-        ))}
-      </div>
+      {DATA.length === 1 ? (
+        // Single card: centered, no scroll.
+        <div className="flex justify-center px-6">
+          <CampaignCard data={DATA[0]} onClick={() => setOpenIdx(0)} />
+        </div>
+      ) : (
+        <>
+          {/* Auto-scrolling marquee for any 2+ cards (all screen sizes), so the
+              row always animates instead of stacking or sitting static. Native
+              horizontal scroll gives swipe left/right; auto-scroll pauses on
+              press; cards block text selection / long-press copy. Cards are
+              duplicated for a seamless loop. */}
+          <div
+            ref={scrollerRef}
+            className="flex gap-6 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              // Clip any light glass/backdrop-filter fringe at the scroll edges so
+              // the cards meet the black page cleanly (no side "shadow").
+              maskImage: 'linear-gradient(to right, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%)',
+            }}
+            // Pointer events unify mouse + touch: on desktop these are hover
+            // enter/leave (pause while hovering); on touch they fire on finger
+            // down/up (pause while dragging). Using only these avoids the synthetic
+            // `mouseenter`-with-no-`mouseleave` that left the row stuck paused after
+            // a tap on mobile.
+            onPointerEnter={pause}
+            onPointerLeave={resume}
+            onPointerCancel={resume}
+          >
+            {loop.map((data, i) => (
+              <CampaignCard key={i} data={data} onClick={() => setOpenIdx(i % DATA.length)} />
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Tap-to-open detail of a single card. Rendered through a portal on
           <body> so it escapes this section's `z-10` stacking context — otherwise

@@ -143,7 +143,7 @@ export default function WorkWithMe() {
             <button
               type="submit"
               disabled={sending || sent}
-              className="mt-2 self-center w-auto px-10 rounded-full text-white font-semibold text-base md:text-lg py-3.5 inline-flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] disabled:opacity-70"
+              className="mt-2 self-center w-auto px-10 md:px-14 rounded-full text-white font-semibold text-base md:text-xl py-3.5 md:py-5 inline-flex items-center justify-center gap-2 md:gap-3 transition-transform hover:scale-[1.02] disabled:opacity-70"
               style={{ background: 'linear-gradient(90deg,#8B5CF6 0%, #EC4899 100%)', fontFamily: FONT }}
             >
               {sent ? 'Inquiry Sent ✓' : sending ? 'Sending…' : 'Send Inquiry'}

@@ -45,12 +45,12 @@ export function randomCreator() {
     pills: [
       { value: followers, label: 'Followers', color: '#C9CDEE' },
       { value: engRate, label: 'Eng. Rate', color: '#4DE0B0' },
-      { value: commas(totalViews), label: 'Total Views (last 30d)', color: '#C9CDEE' },
+      { value: commas(totalViews), label: 'Total Views', color: '#C9CDEE' },
       { value: commas(totalReach), label: 'Total Reach', color: '#C9CDEE' },
     ],
     tiles: [
       { value: engRate, label: 'Engagement Rate', Icon: ChartIcon },
-      { value: commas(totalViews), label: 'Total Views (last 30d)', Icon: EyeIcon },
+      { value: commas(totalViews), label: 'Total Views', Icon: EyeIcon },
       { value: String(rand(40, 320)), label: 'Total Post', Icon: CameraIcon },
       { value: followers, label: 'Total Followers', Icon: FollowersIcon },
       { value: commas(totalReach), label: 'Reach', Icon: SendIcon },

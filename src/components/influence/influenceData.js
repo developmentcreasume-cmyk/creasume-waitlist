@@ -35,16 +35,18 @@ export const CREATOR = {
   pills: [
     { value: '125K', label: 'Followers', color: '#89DFEC', labelColor: '#ffffff' },
     { value: '3.46%', label: 'Eng. Rate', color: '#89DFEC', labelColor: '#ffffff' },
-    { value: '43,000', label: 'Total Views (last 30d)', color: '#89DFEC', labelColor: '#ffffff' },
+    { value: '43,000', label: 'Total Views', color: '#89DFEC', labelColor: '#ffffff' },
     { value: '17,000', label: 'Total Reach', color: '#89DFEC', labelColor: '#ffffff' },
   ],
-  // 3×3 metric grid (icons resolved in ProfileHero).
+  // 3×3 metric grid (icons resolved in ProfileHero). `source` drives the
+  // flip-card back face: where each metric comes from. type ∈
+  // 'instagram' | 'calculated' | 'creasume'.
   tiles: [
-    { value: '3.46%', label: 'Engagement Rate', icon: 'chart' },
-    { value: '43,000', label: 'Total Views (last 30d)', icon: 'eye' },
-    { value: '184', label: 'Total Post', icon: 'camera' },
-    { value: '125K', label: 'Total Followers', icon: 'followers' },
-    { value: '87', label: 'Creasume Score', icon: 'score' },
+    { value: '3.46%', label: 'Engagement Rate', icon: 'chart', source: { type: 'calculated', text: 'Total engagement (likes + comments + shares) ÷ reach × 100, from Instagram Insights.' } },
+    { value: '43,000', label: 'Total Views', icon: 'eye', source: { type: 'instagram', text: 'Pulled live from Instagram Insights — views over the last 30 days.' } },
+    { value: '184', label: 'Total Post', icon: 'camera', source: { type: 'instagram', text: 'Your total media count, straight from Instagram.' } },
+    { value: '125K', label: 'Total Followers', icon: 'followers', source: { type: 'instagram', text: 'Live follower count from Instagram.' } },
+    { value: '87', label: 'Creasume Score', icon: 'score', source: { type: 'creasume', text: '(Card Views × 1 + Card Shares × 4\n+ Brand Inquiries × 6 + Inquiries Accepted × 10)\n÷ Maximum Benchmark × 100' } },
     {
       value: '934.8K', label: 'Total Impressions', icon: 'heart',
       // Likes / comments / shares shown as a mini-row inside this tile.
@@ -53,10 +55,11 @@ export const CREATOR = {
         { icon: 'comment', value: '24.6K' },
         { icon: 'share', value: '18.2K' },
       ],
+      source: { type: 'calculated', text: 'Likes + comments + shares combined across your posts.' },
     },
-    { value: '17,000', label: 'Reach', icon: 'rocket' },
-    { value: 'Mumbai', label: 'Top City', icon: 'pin' },
-    { value: '12', label: 'Brand Deals Done', icon: 'handshake' },
+    { value: '17,000', label: 'Reach', icon: 'rocket', source: { type: 'instagram', text: 'Accounts reached over the last 30 days, from Instagram Insights.' } },
+    { value: 'Mumbai', label: 'Top City', icon: 'pin', source: { type: 'instagram', text: 'Your top audience city, from Instagram audience demographics.' } },
+    { value: '12', label: 'Brand Deals Done', icon: 'handshake', source: { type: 'creasume', text: 'Collaborations recorded on your Creasume profile.' } },
   ],
 }
 
