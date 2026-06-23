@@ -337,51 +337,79 @@ function EngagementChart({ bars, months }) {
   const baseDelay = revealed ? 0.05 : 1.15
   const stagger = revealed ? 0.03 : 0.08
   const [hi, setHi] = useState(null)
+  // Per-bar sizing: bars don't shrink below BAR_MIN, so when there are many
+  // months the row overflows and scrolls horizontally instead of squishing.
+  // Few months still fill the width (flex-grow). Bars and labels share the same
+  // flex sizing inside ONE scroll container, so they always stay aligned.
+  const BAR_FLEX = '1 0 34px'
   return (
     <div className="pt-3">
-      <div className="relative" style={{ height: CHART_H }}>
-        {ticks.map((v) => (
-          <div
-            key={v}
-            className="absolute left-0 right-0 flex items-center"
-            style={{ top: `${(1 - v / axisMax) * 100}%`, transform: 'translateY(-50%)' }}
-          >
-            <span className="text-white text-[11px]" style={{ fontFamily: MONO, width: AXIS_W }}>{v}%</span>
-            <span className="flex-1 border-t border-dashed" style={{ borderColor: 'rgba(255,255,255,0.45)' }} />
-          </div>
-        ))}
-        <div className="absolute bottom-0 flex items-end justify-between gap-1 md:gap-3" style={{ left: AXIS_W, right: 6, height: '100%' }}>
-          {bars.map((b, i) => {
-            const last = i === bars.length - 1
-            const h = Math.max(3, Math.min(100, (b / axisMax) * 100))
-            return (
-              <motion.div
-                key={i}
-                className="relative flex-1 rounded-t-md origin-bottom cursor-default"
-                style={{ height: `${h}%`, background: last ? '#89DFEC' : 'linear-gradient(180deg,#E731A2 0%,#C04DCC 50%,#A35CE1 100%)', opacity: hi !== null && hi !== i ? 0.55 : 1 }}
-                initial={{ scaleY: 0, opacity: 0 }}
-                whileInView={{ scaleY: 1, opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, ease: 'easeOut', delay: baseDelay + i * stagger }}
-                onMouseEnter={() => setHi(i)}
-                onMouseLeave={() => setHi(null)}
-              >
-                {hi === i && (
-                  <div
-                    className="absolute left-1/2 -translate-x-1/2 -top-1.5 -translate-y-full px-2.5 py-1.5 rounded-lg whitespace-nowrap pointer-events-none z-20 text-center"
-                    style={{ background: '#0B0B27', border: '1px solid rgba(255,255,255,0.15)', fontFamily: MONO, boxShadow: '0 6px 18px rgba(0,0,0,0.5)' }}
-                  >
-                    <div className="text-white/55 text-[10px]">{months[i]}</div>
-                    <div className="text-white font-semibold text-[12px]">{b}%</div>
-                  </div>
-                )}
-              </motion.div>
-            )
-          })}
+      <div className="flex">
+        {/* Fixed Y-axis: % tick labels on the left (don't scroll). */}
+        <div className="relative shrink-0" style={{ height: CHART_H, width: AXIS_W }}>
+          {ticks.map((v) => (
+            <span
+              key={v}
+              className="absolute left-0 text-white text-[11px]"
+              style={{ fontFamily: MONO, top: `${(1 - v / axisMax) * 100}%`, transform: 'translateY(-50%)' }}
+            >
+              {v}%
+            </span>
+          ))}
         </div>
-      </div>
-      <div className="flex gap-1 md:gap-3 mt-2 text-white text-[8px] md:text-[10px]" style={{ fontFamily: MONO, marginLeft: AXIS_W, marginRight: 6 }}>
-        {months.slice(0, bars.length).map((m, i) => <span key={`${m}-${i}`} className="flex-1 text-center">{m}</span>)}
+
+        {/* Scrollable chart: dashed gridlines + bars + month labels, all sharing
+            the same inner min-width so they scroll together and stay aligned. */}
+        <div className="flex-1 overflow-x-auto pb-1 [scrollbar-width:thin]" style={{ marginRight: 6 }}>
+          <div style={{ minWidth: '100%' }}>
+            <div className="relative" style={{ height: CHART_H }}>
+              {/* Dashed gridlines (full inner width). */}
+              {ticks.map((v) => (
+                <div
+                  key={v}
+                  className="absolute left-0 right-0 border-t border-dashed"
+                  style={{ top: `${(1 - v / axisMax) * 100}%`, borderColor: 'rgba(255,255,255,0.45)' }}
+                />
+              ))}
+              {/* Bars. */}
+              <div className="absolute bottom-0 left-0 right-0 flex items-end gap-1 md:gap-3" style={{ height: '100%' }}>
+                {bars.map((b, i) => {
+                  const last = i === bars.length - 1
+                  const h = Math.max(3, Math.min(100, (b / axisMax) * 100))
+                  return (
+                    <motion.div
+                      key={i}
+                      className="relative rounded-t-md origin-bottom cursor-default"
+                      style={{ flex: BAR_FLEX, height: `${h}%`, background: last ? '#89DFEC' : 'linear-gradient(180deg,#E731A2 0%,#C04DCC 50%,#A35CE1 100%)', opacity: hi !== null && hi !== i ? 0.55 : 1 }}
+                      initial={{ scaleY: 0, opacity: 0 }}
+                      whileInView={{ scaleY: 1, opacity: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, ease: 'easeOut', delay: baseDelay + i * stagger }}
+                      onMouseEnter={() => setHi(i)}
+                      onMouseLeave={() => setHi(null)}
+                    >
+                      {hi === i && (
+                        <div
+                          className="absolute left-1/2 -translate-x-1/2 -top-1.5 -translate-y-full px-2.5 py-1.5 rounded-lg whitespace-nowrap pointer-events-none z-20 text-center"
+                          style={{ background: '#0B0B27', border: '1px solid rgba(255,255,255,0.15)', fontFamily: MONO, boxShadow: '0 6px 18px rgba(0,0,0,0.5)' }}
+                        >
+                          <div className="text-white/55 text-[10px]">{months[i]}</div>
+                          <div className="text-white font-semibold text-[12px]">{b}%</div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </div>
+            {/* Month labels — same flex sizing as the bars, so they line up. */}
+            <div className="flex gap-1 md:gap-3 mt-2 text-white text-[8px] md:text-[10px]" style={{ fontFamily: MONO }}>
+              {months.slice(0, bars.length).map((m, i) => (
+                <span key={`${m}-${i}`} className="text-center" style={{ flex: BAR_FLEX }}>{m}</span>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
