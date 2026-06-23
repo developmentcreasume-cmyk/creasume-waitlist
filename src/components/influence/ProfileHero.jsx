@@ -2,7 +2,7 @@ import { useRef, useState, useEffect, useLayoutEffect } from 'react'
 import { motion, useInView, useReducedMotion } from 'framer-motion'
 import { FONT, MONO, LABEL_GRADIENT } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
-import { shortenLocation } from '../../services/influenceApi.js'
+import { shortenLocation, resolveUsername, API_BASE } from '../../services/influenceApi.js'
 import { goToPath } from '../../router.js'
 import { RollUp } from '../../anim.jsx'
 
@@ -223,6 +223,38 @@ export default function ProfileHero() {
   const avatarSrc = avatarSources[srcIdx]
   // Creasume Score for the badge under the action buttons.
   const score = CREATOR.tiles.find((t) => t.label === 'Creasume Score')?.value ?? '87'
+
+  // "Download PDF" — generated server-side by headless Chrome (backend renders
+  // the real page → faithful gradients/charts/glass) and streamed back as a
+  // file, so it downloads directly with no print dialog.
+  const [pdfing, setPdfing] = useState(false)
+  const handleDownloadPdf = async () => {
+    if (pdfing) return
+    const username = resolveUsername()
+    if (!username) {
+      alert('PDF export is available on a live creator page (/influence/<username>).')
+      return
+    }
+    setPdfing(true)
+    try {
+      const res = await fetch(`${API_BASE}/public/${encodeURIComponent(username)}/pdf`)
+      if (!res.ok) throw new Error(`Server returned ${res.status}`)
+      const blob = await res.blob()
+      const href = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = href
+      a.download = `${username}-media-kit.pdf`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(href)
+    } catch (err) {
+      console.error('PDF download failed', err)
+      alert('Could not download the PDF: ' + (err?.message || err))
+    } finally {
+      setPdfing(false)
+    }
+  }
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-24 pb-12 md:pt-32 md:pb-16 overflow-hidden">
       {/* Creasume wordmark — top-left corner. Clicking it returns to the
@@ -366,7 +398,7 @@ export default function ProfileHero() {
             {/* Headline stat pills — flip in on a horizontal axis. Two per row
                 (2×2) on small screens; a single flex row on large screens. */}
             <motion.div
-              className="grid grid-cols-2 w-full max-w-[460px] mx-auto justify-items-center gap-2.5 mb-9 md:mb-11 lg:flex lg:w-auto lg:max-w-none lg:mx-0 lg:flex-wrap lg:justify-start"
+              className="flex flex-wrap justify-center w-full max-w-[460px] mx-auto gap-2.5 mb-9 md:mb-11 lg:w-auto lg:max-w-none lg:mx-0 lg:justify-start"
               initial="hidden"
               whileInView="show"
               viewport={viewport}
@@ -398,8 +430,10 @@ export default function ProfileHero() {
               {CREATOR.bio}
             </motion.p>
 
-            {/* Action buttons — same flip-in as the pills */}
+            {/* Action buttons — same flip-in as the pills. Hidden in the PDF
+                export (data-pdf-hide), since they're interactive, not content. */}
             <motion.div
+              data-pdf-hide
               className="flex flex-nowrap justify-center lg:justify-start gap-2 md:gap-3 mb-10 md:mb-12"
               initial="hidden"
               whileInView="show"
@@ -422,13 +456,15 @@ export default function ProfileHero() {
                 custom={5}
                 variants={flipIn}
                 type="button"
-                className="inline-flex items-center whitespace-nowrap gap-2.5 rounded-full text-white font-semibold text-sm md:text-base px-4 md:px-7 py-3 md:py-3.5 transition-colors hover:bg-white/5"
+                onClick={handleDownloadPdf}
+                disabled={pdfing}
+                className="inline-flex items-center whitespace-nowrap gap-2.5 rounded-full text-white font-semibold text-sm md:text-base px-4 md:px-7 py-3 md:py-3.5 transition-colors hover:bg-white/5 disabled:opacity-60"
                 style={{ fontFamily: FONT, border: '1px solid rgba(255,255,255,0.18)', transformOrigin: 'center' }}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 3v12" /><path d="m7 11 5 5 5-5" /><path d="M5 21h14" />
                 </svg>
-                Download PDF
+                {pdfing ? 'Preparing…' : 'Download PDF'}
               </motion.button>
             </motion.div>
 
@@ -454,7 +490,10 @@ export default function ProfileHero() {
                   border: '1px solid rgba(255,255,255,0.3)',
                   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)',
                   fontFamily: FONT,
-                  fontSize: 20,
+                  // Shrink for longer scores (e.g. "52.02") so they fit the circle.
+                  fontSize: String(score).length >= 5 ? 13 : String(score).length === 4 ? 15 : String(score).length === 3 ? 17 : 20,
+                  lineHeight: 1,
+                  padding: '0 2px',
                 }}
               >
                 {score}

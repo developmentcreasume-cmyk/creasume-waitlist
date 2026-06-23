@@ -28,6 +28,36 @@ html, body, #root {
   max-width: 100%;
 }
 
+/* ===== Download PDF = native print (Save as PDF). Renders the real page, so
+   colours / gradients / charts come out right (html2canvas left them blank). */
+@media print {
+  /* Print only the influence card. */
+  body * { visibility: hidden !important; }
+  #influence-card-root, #influence-card-root * { visibility: visible !important; }
+  #influence-card-root {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Drop interactive-only bits (Book a Collab / Download PDF). */
+  [data-pdf-hide] { display: none !important; }
+
+  /* Reveal sections that framer-motion left at opacity:0 (never scrolled into
+     view) — inline opacity is beaten by !important here. */
+  #influence-card-root [style*="opacity"] { opacity: 1 !important; }
+
+  /* Keep the dark theme and force backgrounds/colours to actually print. */
+  html, body, #root, #influence-card-root { background: #05050b !important; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+  /* Pause the auto-scrolling marquee so it doesn't print mid-shift. */
+  .starfield { animation: none !important; }
+
+  @page { margin: 0; }
+}
+
 /* Lenis smooth scroll — recommended base styles. Note: native CSS
    `scroll-behavior: smooth` must be off so it doesn't fight Lenis. */
 html.lenis,

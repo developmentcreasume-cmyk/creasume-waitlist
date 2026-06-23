@@ -18,7 +18,7 @@ export default function InfluenceCard() {
   return (
     <InfluenceDataProvider>
       <MotionConfig reducedMotion="user">
-        <div className="relative min-h-screen overflow-x-clip bg-black text-white">
+        <div id="influence-card-root" className="relative min-h-screen overflow-x-clip bg-black text-white">
           {/* Ambient brand background */}
           <div className="starfield" />
 

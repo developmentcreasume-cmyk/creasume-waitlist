@@ -147,6 +147,9 @@ export function mapInfluenceData(api, d) {
     Reach: fc0(s.reach),
     'Top City': topCity || null,
     'Brand Deals Done': String(collabs.length),
+    // Real Creasume Score from the backend (0–100, 2 decimals). Falls back to
+    // the bundled demo value only when the backend doesn't supply one.
+    'Creasume Score': s.creasumeScore != null ? String(s.creasumeScore) : null,
   }
   // The Impressions tile shows likes / comments / shares as a mini-row beneath.
   const impressionDetails = [
@@ -187,7 +190,7 @@ export function mapInfluenceData(api, d) {
   let MONTHS = d.MONTHS
   if (growth.length >= 2) {
     const pts = growth.slice(-7)
-    GROWTH = pts.map((g) => Math.max(1, Math.round(g.followers / 1000)))
+    GROWTH = pts.map((g) => g.followers / 1000)
     MONTHS = pts.map((g) => new Date(g.date).toLocaleString('en-US', { month: 'short' }))
   }
 
@@ -207,16 +210,23 @@ export function mapInfluenceData(api, d) {
   }
 
   // Dated raw series so the 30D / 90D / 1Y toggle can filter by time window in
-  // the component (followers per snapshot day, engagement rate per post).
+  // the component. Followers + engagement come from the backend's daily
+  // snapshots (growth[]), so both charts read the SAME real history.
   const GROWTH_POINTS = growth.map((g) => ({ date: g.date, followers: g.followers }))
-  const ENG_POINTS = media
-    .filter((m) => m.timestamp)
-    .map((m) => {
-      const e = (m.like_count || 0) + (m.comments_count || 0) + (m.saved || 0) + (m.shares || 0)
-      const denom = m.views || s.reach || s.followersCount || 1
-      return { date: m.timestamp, rate: Math.round((e / denom) * 1000) / 10 }
-    })
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
+  // Prefer the real daily engagement-rate history; until enough daily snapshots
+  // exist, fall back to per-post engagement from the recent media.
+  const ENG_POINTS = growth.some((g) => g.engagement > 0)
+    ? growth
+        .filter((g) => g.engagement > 0)
+        .map((g) => ({ date: g.date, rate: g.engagement }))
+    : media
+        .filter((m) => m.timestamp)
+        .map((m) => {
+          const e = (m.like_count || 0) + (m.comments_count || 0) + (m.saved || 0) + (m.shares || 0)
+          const denom = m.views || s.reach || s.followersCount || 1
+          return { date: m.timestamp, rate: Math.round((e / denom) * 1000) / 10 }
+        })
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
 
   // ---- Audience: age distribution, top cities, gender split ----
   let AGE_GROUPS = d.AGE_GROUPS

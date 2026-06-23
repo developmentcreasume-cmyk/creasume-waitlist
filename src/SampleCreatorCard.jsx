@@ -45,12 +45,12 @@ export function randomCreator() {
     pills: [
       { value: followers, label: 'Followers', color: '#C9CDEE' },
       { value: engRate, label: 'Eng. Rate', color: '#4DE0B0' },
-      { value: commas(totalViews), label: 'Total Views', color: '#C9CDEE' },
+      { value: commas(totalViews), label: 'Total Views (last 30d)', color: '#C9CDEE' },
       { value: commas(totalReach), label: 'Total Reach', color: '#C9CDEE' },
     ],
     tiles: [
       { value: engRate, label: 'Engagement Rate', Icon: ChartIcon },
-      { value: commas(totalViews), label: 'Total Views', Icon: EyeIcon },
+      { value: commas(totalViews), label: 'Total Views (last 30d)', Icon: EyeIcon },
       { value: String(rand(40, 320)), label: 'Total Post', Icon: CameraIcon },
       { value: followers, label: 'Total Followers', Icon: FollowersIcon },
       { value: commas(totalReach), label: 'Reach', Icon: SendIcon },
@@ -88,6 +88,11 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul']
 
 // Solid-stroke sparkline. (SVG gradient `url(#id)` refs don't render in this
 // app's hash-routed pages, so the line uses a flat brand color.)
+function getInstagramUrl(handle) {
+  const username = String(handle || '').trim().replace(/^@/, '')
+  return username ? `https://instagram.com/${username}` : '#'
+}
+
 function Sparkline({ points, stroke = '#9CA2E1' }) {
   const w = 320
   const h = 64
@@ -345,7 +350,16 @@ export default function SampleCreatorCard({ data = randomCreator() }) {
             {data.name}
           </h3>
           <p className="text-white/50 text-[12px] leading-snug truncate" style={{ fontFamily: MONO }}>
-            {data.handle} · {data.niche}
+            <a
+              href={getInstagramUrl(data.handle)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#E1306C] hover:text-white transition-colors"
+              aria-label={`Open Instagram profile ${data.handle}`}
+            >
+              {data.handle}
+            </a>
+            {' '}· {data.niche}
           </p>
         </div>
       </div>

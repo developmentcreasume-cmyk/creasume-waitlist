@@ -35,13 +35,13 @@ export const CREATOR = {
   pills: [
     { value: '125K', label: 'Followers', color: '#89DFEC', labelColor: '#ffffff' },
     { value: '3.46%', label: 'Eng. Rate', color: '#89DFEC', labelColor: '#ffffff' },
-    { value: '43,000', label: 'Total Views', color: '#89DFEC', labelColor: '#ffffff' },
+    { value: '43,000', label: 'Total Views (last 30d)', color: '#89DFEC', labelColor: '#ffffff' },
     { value: '17,000', label: 'Total Reach', color: '#89DFEC', labelColor: '#ffffff' },
   ],
   // 3×3 metric grid (icons resolved in ProfileHero).
   tiles: [
     { value: '3.46%', label: 'Engagement Rate', icon: 'chart' },
-    { value: '43,000', label: 'Total Views', icon: 'eye' },
+    { value: '43,000', label: 'Total Views (last 30d)', icon: 'eye' },
     { value: '184', label: 'Total Post', icon: 'camera' },
     { value: '125K', label: 'Total Followers', icon: 'followers' },
     { value: '87', label: 'Creasume Score', icon: 'score' },

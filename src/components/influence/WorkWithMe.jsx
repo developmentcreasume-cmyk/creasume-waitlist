@@ -4,10 +4,10 @@ import { FONT } from './influenceData.js'
 import { sendInquiry, resolveUsername } from '../../services/influenceApi.js'
 
 const FIELDS = [
-  { key: 'brand', placeholder: 'Brand Name', type: 'text' },
-  { key: 'agency', placeholder: 'Agency (Optional)', type: 'text' },
-  { key: 'email', placeholder: 'Your Professional Email', type: 'email' },
-  { key: 'campaignType', placeholder: 'Campaign Type', type: 'text' },
+  { key: 'brand', placeholder: 'Brand Name', type: 'text', required: true },
+  { key: 'agency', placeholder: 'Agency (Optional)', type: 'text', required: false },
+  { key: 'email', placeholder: 'Your Professional Email', type: 'email', required: true },
+  { key: 'campaignType', placeholder: 'Campaign Type', type: 'text', required: true },
 ]
 
 export default function WorkWithMe() {
@@ -28,6 +28,17 @@ export default function WorkWithMe() {
   const submit = async (e) => {
     e.preventDefault()
     if (sending || sent) return
+    // Require the key fields (Agency + Brief are optional) so empty forms can't
+    // be submitted, with a friendly inline message.
+    if (!data.brand.trim() || !data.email.trim() || !data.campaignType.trim()) {
+      setError('Please fill in your brand, email and campaign type.')
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) {
+      setError('Please enter a valid email address.')
+      return
+    }
+    setError('')
     // No live creator (no URL username and no env default) → demo confirmation.
     if (!resolveUsername()) {
       setSent(true)
@@ -111,6 +122,7 @@ export default function WorkWithMe() {
                 key={f.key}
                 type={f.type}
                 placeholder={f.placeholder}
+                required={f.required}
                 value={data[f.key]}
                 onChange={(e) => setData({ ...data, [f.key]: e.target.value })}
                 className="rounded-xl px-5 text-white text-base placeholder:text-white placeholder:opacity-100 outline-none focus:border-white/25 transition-colors"

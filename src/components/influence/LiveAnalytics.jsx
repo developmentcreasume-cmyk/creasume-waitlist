@@ -4,11 +4,8 @@ import { FONT, MONO, PANEL } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
 import { CountUp } from '../../anim.jsx'
 
-// Follower Growth line chart: left Y-axis ticks (280k…70k), dashed gridlines,
-// and a white line. vectorEffect keeps the stroke crisp under the stretched
-// (preserveAspectRatio: none) viewBox.
-const AXIS_MAX = 280
-const Y_TICKS = [280, 210, 140, 70]
+// Follower Growth line chart: left Y-axis ticks use dynamic intervals,
+// based on the graph's current scale. Labels are shown in thousands.
 const CHART_H = 190
 const AXIS_W = 46
 // Baseline (the x-axis) sits just above the months; the white line rides on it
@@ -16,24 +13,141 @@ const AXIS_W = 46
 const BASELINE_Y = 97
 const LINE_AMP = 9
 
+function niceFollowerAxisScale(maxK) {
+  // Always render 5–6 gridlines. Aim for 5 steps, with the step rounded up to a
+  // "nice" number (1 / 2 / 2.5 / 5 × 10ⁿ) so the k-labels stay tidy. No 1k floor
+  // — sub-1k creators (a few hundred followers) need the axis to scale to their
+  // real numbers instead of collapsing to a flat "1k".
+  const value = maxK > 0 ? maxK : 1
+  const rawStep = value / 5
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)))
+  const norm = rawStep / mag
+  const niceNorm = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10
+  const interval = niceNorm * mag
+  let axisMax = Math.ceil(value / interval) * interval
+  const tickCount = Math.round(axisMax / interval)
+  if (tickCount < 5) axisMax = interval * 5
+  else if (tickCount > 6) axisMax = interval * 6
+  return { axisMax, interval }
+}
+
+function formatFollowerTick(v) {
+  if (v >= 1) {
+    return `${Number.isInteger(v) ? v : v.toFixed(2)}k`
+  }
+  return `${Math.round(v * 1000)}`
+}
+
+function formatRangeLabel(dateMs, range) {
+  const date = new Date(dateMs)
+  if (range === '30D') {
+    return date.toLocaleString('en-US', { day: 'numeric', month: 'short' })
+  }
+  return date.toLocaleString('en-US', { month: 'short' })
+}
+
+function buildTimeSeries(points, range, valueKey, transform) {
+  const sorted = points
+    .map((point) => ({ ...point, date: new Date(point.date).getTime() }))
+    .filter((point) => !Number.isNaN(point.date))
+    .sort((a, b) => a.date - b.date)
+
+  if (!sorted.length) {
+    return { values: [], labels: [] }
+  }
+
+  const now = Date.now()
+  const msPerDay = 86400000
+  const totalDays = range === '1Y' ? 365 : range === '90D' ? 90 : 30
+  const start = now - totalDays * msPerDay
+  const boundaries = []
+
+  if (range === '30D') {
+    // Weekly markers across the month (17 Jun → 24 Jun → …).
+    for (let i = 1; i <= 4; i += 1) {
+      boundaries.push(start + i * 7 * msPerDay)
+    }
+  } else if (range === '90D') {
+    for (let i = 1; i <= 3; i += 1) {
+      boundaries.push(start + i * 30 * msPerDay)
+    }
+  } else {
+    const startDate = new Date(start)
+    const baseMonth = startDate.getMonth()
+    const baseYear = startDate.getFullYear()
+    const startDay = startDate.getDate()
+    for (let i = 1; i <= 12; i += 1) {
+      boundaries.push(new Date(baseYear, baseMonth + i, startDay).getTime())
+    }
+  }
+
+  const values = []
+  const labels = []
+  let lastMatched = sorted[0]
+  let idx = 0
+
+  boundaries.forEach((boundary) => {
+    while (idx < sorted.length && sorted[idx].date <= boundary) {
+      lastMatched = sorted[idx]
+      idx += 1
+    }
+    if (!lastMatched) {
+      return
+    }
+    values.push(transform(lastMatched[valueKey]))
+    // Label by the period boundary (the week / month tick), not the matched
+    // point's date — otherwise sparse data repeats the same date on every tick.
+    labels.push(formatRangeLabel(boundary, range))
+  })
+
+  return { values, labels }
+}
+
+// Catmull-Rom → cubic-bézier so the follower line reads as a smooth curve
+// through every point instead of straight zig-zag segments.
+function smoothPath(pts) {
+  let d = `M${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`
+  for (let i = 0; i < pts.length - 1; i += 1) {
+    const p0 = pts[i - 1] || pts[i]
+    const p1 = pts[i]
+    const p2 = pts[i + 1]
+    const p3 = pts[i + 2] || p2
+    const c1x = p1.x + (p2.x - p0.x) / 6
+    const c1y = p1.y + (p2.y - p0.y) / 6
+    const c2x = p2.x - (p3.x - p1.x) / 6
+    const c2y = p2.y - (p3.y - p1.y) / 6
+    d += ` C${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`
+  }
+  return d
+}
+
 function FollowerGrowthChart({ points, months }) {
-  // One straight line: starts on the baseline (first value) and climbs to the
-  // last value. Endpoints are data-driven; the middle isn't drawn.
-  const lo = Math.min(...points)
-  const span = Math.max(...points) - lo || 1
-  // Flat line, just above the baseline.
-  const flatY = (BASELINE_Y - 4).toFixed(1)
-  const d = `M0 ${flatY} L100 ${flatY}`
+  const maxK = Math.max(...points)
+  const { axisMax, interval } = niceFollowerAxisScale(maxK)
+  const tickCount = Math.max(2, Math.ceil(axisMax / interval))
+  const ticks = Array.from({ length: tickCount }, (_, i) => +(interval * (i + 1)).toFixed(2))
+
+  // Plot the REAL follower trend as a smooth curve, scaled to the same axis as
+  // the gridlines so it sits exactly on its values. We also build a flat version
+  // along the baseline so the curve can animate up from the bottom into place.
+  const n = points.length
+  const yFor = (v) => +(Math.min(BASELINE_Y, Math.max(0, 1 - v / axisMax) * 100)).toFixed(2)
+  const realPts = n < 2
+    ? [{ x: 0, y: yFor(points[0] ?? 0) }, { x: 100, y: yFor(points[0] ?? 0) }]
+    : points.map((p, i) => ({ x: (i / (n - 1)) * 100, y: yFor(p) }))
+  const flatPts = realPts.map((p) => ({ x: p.x, y: BASELINE_Y }))
+  const d = smoothPath(realPts)
+  const dFlat = smoothPath(flatPts)
   return (
     <div>
       <div className="relative" style={{ height: CHART_H }}>
-        {Y_TICKS.map((v) => (
+        {ticks.map((v) => (
           <div
             key={v}
             className="absolute left-0 right-0 flex items-center"
-            style={{ top: `${(1 - v / AXIS_MAX) * 100}%`, transform: 'translateY(-50%)' }}
+            style={{ top: `${(1 - v / axisMax) * 100}%`, transform: 'translateY(-50%)' }}
           >
-            <span className="text-white text-[11px]" style={{ fontFamily: MONO, width: AXIS_W }}>{v}k</span>
+            <span className="text-white text-[11px]" style={{ fontFamily: MONO, width: AXIS_W }}>{formatFollowerTick(v)}</span>
             <span className="flex-1 border-t border-dashed" style={{ borderColor: 'rgba(255,255,255,0.45)' }} />
           </div>
         ))}
@@ -51,9 +165,10 @@ function FollowerGrowthChart({ points, months }) {
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
         >
-          {/* One solid continuous stroke. The pathLength draw is avoided here —
-              under the stretched viewBox + non-scaling-stroke it renders as
-              broken dashes, so the line is faded in instead. */}
+          {/* The curve rises up from the baseline into its real shape by
+              interpolating the path `d` from the flat baseline to the trend.
+              non-scaling-stroke keeps the 2.5px width crisp under the stretched
+              viewBox. */}
           <motion.path
             d={d}
             fill="none"
@@ -62,10 +177,10 @@ function FollowerGrowthChart({ points, months }) {
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+            initial={{ d: dFlat, opacity: 0 }}
+            whileInView={{ d, opacity: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6, ease: 'easeOut', delay: 1.15 }}
+            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
           />
         </svg>
       </div>
@@ -76,19 +191,14 @@ function FollowerGrowthChart({ points, months }) {
   )
 }
 
-// Engagement Rate: percentage Y-axis with dashed gridlines, and a vertical bar
-// per post whose HEIGHT reflects that post's engagement rate. The axis auto-
-// scales (min 8%) so the bars actually fill the chart instead of sitting flat on
-// the baseline. Latest post highlighted in cyan.
-const niceCeil = (v) => {
-  if (v <= 8) return 8
-  const step = v <= 20 ? 5 : v <= 50 ? 10 : 25
-  return Math.ceil(v / step) * step
-}
+// Engagement Rate: fixed 20% step Y-axis with dashed gridlines, and a vertical bar
+// per post whose HEIGHT reflects that post's engagement rate. Latest post
+// highlighted in cyan.
+const axisMaxEngagement = 100
 
 function EngagementChart({ bars, months }) {
-  const axisMax = niceCeil(Math.max(0, ...bars))
-  const ticks = [1, 0.75, 0.5, 0.25, 0].map((f) => Math.round(axisMax * f * 10) / 10)
+  const step = 20
+  const ticks = Array.from({ length: axisMaxEngagement / step + 1 }, (_, i) => i * step)
   return (
     <div>
       <div className="relative" style={{ height: CHART_H }}>
@@ -96,7 +206,7 @@ function EngagementChart({ bars, months }) {
           <div
             key={v}
             className="absolute left-0 right-0 flex items-center"
-            style={{ top: `${(1 - v / axisMax) * 100}%`, transform: 'translateY(-50%)' }}
+            style={{ top: `${(1 - v / axisMaxEngagement) * 100}%`, transform: 'translateY(-50%)' }}
           >
             <span className="text-white text-[11px]" style={{ fontFamily: MONO, width: AXIS_W }}>{v}%</span>
             <span className="flex-1 border-t border-dashed" style={{ borderColor: 'rgba(255,255,255,0.45)' }} />
@@ -105,7 +215,7 @@ function EngagementChart({ bars, months }) {
         <div className="absolute bottom-0 flex items-end justify-between gap-3" style={{ left: AXIS_W, right: 6, height: '100%' }}>
           {bars.map((b, i) => {
             const last = i === bars.length - 1
-            const h = Math.max(3, Math.min(100, (b / axisMax) * 100))
+            const h = Math.max(3, Math.min(100, (b / axisMaxEngagement) * 100))
             return (
               <motion.div
                 key={i}
@@ -168,17 +278,14 @@ export default function LiveAnalytics() {
 
   // Filter the dated series by the selected window so 30D / 90D / 1Y actually
   // change the charts. Falls back to the precomputed arrays (demo / no dates).
-  // Day + short month (e.g. "10 Apr") so posts in the same month don't all show
-  // an identical label.
-  const mShort = (iso) => new Date(iso).toLocaleString('en-US', { day: 'numeric', month: 'short' })
-  const days = range === '90D' ? 90 : range === '1Y' ? 365 : 30
-  const cutoff = Date.now() - days * 86400000
-  const engSel = (ENG_POINTS || []).filter((p) => new Date(p.date).getTime() >= cutoff).slice(-6)
-  const growSel = (GROWTH_POINTS || []).filter((p) => new Date(p.date).getTime() >= cutoff).slice(-7)
-  const engBars = engSel.length ? engSel.map((p) => p.rate) : ENGAGEMENT_BARS
-  const engMonths = engSel.length ? engSel.map((p) => mShort(p.date)) : (ENG_MONTHS || MONTHS)
-  const growthVals = growSel.length >= 2 ? growSel.map((g) => Math.max(1, Math.round(g.followers / 1000))) : GROWTH
-  const growthMonths = growSel.length >= 2 ? growSel.map((g) => mShort(g.date)) : MONTHS
+  // Keep followers as exact thousands (e.g. 233 → 0.233) so small creators show
+  // their real numbers; the axis + tick formatter render the actual counts.
+  const growthSeries = buildTimeSeries(GROWTH_POINTS || [], range, 'followers', (value) => value / 1000)
+  const engSeries = buildTimeSeries(ENG_POINTS || [], range, 'rate', (value) => Math.round(value * 10) / 10)
+  const engBars = engSeries.values.length ? engSeries.values : ENGAGEMENT_BARS
+  const engMonths = engSeries.labels.length ? engSeries.labels : (ENG_MONTHS || MONTHS)
+  const growthVals = growthSeries.values.length ? growthSeries.values : GROWTH
+  const growthMonths = growthSeries.labels.length ? growthSeries.labels : MONTHS
   const [hovered, setHovered] = useState(null)
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-12 md:py-20 overflow-hidden">
@@ -231,9 +338,12 @@ export default function LiveAnalytics() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pl-4 md:pl-8">
           <Panel title="Follower Growth" from="left" style={{ background: 'linear-gradient(155deg, #1b2052 0%, #10133C 60%)' }}>
             <FollowerGrowthChart points={growthVals} months={growthMonths} />
+            <p className="mt-3 text-[11px] text-white/60" style={{ fontFamily: MONO }}>
+              This chart only shows the follower growth of the creator after joining Creasume.
+            </p>
           </Panel>
 
           <Panel title="Engagement Rate" from="right" style={{ background: 'linear-gradient(155deg, #1b2052 0%, #10133C 60%)' }}>

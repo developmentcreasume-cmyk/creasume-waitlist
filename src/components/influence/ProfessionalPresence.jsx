@@ -15,6 +15,15 @@ const fadeCard = {
 }
 
 // Brand logo glyphs for the platform rows.
+function getSocialUrl(platform, handle) {
+  const username = String(handle || '').trim().replace(/^@/, '')
+  if (!username) return undefined
+  if (platform === 'Instagram') return `https://instagram.com/${username}`
+  if (platform === 'YouTube') return `https://www.youtube.com/${username}`
+  if (platform === 'X (Twitter)') return `https://x.com/${username}`
+  return undefined
+}
+
 const PLATFORM_ICON = {
   YouTube: (<svg width="22" height="22" viewBox="0 0 24 24" fill="#FF0000"><path d="M23 12s0-3.8-.5-5.6a2.9 2.9 0 0 0-2-2C18.7 4 12 4 12 4s-6.7 0-8.5.4a2.9 2.9 0 0 0-2 2C1 8.2 1 12 1 12s0 3.8.5 5.6a2.9 2.9 0 0 0 2 2C5.3 20 12 20 12 20s6.7 0 8.5-.4a2.9 2.9 0 0 0 2-2C23 15.8 23 12 23 12ZM9.8 15.3V8.7l5.7 3.3-5.7 3.3Z" /></svg>),
   'Instagram': (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E1306C" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="#E1306C" stroke="none" /></svg>),
@@ -57,32 +66,42 @@ export default function ProfessionalPresence() {
 
         {/* Platform rows */}
         <motion.div
-          className="flex flex-col md:flex-row gap-3 mb-3 max-w-[920px] mx-auto"
+          className="flex flex-col md:flex-row gap-3 mb-3 max-w-[920px] mx-auto md:translate-x-16"
           variants={fadeStagger}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: '-60px' }}
         >
-          {SOCIALS.map((s) => (
-            <motion.div
-              key={s.name}
-              variants={fadeCard}
-              className="flex-1 flex items-center gap-3 rounded-xl px-4 py-3.5"
-              style={{ background: 'rgba(40,46,112,0.30)', border: '1px solid rgba(255,255,255,0.08)' }}
-            >
-              <span className="shrink-0">{PLATFORM_ICON[s.name]}</span>
-              <div className="min-w-0 flex-1">
-                <div className="text-white text-sm font-medium truncate" style={{ fontFamily: FONT }}>{s.name}</div>
-                <div className="text-white text-[11px] truncate" style={{ fontFamily: MONO }}>{s.handle}</div>
-              </div>
-              <span
-                className="shrink-0 text-[13px] font-semibold"
-                style={{ fontFamily: MONO, color: '#D85A9E' }}
+          {SOCIALS.map((s) => {
+            const url = getSocialUrl(s.name, s.handle)
+            const content = (
+              <div className="flex-1 flex items-center gap-3 rounded-xl px-4 py-3.5"
+                style={{ background: 'rgba(40,46,112,0.30)', border: '1px solid rgba(255,255,255,0.08)' }}
               >
-                {s.status}
-              </span>
-            </motion.div>
-          ))}
+                <span className="shrink-0">{PLATFORM_ICON[s.name]}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-white text-sm font-medium truncate" style={{ fontFamily: FONT }}>{s.name}</div>
+                  <div className="text-white text-[11px] truncate" style={{ fontFamily: MONO }}>{s.handle}</div>
+                </div>
+                <span
+                  className="shrink-0 text-[13px] font-semibold"
+                  style={{ fontFamily: MONO, color: '#D85A9E' }}
+                >
+                  {s.status}
+                </span>
+              </div>
+            )
+
+            return (
+              <motion.div key={s.name} variants={fadeCard}>
+                {url ? (
+                  <a href={url} target="_blank" rel="noopener noreferrer" className="block hover:opacity-90 transition-opacity">
+                    {content}
+                  </a>
+                ) : content}
+              </motion.div>
+            )
+          })}
         </motion.div>
 
         <div className="rounded-xl px-4 py-3 text-center text-base mb-24 md:mb-32 max-w-[920px] mx-auto" style={{ background: 'rgba(40,46,112,0.30)', border: '1px solid rgba(255,255,255,0.08)', fontFamily: FONT }}>

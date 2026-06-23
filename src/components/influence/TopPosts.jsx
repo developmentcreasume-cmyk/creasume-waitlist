@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { motion, AnimatePresence, useScroll, useMotionValueEvent, useTransform } from 'framer-motion'
 import { FONT, MONO } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
+import { formatCount } from '../../services/influenceApi.js'
 
 // One marquee row of "TOP POSTS • INFLUENCE •" text. Driven by the section's
 // scroll progress: scrolling down slides it one way, scrolling up the other.
@@ -38,6 +39,18 @@ function MarqueeRow({ text, reverse = false, hollow = false, progress, className
       </motion.div>
     </div>
   )
+}
+
+function parseCount(value) {
+  if (value == null) return 0
+  const str = String(value).trim()
+  if (str === '') return 0
+  const million = str.match(/^([\d.]+)\s*M$/i)
+  if (million) return Number(million[1]) * 1_000_000
+  const thousand = str.match(/^([\d.]+)\s*K$/i)
+  if (thousand) return Number(thousand[1]) * 1_000
+  const num = Number(str.replace(/,/g, ''))
+  return Number.isNaN(num) ? 0 : num
 }
 
 export default function TopPosts() {
@@ -77,14 +90,23 @@ export default function TopPosts() {
           boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
         }}
       >
-        {/* Left: this post's view count + its own supporting stats */}
+        {/* Left: this post's total impressions + its own supporting stats */}
         <div className="flex flex-col justify-center gap-4 md:gap-7 items-center md:items-start text-center md:text-left">
           <div>
-            <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(40px, 5vw, 64px)' }}>{post.views}</div>
-            <div className="text-white/70 font-light text-sm tracking-widest uppercase mt-2" style={{ fontFamily: MONO }}>Views</div>
+            <div className="text-white font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(40px, 5vw, 64px)' }}>
+              {formatCount(
+                parseCount(post.views) +
+                parseCount(post.likes) +
+                parseCount(post.comments) +
+                parseCount(post.saves) +
+                parseCount(post.shares),
+              )}
+            </div>
+            <div className="text-white/70 font-light text-sm tracking-widest uppercase mt-2" style={{ fontFamily: MONO }}>Total Impressions</div>
           </div>
           <div className="flex flex-wrap justify-center md:justify-start gap-x-5 gap-y-3 md:gap-7">
             {[
+              { label: 'Views', value: post.views },
               { label: 'Likes', value: post.likes },
               { label: 'Comments', value: post.comments },
               { label: 'Saves', value: post.saves },

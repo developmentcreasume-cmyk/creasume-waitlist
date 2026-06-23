@@ -475,7 +475,7 @@ function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-    <div className="relative min-h-screen overflow-x-clip bg-black text-white">
+    <div className="relative min-h-screen flex flex-col overflow-x-clip bg-black text-white">
       {/* Starfield */}
       <div className="starfield" />
 
@@ -923,7 +923,7 @@ function App() {
 
         <div className="max-w-5xl mx-auto">
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-6 relative"
+            className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-6 relative pl-4 md:pl-8"
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: '-80px' }}
@@ -1242,9 +1242,7 @@ function App() {
               minHeight: '440px',
               padding: 'clamp(28px, 6vw, 44px) clamp(20px, 4vw, 28px)',
               zIndex: 1,
-              background: 'rgba(18, 18, 22, 0.55)',
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
+              background: 'rgba(18, 18, 22, 0.98)',
               border: '1px solid rgba(255, 255, 255, 0.18)',
               boxShadow:
                 'inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 30px 90px rgba(0, 0, 0, 0.55)',
@@ -1367,13 +1365,17 @@ function App() {
             <img
               src="/Group%201707480613.png"
               alt="Creasume"
-              style={{ width: '135px', height: '37px', objectFit: 'contain' }}
+              width="96"
+              height="26"
+              style={{ display: 'block', width: '96px', height: '26px', objectFit: 'contain', imageRendering: 'auto' }}
             />
             <span className="text-[#9EA5E2] text-base">×</span>
             <img
               src="/image%202%20(1).png"
               alt="Meta"
-              style={{ width: '105px', height: '30px', objectFit: 'contain' }}
+              width="75"
+              height="21"
+              style={{ display: 'block', width: '75px', height: '21px', objectFit: 'contain', imageRendering: 'auto' }}
             />
           </div>
           <p
