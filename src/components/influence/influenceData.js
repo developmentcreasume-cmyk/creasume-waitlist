@@ -46,7 +46,25 @@ export const CREATOR = {
     { value: '43,000', label: 'Total Views', icon: 'eye', source: { type: 'instagram', text: 'Pulled live from Instagram Insights — views over the last 30 days.' } },
     { value: '184', label: 'Total Post', icon: 'camera', source: { type: 'instagram', text: 'Your total media count, straight from Instagram.' } },
     { value: '125K', label: 'Total Followers', icon: 'followers', source: { type: 'instagram', text: 'Live follower count from Instagram.' } },
-    { value: '87', label: 'Creasume Score', icon: 'score', source: { type: 'creasume', text: '(Card Views × 1 + Card Shares × 4\n+ Brand Inquiries × 6 + Inquiries Accepted × 10)\n÷ Maximum Benchmark × 100' } },
+    {
+      value: '87', label: 'Creasume Score', icon: 'score',
+      source: {
+        type: 'creasume',
+        text: 'Your credibility score out of 100, built from your influence card activity, brand inquiries, and deals you actually close.',
+        more: {
+          title: 'How to build your Creasume Score',
+          intro: 'Your Creasume Score grows every time you put your Influence Card to work. Build it by:',
+          bullets: [
+            'Completing your profile and verifying your identity',
+            'Adding your past campaigns and keeping your card fresh',
+            'Sharing your card link in your bio, pitches, and DMs',
+            'Attracting brand inquiries through your card',
+            'Accepting and closing deals through Creasume (biggest boost)',
+          ],
+          outro: 'The more you share and close deals, the higher your score climbs. A higher score means brands trust you more. It also pushes your card higher when brands search for creators. So keep sharing, keep closing, and keep climbing.',
+        },
+      },
+    },
     {
       value: '934.8K', label: 'Total Impressions', icon: 'heart',
       // Likes / comments / shares shown as a mini-row inside this tile.
@@ -55,7 +73,7 @@ export const CREATOR = {
         { icon: 'comment', value: '24.6K' },
         { icon: 'share', value: '18.2K' },
       ],
-      source: { type: 'calculated', text: 'Likes + comments + shares combined across your posts.' },
+      source: { type: 'instagram', text: 'Pulled live from Instagram Insights — total impressions across your posts.' },
     },
     { value: '17,000', label: 'Reach', icon: 'rocket', source: { type: 'instagram', text: 'Accounts reached over the last 30 days, from Instagram Insights.' } },
     { value: 'Mumbai', label: 'Top City', icon: 'pin', source: { type: 'instagram', text: 'Your top audience city, from Instagram audience demographics.' } },

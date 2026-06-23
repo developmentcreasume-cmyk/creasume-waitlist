@@ -136,9 +136,10 @@ export default function ProfessionalPresence() {
             )
 
             return (
-              <motion.div key={`${s.name}-${i}`} variants={fadeCard} className="grow basis-[calc(50%-6px)] md:basis-0 flex">
-                {/* basis 50%−gap → 2 per row on mobile; a lone card still grows
-                    to full width; desktop collapses to one equal-width row. */}
+              <motion.div key={`${s.name}-${i}`} variants={fadeCard} className="grow basis-[calc(50%-6px)] md:basis-0 md:max-w-[300px] flex">
+                {/* basis 50%−gap → 2 per row on mobile; desktop shares the row
+                    equally but each card is capped (md:max-w) so a lone card
+                    doesn't stretch full width — it stays sized and centred. */}
                 {url ? (
                   <a href={url} target="_blank" rel="noopener noreferrer" className="block w-full flex-1">
                     {content}

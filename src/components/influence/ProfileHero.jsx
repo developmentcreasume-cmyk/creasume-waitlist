@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useLayoutEffect } from 'react'
-import { motion, useInView, useReducedMotion } from 'framer-motion'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence, useInView, useReducedMotion } from 'framer-motion'
 import { FONT, MONO, LABEL_GRADIENT } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
 import { shortenLocation, resolveUsername, API_BASE } from '../../services/influenceApi.js'
@@ -97,6 +98,8 @@ function StatsGrid({ includeScore = false }) {
   const [dealing, setDealing] = useState(false)
   // Which tile is flipped to its "data source" back face (one at a time).
   const [flippedIdx, setFlippedIdx] = useState(null)
+  // The "Learn more" detail (e.g. the Creasume Score how-to) shown in a modal.
+  const [learnMore, setLearnMore] = useState(null)
 
   useLayoutEffect(() => {
     if (reduce) return
@@ -123,6 +126,7 @@ function StatsGrid({ includeScore = false }) {
   }, [reduce, inView, offsets])
 
   return (
+    <>
     <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-3 auto-rows-fr gap-2.5 md:gap-3">
       {tiles.map(({ value, label, icon, color, details, source }, i) => {
         const dealPos = dealOrder.indexOf(i)
@@ -230,7 +234,10 @@ function StatsGrid({ includeScore = false }) {
               </div>
 
               {/* BACK — where the data comes from */}
-              <div className={`absolute inset-0 ${faceCard}`} style={{ ...faceStyle, transform: 'rotateY(180deg)' }}>
+              <div
+                className="absolute inset-0 rounded-2xl px-4 py-4 md:px-5 md:py-4 flex flex-col justify-center items-center text-center overflow-hidden"
+                style={{ ...faceStyle, transform: 'rotateY(180deg)' }}
+              >
                 {src && (
                   <span
                     className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 mb-3"
@@ -241,6 +248,16 @@ function StatsGrid({ includeScore = false }) {
                   </span>
                 )}
                 <p className="text-[10px] md:text-[12.5px] leading-snug text-white/70 max-w-[94%]" style={{ fontFamily: FONT, whiteSpace: 'pre-line' }}>{source?.text}</p>
+                {source?.more && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setLearnMore(source.more) }}
+                    className="mt-2 inline-flex items-center gap-1 text-[10px] md:text-xs font-semibold hover:underline"
+                    style={{ color: src?.color || '#5AA9FF' }}
+                  >
+                    ~ Learn more
+                  </button>
+                )}
                 <span className="absolute bottom-2 right-3 text-[8px] md:text-[9px] text-white/30" style={{ fontFamily: MONO }}>tap to flip back</span>
               </div>
             </motion.div>
@@ -248,6 +265,65 @@ function StatsGrid({ includeScore = false }) {
         )
       })}
     </div>
+
+    {/* "Learn more" detail card (e.g. how to build your Creasume Score) */}
+    {createPortal(
+      <AnimatePresence>
+        {learnMore && (
+          <motion.div
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-5"
+            style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setLearnMore(null)}
+          >
+            <motion.div
+              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.92, y: 14 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="relative rounded-2xl p-6 md:p-7 w-full max-w-md max-h-[85vh] overflow-y-auto text-left"
+              style={{ background: '#0B0B16', border: '1px solid rgba(120,140,255,0.3)', boxShadow: '0 24px 60px rgba(0,0,0,0.6)' }}
+            >
+              <button
+                type="button"
+                onClick={() => setLearnMore(null)}
+                aria-label="Close"
+                className="absolute top-4 right-4 flex items-center justify-center rounded-full text-white/55 hover:text-white hover:bg-white/10 transition-colors"
+                style={{ width: 32, height: 32, border: '1px solid rgba(255,255,255,0.18)' }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+              <div className="flex items-center gap-2.5 mb-4 pr-8">
+                <img src="/creasume-c.png" alt="" className="w-6 h-6 object-contain shrink-0" />
+                <h3 className="text-white font-bold leading-tight" style={{ fontFamily: FONT, fontSize: 19 }}>{learnMore.title}</h3>
+              </div>
+              {learnMore.intro && (
+                <p className="text-white/75 leading-relaxed mb-3.5" style={{ fontFamily: FONT, fontSize: 14 }}>{learnMore.intro}</p>
+              )}
+              {learnMore.bullets && (
+                <ul className="flex flex-col gap-2.5 mb-4">
+                  {learnMore.bullets.map((b, bi) => (
+                    <li key={bi} className="flex items-start gap-2.5 text-white/80" style={{ fontFamily: FONT, fontSize: 14 }}>
+                      <span className="mt-1.5 shrink-0 rounded-full" style={{ width: 6, height: 6, background: 'linear-gradient(90deg,#A35CE1,#E731A2)' }} />
+                      <span className="leading-snug">{b}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {learnMore.outro && (
+                <p className="text-white/65 leading-relaxed" style={{ fontFamily: FONT, fontSize: 13.5 }}>{learnMore.outro}</p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body,
+    )}
+    </>
   )
 }
 

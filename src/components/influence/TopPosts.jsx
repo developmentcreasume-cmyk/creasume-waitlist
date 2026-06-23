@@ -1,13 +1,15 @@
 import { useRef, useState } from 'react'
-import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion'
+import { motion, AnimatePresence, useScroll, useMotionValueEvent, useTransform } from 'framer-motion'
 import { FONT, MONO } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
 import { formatCount } from '../../services/influenceApi.js'
 
-// One marquee row of "TOP POSTS • INFLUENCE •" text. Continuously auto-scrolls
-// (always moving, even when the section is pinned and the page isn't scrolling),
-// looping seamlessly. `reverse` runs it the opposite direction.
-function MarqueeRow({ text, reverse = false, hollow = false, className = '' }) {
+// One marquee row of "TOP POSTS • INFLUENCE •" text. Drifts with SCROLL (tied to
+// `progress`, the section's scroll position) — not a continuous auto-loop — so it
+// only moves as the user scrolls. `reverse` runs it the opposite direction.
+function MarqueeRow({ text, progress, reverse = false, hollow = false, className = '' }) {
+  // Map scroll progress (0 → 1 across the section) to a one-loop translate.
+  const x = useTransform(progress, [0, 1], reverse ? ['-50%', '0%'] : ['0%', '-50%'])
   // Two identical halves; we translate by exactly -50% so the second half lands
   // where the first started → seamless infinite loop.
   const seq = Array.from({ length: 8 })
@@ -27,9 +29,7 @@ function MarqueeRow({ text, reverse = false, hollow = false, className = '' }) {
     <div className="overflow-hidden w-full">
       <motion.div
         className={`flex whitespace-nowrap ${className}`}
-        style={{ width: 'max-content' }}
-        animate={{ x: reverse ? ['-50%', '0%'] : ['0%', '-50%'] }}
-        transition={{ duration: 30, ease: 'linear', repeat: Infinity }}
+        style={{ width: 'max-content', x }}
       >
         {seq.concat(seq).map((_, i) => (
           <span
@@ -68,6 +68,9 @@ export default function TopPosts() {
   // panel is pinned; a separate marqueeProgress drifts the background text from
   // the moment the section enters the viewport.
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] })
+  // Separate progress for the background marquee: drifts the whole time the
+  // section is on screen (enter → leave), so the text moves with the scroll.
+  const { scrollYProgress: marqueeProgress } = useScroll({ target: sectionRef, offset: ['start end', 'end start'] })
 
   // Card boundaries along the pinned scroll — one even slice per post.
   const THRESHOLDS = POSTS.slice(1).map((_, i) => (i + 1) / POSTS.length)
@@ -166,25 +169,25 @@ export default function TopPosts() {
       <div className="sticky top-0 h-svh overflow-hidden">
         {/* Desktop: full marquee band sits BEHIND the centered card */}
         <div className="hidden md:flex absolute inset-0 flex-col justify-center gap-16 select-none pointer-events-none">
-          <MarqueeRow text="TOP POSTS" />
-          <MarqueeRow text="INFLUENCE" reverse hollow />
-          <MarqueeRow text="INFLUENCE" hollow />
-          <MarqueeRow text="TOP POSTS" reverse />
+          <MarqueeRow text="TOP POSTS" progress={marqueeProgress} />
+          <MarqueeRow text="INFLUENCE" progress={marqueeProgress} reverse hollow />
+          <MarqueeRow text="INFLUENCE" progress={marqueeProgress} hollow />
+          <MarqueeRow text="TOP POSTS" progress={marqueeProgress} reverse />
         </div>
 
         <div className="relative z-10 h-full flex flex-col items-center justify-center gap-3 md:gap-6">
           {/* Mobile only: two marquee lines ABOVE the card */}
           <div className="md:hidden w-full flex flex-col gap-2 select-none pointer-events-none">
-            <MarqueeRow text="TOP POSTS" />
-            <MarqueeRow text="INFLUENCE" reverse hollow />
+            <MarqueeRow text="TOP POSTS" progress={marqueeProgress} />
+            <MarqueeRow text="INFLUENCE" progress={marqueeProgress} reverse hollow />
           </div>
 
           {cardAndDashes}
 
           {/* Mobile only: two marquee lines BELOW the card */}
           <div className="md:hidden w-full flex flex-col gap-2 select-none pointer-events-none">
-            <MarqueeRow text="INFLUENCE" hollow />
-            <MarqueeRow text="TOP POSTS" reverse />
+            <MarqueeRow text="INFLUENCE" progress={marqueeProgress} hollow />
+            <MarqueeRow text="TOP POSTS" progress={marqueeProgress} reverse />
           </div>
         </div>
       </div>

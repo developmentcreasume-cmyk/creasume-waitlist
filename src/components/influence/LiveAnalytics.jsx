@@ -176,22 +176,26 @@ function smoothPath(pts) {
 // `points`: [{ label, value (thousands, for plotting), count (real followers),
 // delta (vs previous point) }]. Renders the exact trend through every snapshot,
 // with a hover dot + tooltip (date, count, increase/decrease).
-function FollowerGrowthChart({ points }) {
+function FollowerGrowthChart({ points, xLabels = [] }) {
   const [hi, setHi] = useState(null)
   const values = points.map((p) => p.value)
   const { axisMin, axisMax, ticks } = followerAxisScale(values.length ? values : [0])
   const span = axisMax - axisMin || 1
   const n = points.length
   const yFor = (v) => +(Math.min(BASELINE_Y, Math.max(0, (axisMax - v) / span) * BASELINE_Y).toFixed(2))
-  const xFor = (i) => (n < 2 ? 50 : (i / (n - 1)) * 100)
+  // Points are pre-positioned by date (p.x in 0–100 across the window). The line
+  // is carried flat from the left edge (first value) and to the right edge (last
+  // value) so it spans the full window even when data covers only part of it.
   const linePts = n < 2
     ? [{ x: 0, y: yFor(values[0] ?? axisMin) }, { x: 100, y: yFor(values[0] ?? axisMin) }]
-    : points.map((p, i) => ({ x: xFor(i), y: yFor(p.value) }))
+    : [
+        { x: 0, y: yFor(points[0].value) },
+        ...points.map((p) => ({ x: p.x, y: yFor(p.value) })),
+        { x: 100, y: yFor(points[n - 1].value) },
+      ]
   const d = smoothPath(linePts)
   const dFlat = smoothPath(linePts.map((p) => ({ x: p.x, y: BASELINE_Y })))
   const fmtCount = (c) => (c >= 1000 ? `${(c / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(Math.round(c)))
-  // Show ~6 x-axis labels max so daily snapshots don't crowd; dots stay for all.
-  const labelStep = Math.max(1, Math.ceil(n / 6))
   return (
     <div className="pt-3">
       <div className="relative" style={{ height: CHART_H }}>
@@ -239,22 +243,24 @@ function FollowerGrowthChart({ points }) {
             <div
               key={i}
               className="absolute top-0 bottom-0 -translate-x-1/2"
-              style={{ left: `${xFor(i)}%`, width: `${Math.max(8, 100 / Math.max(n, 1))}%`, cursor: 'pointer' }}
+              style={{ left: `${p.x}%`, width: '9%', cursor: 'pointer' }}
               onMouseEnter={() => setHi(i)}
               onMouseLeave={() => setHi((h) => (h === i ? null : h))}
               onTouchStart={() => setHi(i)}
             >
-              <span
-                className="absolute rounded-full"
-                style={{
-                  left: '50%', top: `${yFor(p.value)}%`,
-                  width: hi === i ? 11 : 6, height: hi === i ? 11 : 6,
-                  transform: 'translate(-50%, -50%)',
-                  background: '#fff',
-                  boxShadow: hi === i ? '0 0 0 4px rgba(255,255,255,0.18)' : 'none',
-                  transition: 'width 120ms, height 120ms',
-                }}
-              />
+              {/* Dot is shown only on hover — the line itself stays clean. */}
+              {hi === i && (
+                <span
+                  className="absolute rounded-full"
+                  style={{
+                    left: '50%', top: `${yFor(p.value)}%`,
+                    width: 11, height: 11,
+                    transform: 'translate(-50%, -50%)',
+                    background: '#fff',
+                    boxShadow: '0 0 0 4px rgba(255,255,255,0.18)',
+                  }}
+                />
+              )}
             </div>
           ))}
 
@@ -262,7 +268,7 @@ function FollowerGrowthChart({ points }) {
             <div
               className="absolute z-20 rounded-lg px-3 py-2 pointer-events-none whitespace-nowrap"
               style={{
-                left: `${xFor(hi)}%`,
+                left: `${points[hi].x}%`,
                 top: `${yFor(points[hi].value)}%`,
                 transform: 'translate(-50%, calc(-100% - 12px))',
                 background: 'rgba(10,12,30,0.96)',
@@ -282,19 +288,18 @@ function FollowerGrowthChart({ points }) {
         </div>
       </div>
 
-      {/* X-axis labels — subsampled so they never crowd. */}
+      {/* X-axis markers spanning the whole window (weekly for 30D, monthly for
+          90D/1Y) so months always show even when the data spans only a few days. */}
       <div className="relative mt-2 h-4" style={{ marginLeft: AXIS_W, marginRight: 0 }}>
-        {points.map((p, i) =>
-          (i % labelStep === 0 || i === n - 1) ? (
-            <span
-              key={i}
-              className="absolute -translate-x-1/2 text-white text-[10px] whitespace-nowrap"
-              style={{ left: `${xFor(i)}%`, fontFamily: MONO }}
-            >
-              {p.label}
-            </span>
-          ) : null,
-        )}
+        {xLabels.map((l, i) => (
+          <span
+            key={i}
+            className="absolute -translate-x-1/2 text-white text-[10px] whitespace-nowrap"
+            style={{ left: `${l.x}%`, fontFamily: MONO }}
+          >
+            {l.label}
+          </span>
+        ))}
       </div>
     </div>
   )
@@ -345,7 +350,7 @@ function EngagementChart({ bars, months }) {
             <span className="flex-1 border-t border-dashed" style={{ borderColor: 'rgba(255,255,255,0.45)' }} />
           </div>
         ))}
-        <div className="absolute bottom-0 flex items-end justify-between gap-3" style={{ left: AXIS_W, right: 6, height: '100%' }}>
+        <div className="absolute bottom-0 flex items-end justify-between gap-1 md:gap-3" style={{ left: AXIS_W, right: 6, height: '100%' }}>
           {bars.map((b, i) => {
             const last = i === bars.length - 1
             const h = Math.max(3, Math.min(100, (b / axisMax) * 100))
@@ -375,7 +380,7 @@ function EngagementChart({ bars, months }) {
           })}
         </div>
       </div>
-      <div className="flex gap-3 mt-2 text-white text-[10px]" style={{ fontFamily: MONO, marginLeft: AXIS_W, marginRight: 6 }}>
+      <div className="flex gap-1 md:gap-3 mt-2 text-white text-[8px] md:text-[10px]" style={{ fontFamily: MONO, marginLeft: AXIS_W, marginRight: 6 }}>
         {months.slice(0, bars.length).map((m, i) => <span key={`${m}-${i}`} className="flex-1 text-center">{m}</span>)}
       </div>
     </div>
@@ -433,29 +438,58 @@ export default function LiveAnalytics() {
   const engBars = engSeries.values.length ? engSeries.values : ENGAGEMENT_BARS
   const engMonths = engSeries.labels.length ? engSeries.labels : (ENG_MONTHS || MONTHS)
 
-  // Follower growth: plot the ACTUAL dated snapshots in the window (no
-  // carry-forward resampling) so the trend is exact. Each point carries its real
-  // follower count + day-over-day delta for the hover tooltip.
+  // Follower growth: plot the ACTUAL dated snapshots positioned by their real
+  // date within the window (no carry-forward resampling), so the trend is exact
+  // AND the x-axis can show month/week markers across the whole 30D/90D/1Y range.
+  // Position data across the FULL selected window so the x-axis can show the
+  // whole range: 30D → weekly markers, 90D → months, 1Y → all 12 months. The
+  // line is carried flat from the window start / to "now" (in the chart) so it
+  // stays visible even when the real snapshots only cover part of the window.
   const totalDays = range === '1Y' ? 365 : range === '90D' ? 90 : 30
-  const growthCutoff = Date.now() - totalDays * 86400000
+  const winEnd = Date.now()
+  const winStart = winEnd - totalDays * 86400000
+  const winSpan = winEnd - winStart || 1
+  const xOf = (t) => Math.max(0, Math.min(100, ((t - winStart) / winSpan) * 100))
   const realGrowth = (GROWTH_POINTS || [])
     .map((p) => ({ t: new Date(p.date).getTime(), f: Number(p.followers) }))
-    .filter((p) => !Number.isNaN(p.t) && p.t >= growthCutoff && Number.isFinite(p.f))
+    .filter((p) => !Number.isNaN(p.t) && p.t >= winStart && Number.isFinite(p.f))
     .sort((a, b) => a.t - b.t)
-  const dFmt = range === '30D' ? { day: 'numeric', month: 'short' } : { month: 'short' }
-  const growthPoints = realGrowth.length
-    ? realGrowth.map((p, i) => ({
-        label: new Date(p.t).toLocaleString('en-US', dFmt),
-        value: p.f / 1000, // plotting unit (thousands) — matches the axis ticks
-        count: p.f, // exact follower count for the tooltip
-        delta: i ? p.f - realGrowth[i - 1].f : 0,
-      }))
-    : GROWTH.map((v, i) => ({
-        label: MONTHS[i] || '',
-        value: v,
-        count: Math.round(v * 1000),
-        delta: i ? Math.round((v - GROWTH[i - 1]) * 1000) : 0,
-      }))
+
+  let growthPoints
+  let growthXLabels
+  if (realGrowth.length) {
+    growthPoints = realGrowth.map((p, i) => ({
+      x: realGrowth.length < 2 ? xOf(p.t) : xOf(p.t),
+      label: new Date(p.t).toLocaleString('en-US', { day: 'numeric', month: 'short' }),
+      value: p.f / 1000, // plotting unit (thousands) — matches the axis ticks
+      count: p.f, // exact follower count for the tooltip
+      delta: i ? p.f - realGrowth[i - 1].f : 0,
+    }))
+    if (range === '30D') {
+      growthXLabels = []
+      for (let t = winStart; t <= winEnd + 1; t += 7 * 86400000) {
+        growthXLabels.push({ x: xOf(t), label: new Date(t).toLocaleString('en-US', { day: 'numeric', month: 'short' }) })
+      }
+    } else {
+      growthXLabels = []
+      const m = new Date(winStart)
+      m.setDate(1)
+      m.setHours(0, 0, 0, 0)
+      if (m.getTime() < winStart) m.setMonth(m.getMonth() + 1)
+      for (; m.getTime() <= winEnd; m.setMonth(m.getMonth() + 1)) {
+        growthXLabels.push({ x: xOf(m.getTime()), label: m.toLocaleString('en-US', { month: 'short' }) })
+      }
+    }
+  } else {
+    growthPoints = GROWTH.map((v, i) => ({
+      x: GROWTH.length < 2 ? 50 : (i / (GROWTH.length - 1)) * 100,
+      label: MONTHS[i] || '',
+      value: v,
+      count: Math.round(v * 1000),
+      delta: i ? Math.round((v - GROWTH[i - 1]) * 1000) : 0,
+    }))
+    growthXLabels = growthPoints.map((p) => ({ x: p.x, label: p.label }))
+  }
   const [hovered, setHovered] = useState(null)
   return (
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-12 md:py-20 overflow-hidden">
@@ -510,7 +544,7 @@ export default function LiveAnalytics() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pl-4 md:pl-8">
           <Panel title="Follower Growth" from="left" style={{ background: 'linear-gradient(155deg, #1b2052 0%, #10133C 60%)' }}>
-            <FollowerGrowthChart points={growthPoints} />
+            <FollowerGrowthChart points={growthPoints} xLabels={growthXLabels} />
             <p className="mt-3 ml-3 text-[11px] italic text-white/60" style={{ fontFamily: MONO }}>
               &ldquo;This chart only shows the follower growth of the creator after joining Creasume.&rdquo;
             </p>
