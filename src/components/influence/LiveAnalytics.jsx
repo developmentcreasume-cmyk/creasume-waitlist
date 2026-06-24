@@ -192,10 +192,10 @@ function useIsMobile() {
 // with a hover dot + tooltip (date, count, increase/decrease).
 function FollowerGrowthChart({ points, xLabels = [], range }) {
   const [hi, setHi] = useState(null)
-  const isMobile = useIsMobile()
-  // Only the 1Y view on mobile widens past the panel and scrolls. 30D/90D fit,
-  // so they keep visible overflow — no scrollbar, no clipped edge labels.
-  const scrollable = isMobile && range === '1Y'
+  // Only the 1Y view can scroll (its 12 months need ~44px each). The CSS max()
+  // below means it only actually scrolls where the panel is too narrow to fit
+  // them — wide panels keep 100% and show no scrollbar. 30D/90D never widen.
+  const scrollable = range === '1Y'
   const values = points.map((p) => p.value)
   const { axisMin, axisMax, ticks } = followerAxisScale(values.length ? values : [0])
   const span = axisMax - axisMin || 1
@@ -246,7 +246,7 @@ function FollowerGrowthChart({ points, xLabels = [], range }) {
             the same inner min-width so they scroll together. Only the 1Y view on
             mobile widens (12 months); 30D/90D fit the panel and never scroll. */}
         <div className={`flex-1 pb-1 ${scrollable ? 'overflow-x-auto [scrollbar-width:thin]' : 'overflow-x-visible'}`} style={{ marginRight: 6 }}>
-          <div style={{ minWidth: scrollable ? `max(100%, ${n * 44}px)` : '100%' }}>
+          <div style={{ minWidth: scrollable ? `max(100%, ${n * 34}px)` : '100%' }}>
             <div className="relative" style={{ height: CHART_H }}>
               {/* Dashed gridlines (full inner width). */}
               {ticks.map((v) => (
