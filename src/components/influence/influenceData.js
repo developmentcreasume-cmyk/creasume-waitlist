@@ -42,8 +42,8 @@ export const CREATOR = {
   // flip-card back face: where each metric comes from. type ∈
   // 'instagram' | 'calculated' | 'creasume'.
   tiles: [
-    { value: '3.46%', label: 'Engagement Rate', icon: 'chart', source: { type: 'calculated', text: 'Total interactions ÷ total accounts reached × 100, over the last 30 days.' } },
-    { value: '43,000', label: 'Total Views', icon: 'eye', source: { type: 'instagram', text: 'Pulled live from Instagram Insights — views over the last 30 days.' } },
+    { value: '3.46%', label: 'Engagement Rate', icon: 'chart', source: { type: 'calculated', text: 'Total interactions ÷ total accounts reached × 100 (last 30 days).' } },
+    { value: '43,000', label: 'Total Views', icon: 'eye', source: { type: 'instagram', text: 'Pulled live from Instagram Insights — views (last 30 days).' } },
     { value: '184', label: 'Total Post', icon: 'camera', source: { type: 'instagram', text: 'Your total media count, straight from Instagram.' } },
     { value: '125K', label: 'Total Followers', icon: 'followers', source: { type: 'instagram', text: 'Live follower count from Instagram.' } },
     {
@@ -73,9 +73,9 @@ export const CREATOR = {
         { icon: 'comment', value: '24.6K' },
         { icon: 'share', value: '18.2K' },
       ],
-      source: { type: 'instagram', text: 'Pulled live from Instagram Insights — total impressions across your posts, last 30 days.' },
+      source: { type: 'instagram', text: 'Pulled live from Instagram Insights — total impressions across your posts (last 30 days).' },
     },
-    { value: '17,000', label: 'Reach', icon: 'rocket', source: { type: 'instagram', text: 'Accounts reached over the last 30 days, from Instagram Insights.' } },
+    { value: '17,000', label: 'Reach', icon: 'rocket', source: { type: 'instagram', text: 'Accounts reached (last 30 days), from Instagram Insights.' } },
     { value: 'Mumbai', label: 'Top City', icon: 'pin', source: { type: 'instagram', text: 'Your top audience city, from Instagram audience demographics.' } },
     { value: '12', label: 'Brand Deals Done', icon: 'handshake', source: { type: 'creasume', text: 'Collaborations recorded on your Creasume profile.' } },
   ],
