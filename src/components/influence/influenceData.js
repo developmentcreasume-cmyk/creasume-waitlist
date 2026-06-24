@@ -42,7 +42,18 @@ export const CREATOR = {
   // flip-card back face: where each metric comes from. type ∈
   // 'instagram' | 'calculated' | 'creasume'.
   tiles: [
-    { value: '3.46%', label: 'Engagement Rate', icon: 'chart', source: { type: 'calculated', text: 'Total interactions ÷ total accounts reached × 100 (last 30 days).' } },
+    {
+      value: '3.46%', label: 'Engagement Rate', icon: 'chart',
+      source: {
+        type: 'calculated',
+        text: 'Total interactions ÷ total accounts reached × 100 (last 30 days).',
+        more: {
+          title: 'How this engagement rate works',
+          intro: "This engagement rate is the creator's profile-wide average across their recent posts — not the engagement of a single post.",
+          outro: 'The conventional Instagram engagement formula is a different calculation that checks engagement for each individual post, rather than averaging across the whole profile.',
+        },
+      },
+    },
     { value: '43,000', label: 'Total Views', icon: 'eye', source: { type: 'instagram', text: 'Pulled live from Instagram Insights — views (last 30 days).' } },
     { value: '184', label: 'Total Post', icon: 'camera', source: { type: 'instagram', text: 'Your total media count, straight from Instagram.' } },
     { value: '125K', label: 'Total Followers', icon: 'followers', source: { type: 'instagram', text: 'Live follower count from Instagram.' } },
