@@ -246,7 +246,7 @@ function FollowerGrowthChart({ points, xLabels = [], range }) {
             the same inner min-width so they scroll together. Only the 1Y view on
             mobile widens (12 months); 30D/90D fit the panel and never scroll. */}
         <div className={`flex-1 min-w-0 pb-1 ${scrollable ? 'overflow-x-auto [scrollbar-width:thin]' : 'overflow-x-visible'}`} style={{ marginRight: 6 }}>
-          <div style={{ minWidth: scrollable ? `max(100%, ${n * 40}px)` : '100%' }}>
+          <div style={{ minWidth: scrollable ? `max(100%, ${Math.max(xLabels.length, n) * 44}px)` : '100%' }}>
             <div className="relative" style={{ height: CHART_H }}>
               {/* Dashed gridlines (full inner width). */}
               {ticks.map((v) => (
