@@ -165,6 +165,33 @@ export default function WorkWithMe() {
         </motion.div>
       </div>
 
+      {/* Invite the viewer to make their own influence card. */}
+      <motion.p
+        initial={{ opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="relative z-10 text-center mt-12 md:mt-16 px-4 text-base md:text-lg font-medium"
+        style={{ fontFamily: FONT, color: 'rgba(255,255,255,0.72)' }}
+      >
+        Create a similar influence card for your Instagram profile{' '}
+        <a
+          href="https://creasume.com/connect"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-bold hover:underline whitespace-nowrap"
+          style={{
+            background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            color: 'transparent',
+          }}
+        >
+          here →
+        </a>
+      </motion.p>
+
       {/* Giant CREASUME wordmark — clip horizontal only so the letters aren't
           cut off at the bottom on mobile. */}
       <div className="relative z-10 overflow-x-clip overflow-y-visible mt-20 md:mt-80 -mx-6 md:-mx-16 lg:-mx-24">

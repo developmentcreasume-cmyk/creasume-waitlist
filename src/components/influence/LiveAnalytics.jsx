@@ -164,9 +164,12 @@ function smoothPath(pts) {
     const p1 = pts[i]
     const p2 = pts[i + 1]
     const p3 = pts[i + 2] || p2
-    const c1x = p1.x + (p2.x - p0.x) / 6
+    // Clamp the control points' x to the segment's own x-range so the curve can
+    // never loop back on itself (a big x-gap — e.g. the flat carry before the
+    // recent data — otherwise pushes a control point past the data and curls it).
+    const c1x = Math.min(p2.x, Math.max(p1.x, p1.x + (p2.x - p0.x) / 6))
     const c1y = p1.y + (p2.y - p0.y) / 6
-    const c2x = p2.x - (p3.x - p1.x) / 6
+    const c2x = Math.min(p2.x, Math.max(p1.x, p2.x - (p3.x - p1.x) / 6))
     const c2y = p2.y - (p3.y - p1.y) / 6
     d += ` C${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`
   }
@@ -192,20 +195,20 @@ function useIsMobile() {
 // with a hover dot + tooltip (date, count, increase/decrease).
 function FollowerGrowthChart({ points, xLabels = [], range }) {
   const [hi, setHi] = useState(null)
+  const isMobile = useIsMobile()
   // Only the 1Y view can scroll (its 12 months need ~44px each). The CSS max()
   // below means it only actually scrolls where the panel is too narrow to fit
   // them — wide panels keep 100% and show no scrollbar. 30D/90D never widen.
-  // Widen + horizontally scroll the 12-month 1Y view on mobile only; on desktop
-  // the panel is wide enough to fit all months, so no scrollbar.
-  const scrollable = range === '1Y' && isMobile
+  const scrollable = range === '1Y'
   const values = points.map((p) => p.value)
   const { axisMin, axisMax, ticks } = followerAxisScale(values.length ? values : [0])
   const span = axisMax - axisMin || 1
   const n = points.length
   const yFor = (v) => +(Math.min(BASELINE_Y, Math.max(0, (axisMax - v) / span) * BASELINE_Y).toFixed(2))
-  // Points are pre-positioned by date (p.x in 0–100 across the window). The line
-  // is carried flat from the left edge (first value) and to the right edge (last
-  // value) so it spans the full window even when data covers only part of it.
+  // Points are pre-positioned by date (p.x in 0–100 across the window). Carry a
+  // FLAT straight line from the left edge at the first value (the period before
+  // any follower data) up to the first real snapshot, then let the line FLUCTUATE
+  // through the actual snapshots, and hold the last value to the right edge.
   const linePts = n < 2
     ? [{ x: 0, y: yFor(values[0] ?? axisMin) }, { x: 100, y: yFor(values[0] ?? axisMin) }]
     : [
@@ -248,7 +251,7 @@ function FollowerGrowthChart({ points, xLabels = [], range }) {
             the same inner min-width so they scroll together. Only the 1Y view on
             mobile widens (12 months); 30D/90D fit the panel and never scroll. */}
         <div className={`flex-1 min-w-0 pb-1 ${scrollable ? 'overflow-x-auto [scrollbar-width:thin]' : 'overflow-x-visible'}`} style={{ marginRight: 6 }}>
-          <div style={{ minWidth: scrollable ? `max(100%, ${Math.max(xLabels.length, n) * 44}px)` : '100%' }}>
+          <div style={{ minWidth: scrollable && isMobile ? `max(100%, ${Math.max(xLabels.length, n) * 44}px)` : '100%' }}>
             <div className="relative" style={{ height: CHART_H }}>
               {/* Dashed gridlines (full inner width). */}
               {ticks.map((v) => (
@@ -514,29 +517,19 @@ function Panel({ title, children, from = 'up', className = '', bare = false, sty
 
 export default function LiveAnalytics() {
   const {
-    GROWTH, MONTHS, ENGAGEMENT_BARS, ENG_MONTHS, GROWTH_POINTS, ENG_POINTS, ENG_POINTS_WEEKLY, ENG_FROM_POSTS, ENG_RATE,
+    GROWTH, MONTHS, ENGAGEMENT_BARS, ENG_MONTHS, GROWTH_POINTS, ENG_POINTS, ENG_POINTS_WEEKLY, ENG_FROM_POSTS,
     AGE_GROUPS, TOP_LOCATIONS, TOP_COUNTRIES, GENDER_SPLIT,
   } = useInfluence()
   const [range, setRange] = useState('30D')
 
-  // Engagement: prefer the REAL per-period rates (per-week for 30D, per-month for
-  // 90D/1Y) so the bars actually vary. Only when there's no real per-period data
-  // do we fall back to the flat 30-day headline rate (better than empty bars).
-  let engSeries
-  if (ENG_FROM_POSTS) {
-    const real = range === '30D'
-      ? weeklyEngSeries(ENG_POINTS_WEEKLY || [])
-      : monthlyEngSeries(ENG_POINTS || [], range === '1Y' ? 12 : 3)
-    engSeries =
-      range === '30D' && ENG_RATE != null && real.values.every((v) => !v)
-        ? { values: real.labels.map(() => ENG_RATE), labels: real.labels }
-        : real
-  } else if (range === '30D' && ENG_RATE != null) {
-    const ws = weeklyEngSeries(ENG_POINTS_WEEKLY || [])
-    engSeries = { values: ws.labels.map(() => ENG_RATE), labels: ws.labels }
-  } else {
-    engSeries = buildTimeSeries(ENG_POINTS || [], range, 'rate', (value) => Math.round(value * 10) / 10)
-  }
+  // Engagement: real per-period rates — per-WEEK for 30D, per-MONTH for 90D/1Y —
+  // exactly the same approach across ranges. A period with no posts reads 0
+  // (just like an empty month on 90D/1Y); no flat-rate fallback.
+  const engSeries = ENG_FROM_POSTS
+    ? (range === '30D'
+        ? weeklyEngSeries(ENG_POINTS_WEEKLY || [])
+        : monthlyEngSeries(ENG_POINTS || [], range === '1Y' ? 12 : 3))
+    : buildTimeSeries(ENG_POINTS || [], range, 'rate', (value) => Math.round(value * 10) / 10)
   const engBars = engSeries.values.length ? engSeries.values : ENGAGEMENT_BARS
   const engMonths = engSeries.labels.length ? engSeries.labels : (ENG_MONTHS || MONTHS)
 
@@ -561,10 +554,15 @@ export default function LiveAnalytics() {
   let growthPoints
   let growthXLabels
   if (realGrowth.length) {
+    // Position each snapshot by its REAL date within the window, so 30D / 90D /
+    // 1Y genuinely differ: recent data fills the 30D view but sits toward the
+    // right of the 90D / 1Y views (where it actually falls in time).
+    const winNow = Date.now()
+    const winSpan = winNow - winStart || 1
     const gn = realGrowth.length
-    const xEven = (i) => (gn < 2 ? 50 : (i / (gn - 1)) * 100)
+    const xByDate = (t) => (gn < 2 ? 50 : Math.max(0, Math.min(100, ((t - winStart) / winSpan) * 100)))
     growthPoints = realGrowth.map((p, i) => ({
-      x: xEven(i),
+      x: xByDate(p.t),
       label: new Date(p.t).toLocaleString('en-US', { day: 'numeric', month: 'short' }),
       value: p.f / 1000,
       count: p.f,

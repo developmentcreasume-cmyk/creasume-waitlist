@@ -714,6 +714,26 @@ function App() {
               className="w-full"
               style={{ maxWidth: '480px' }}
             >
+             {/* Label for the live demo mockup shown right below. */}
+             <p
+               className="text-center mb-4 text-sm md:text-base font-medium tracking-wide"
+               style={{ fontFamily: "'Outfit', sans-serif", color: 'rgba(255,255,255,0.72)' }}
+             >
+               Check out a live demo{' '}
+               <span
+                 style={{
+                   fontWeight: 700,
+                   background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)',
+                   WebkitBackgroundClip: 'text',
+                   backgroundClip: 'text',
+                   WebkitTextFillColor: 'transparent',
+                   color: 'transparent',
+                 }}
+               >
+                 here
+               </span>
+               <span style={{ color: '#E731A2' }}> ↓</span>
+             </p>
              <div className="shine-border rounded-xl overflow-hidden">
               {/* Browser chrome bar above the card */}
               <div
