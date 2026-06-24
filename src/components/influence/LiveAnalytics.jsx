@@ -351,9 +351,9 @@ function EngagementChart({ bars, months }) {
   const [hi, setHi] = useState(null)
   // Per-bar sizing: bars don't shrink below BAR_MIN, so when there are many
   // months the row overflows and scrolls horizontally instead of squishing.
-  // Few months still fill the width (flex-grow). Bars and labels share the same
-  // flex sizing inside ONE scroll container, so they always stay aligned.
-  const BAR_FLEX = '1 0 34px'
+  // On desktop bars shrink to fit (no scrollbar); on mobile they keep a 34px
+  // min and the row scrolls. Bars and labels share the same flex classes so
+  // they always stay aligned.
   return (
     <div className="pt-3">
       <div className="flex">
@@ -372,7 +372,7 @@ function EngagementChart({ bars, months }) {
 
         {/* Scrollable chart: dashed gridlines + bars + month labels, all sharing
             the same inner min-width so they scroll together and stay aligned. */}
-        <div className="flex-1 overflow-x-auto pb-1 [scrollbar-width:thin]" style={{ marginRight: 6 }}>
+        <div className="flex-1 overflow-x-auto md:overflow-x-visible pb-1 [scrollbar-width:thin]" style={{ marginRight: 6 }}>
           <div style={{ minWidth: '100%' }}>
             <div className="relative" style={{ height: CHART_H }}>
               {/* Dashed gridlines (full inner width). */}
@@ -391,8 +391,8 @@ function EngagementChart({ bars, months }) {
                   return (
                     <motion.div
                       key={i}
-                      className="relative rounded-t-md origin-bottom cursor-default"
-                      style={{ flex: BAR_FLEX, height: `${h}%`, background: last ? '#89DFEC' : 'linear-gradient(180deg,#E731A2 0%,#C04DCC 50%,#A35CE1 100%)', opacity: hi !== null && hi !== i ? 0.55 : 1 }}
+                      className="relative rounded-t-md origin-bottom cursor-default grow shrink-0 basis-[34px] md:shrink md:basis-0"
+                      style={{ height: `${h}%`, background: last ? '#89DFEC' : 'linear-gradient(180deg,#E731A2 0%,#C04DCC 50%,#A35CE1 100%)', opacity: hi !== null && hi !== i ? 0.55 : 1 }}
                       initial={{ scaleY: 0, opacity: 0 }}
                       whileInView={{ scaleY: 1, opacity: 1 }}
                       viewport={{ once: true }}
@@ -417,7 +417,7 @@ function EngagementChart({ bars, months }) {
             {/* Month labels — same flex sizing as the bars, so they line up. */}
             <div className="flex gap-1 md:gap-3 mt-2 text-white text-[8px] md:text-[10px]" style={{ fontFamily: MONO }}>
               {months.slice(0, bars.length).map((m, i) => (
-                <span key={`${m}-${i}`} className="text-center" style={{ flex: BAR_FLEX }}>{m}</span>
+                <span key={`${m}-${i}`} className="text-center grow shrink-0 basis-[34px] md:shrink md:basis-0">{m}</span>
               ))}
             </div>
           </div>
@@ -485,6 +485,10 @@ export default function LiveAnalytics() {
   // whole range: 30D → weekly markers, 90D → months, 1Y → all 12 months. The
   // line is carried flat from the window start / to "now" (in the chart) so it
   // stays visible even when the real snapshots only cover part of the window.
+  // Window the dated snapshots to the selected range, then spread them EVENLY
+  // across the width so the trend reads as a clean line (bucketing/by-date crams a
+  // recent-only creator's data into a flat-then-spike shape). Longer ranges
+  // include more history when it exists; the x-axis labels span the whole range.
   const totalDays = range === '1Y' ? 365 : range === '90D' ? 90 : 30
   const winStart = Date.now() - totalDays * 86400000
   const realGrowth = (GROWTH_POINTS || [])
@@ -495,29 +499,30 @@ export default function LiveAnalytics() {
   let growthPoints
   let growthXLabels
   if (realGrowth.length) {
-    // Spread the snapshots EVENLY across the chart width (not by exact date) so
-    // the trend reads as a clean line. Positioning by real date crams a new
-    // creator's recent snapshots into the right edge with a long flat carry —
-    // the "flat then sharp spike" look. Even spacing uses the whole width.
     const gn = realGrowth.length
     const xEven = (i) => (gn < 2 ? 50 : (i / (gn - 1)) * 100)
     growthPoints = realGrowth.map((p, i) => ({
       x: xEven(i),
       label: new Date(p.t).toLocaleString('en-US', { day: 'numeric', month: 'short' }),
-      value: p.f / 1000, // plotting unit (thousands) — matches the axis ticks
-      count: p.f, // exact follower count for the tooltip
+      value: p.f / 1000,
+      count: p.f,
       delta: i ? p.f - realGrowth[i - 1].f : 0,
     }))
-    // ~6 date labels max, evenly sampled from the real snapshots, aligned to the
-    // points so the x-axis shows the actual dates the data covers.
-    const labelStep = Math.max(1, Math.ceil(gn / 6))
-    growthXLabels = realGrowth
-      .map((p, i) => ({
-        x: xEven(i),
-        label: new Date(p.t).toLocaleString('en-US', { day: 'numeric', month: 'short' }),
-        keep: i % labelStep === 0 || i === gn - 1,
-      }))
-      .filter((l) => l.keep)
+    const now = new Date()
+    if (range === '30D') {
+      const weeks = 5
+      growthXLabels = Array.from({ length: weeks }, (_, k) => {
+        const d = new Date(now)
+        d.setDate(now.getDate() - (weeks - 1 - k) * 7)
+        return { x: (k / (weeks - 1)) * 100, label: d.toLocaleString('en-US', { day: 'numeric', month: 'short' }) }
+      })
+    } else {
+      const mCount = range === '1Y' ? 12 : 3
+      growthXLabels = Array.from({ length: mCount }, (_, k) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (mCount - 1 - k), 1)
+        return { x: (k / (mCount - 1)) * 100, label: d.toLocaleString('en-US', { month: 'short' }) }
+      })
+    }
   } else {
     growthPoints = GROWTH.map((v, i) => ({
       x: GROWTH.length < 2 ? 50 : (i / (GROWTH.length - 1)) * 100,

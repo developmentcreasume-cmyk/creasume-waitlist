@@ -42,7 +42,7 @@ export const CREATOR = {
   // flip-card back face: where each metric comes from. type ∈
   // 'instagram' | 'calculated' | 'creasume'.
   tiles: [
-    { value: '3.46%', label: 'Engagement Rate', icon: 'chart', source: { type: 'calculated', text: 'Total engagement (likes + comments + shares) ÷ reach × 100, from Instagram Insights.' } },
+    { value: '3.46%', label: 'Engagement Rate', icon: 'chart', source: { type: 'calculated', text: 'Total interactions ÷ total accounts reached × 100, over the last 30 days.' } },
     { value: '43,000', label: 'Total Views', icon: 'eye', source: { type: 'instagram', text: 'Pulled live from Instagram Insights — views over the last 30 days.' } },
     { value: '184', label: 'Total Post', icon: 'camera', source: { type: 'instagram', text: 'Your total media count, straight from Instagram.' } },
     { value: '125K', label: 'Total Followers', icon: 'followers', source: { type: 'instagram', text: 'Live follower count from Instagram.' } },

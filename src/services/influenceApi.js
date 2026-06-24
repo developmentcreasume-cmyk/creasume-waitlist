@@ -190,19 +190,12 @@ export function mapInfluenceData(api, d) {
   // product type (e.g. before the backend sends `media_product_type`) are kept
   // so the totals never collapse to 0.
   const sumMedia = (key) => media.reduce((a, m) => a + (m[key] || 0), 0)
-  // Likes / comments are totalled across ALL the creator's media — posts and
-  // Reels (the backend paginates the whole profile into s.totalLikes /
-  // s.totalComments). Shares have no list field, so they stay the sum of the
-  // fetched posts only.
-  const likeT = s.totalLikes != null ? s.totalLikes : sumMedia('like_count')
-  const commentT = s.totalComments != null ? s.totalComments : sumMedia('comments_count')
-  const shareT = sumMedia('shares')
-  // Dev-only: did the backend's all-profile totals come through? Remove when done.
-  if (import.meta.env.DEV) {
-    console.log(
-      `[influence] s.totalLikes=${s.totalLikes}, s.totalComments=${s.totalComments}, recent-sum=${sumMedia('like_count')}, using likeT=${likeT}`,
-    )
-  }
+  // Last-30-day likes / comments / shares (from the backend) so the Total
+  // Impressions tile + mini-row reflect the recent 30-day window, matching the
+  // engagement rate. Falls back to the fetched-posts sum if the fields are absent.
+  const likeT = s.likes30d != null ? s.likes30d : sumMedia('like_count')
+  const commentT = s.comments30d != null ? s.comments30d : sumMedia('comments_count')
+  const shareT = s.shares30d != null ? s.shares30d : sumMedia('shares')
   const tileValues = {
     'Engagement Rate': eng,
     // Key must match the tile/pill label exactly ('Total Views'), else the
