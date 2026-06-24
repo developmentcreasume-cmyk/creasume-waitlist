@@ -73,7 +73,7 @@ export const CREATOR = {
         { icon: 'comment', value: '24.6K' },
         { icon: 'share', value: '18.2K' },
       ],
-      source: { type: 'instagram', text: 'Pulled live from Instagram Insights — total impressions across your posts.' },
+      source: { type: 'instagram', text: 'Pulled live from Instagram Insights — total impressions across your posts, last 30 days.' },
     },
     { value: '17,000', label: 'Reach', icon: 'rocket', source: { type: 'instagram', text: 'Accounts reached over the last 30 days, from Instagram Insights.' } },
     { value: 'Mumbai', label: 'Top City', icon: 'pin', source: { type: 'instagram', text: 'Your top audience city, from Instagram audience demographics.' } },
