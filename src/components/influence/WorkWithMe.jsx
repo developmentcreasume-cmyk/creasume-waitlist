@@ -174,13 +174,14 @@ export default function WorkWithMe() {
         className="relative z-10 text-center mt-12 md:mt-16 px-4 text-base md:text-lg font-medium"
         style={{ fontFamily: FONT, color: 'rgba(255,255,255,0.72)' }}
       >
-        Create a similar influence card for your Instagram profile{' '}
+        &ldquo;Create a similar influence card for your Instagram profile{' '}
         <a
           href="/#waitlist"
-          className="font-bold text-white underline underline-offset-2 hover:opacity-80 whitespace-nowrap"
+          className="text-white hover:opacity-80 whitespace-nowrap"
         >
-          &ldquo;here&rdquo; →
+          here →
         </a>
+        &rdquo;
       </motion.p>
 
       {/* Giant CREASUME wordmark — clip horizontal only so the letters aren't
