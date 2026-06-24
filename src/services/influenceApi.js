@@ -190,11 +190,11 @@ export function mapInfluenceData(api, d) {
   // product type (e.g. before the backend sends `media_product_type`) are kept
   // so the totals never collapse to 0.
   const sumMedia = (key) => media.reduce((a, m) => a + (m[key] || 0), 0)
-  // Last-30-day likes / comments / shares (from the backend) so the Total
-  // Impressions tile + mini-row reflect the recent 30-day window, matching the
-  // engagement rate. Falls back to the fetched-posts sum if the fields are absent.
-  const likeT = s.likes30d != null ? s.likes30d : sumMedia('like_count')
-  const commentT = s.comments30d != null ? s.comments30d : sumMedia('comments_count')
+  // Last-30-day interactions the account received (account-level insights from
+  // the backend) — counts engagement on all posts in the window, not just newly
+  // published ones. Falls back to whole-profile / fetched-post sums if absent.
+  const likeT = s.likes30d != null ? s.likes30d : (s.totalLikes != null ? s.totalLikes : sumMedia('like_count'))
+  const commentT = s.comments30d != null ? s.comments30d : (s.totalComments != null ? s.totalComments : sumMedia('comments_count'))
   const shareT = s.shares30d != null ? s.shares30d : sumMedia('shares')
   const tileValues = {
     'Engagement Rate': eng,
