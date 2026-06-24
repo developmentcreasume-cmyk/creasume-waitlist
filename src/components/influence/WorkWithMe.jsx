@@ -176,19 +176,10 @@ export default function WorkWithMe() {
       >
         Create a similar influence card for your Instagram profile{' '}
         <a
-          href="https://creasume.com/connect"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-bold hover:underline whitespace-nowrap"
-          style={{
-            background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)',
-            WebkitBackgroundClip: 'text',
-            backgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            color: 'transparent',
-          }}
+          href="/#waitlist"
+          className="font-bold text-white underline underline-offset-2 hover:opacity-80 whitespace-nowrap"
         >
-          here →
+          &ldquo;here&rdquo; →
         </a>
       </motion.p>
 
