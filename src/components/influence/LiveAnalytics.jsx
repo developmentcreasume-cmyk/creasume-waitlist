@@ -173,11 +173,29 @@ function smoothPath(pts) {
   return d
 }
 
+// Tracks the mobile breakpoint so charts can widen their inner content (and
+// scroll horizontally) on small screens while still fitting on desktop.
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const update = () => setMobile(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
+  return mobile
+}
+
 // `points`: [{ label, value (thousands, for plotting), count (real followers),
 // delta (vs previous point) }]. Renders the exact trend through every snapshot,
 // with a hover dot + tooltip (date, count, increase/decrease).
-function FollowerGrowthChart({ points, xLabels = [] }) {
+function FollowerGrowthChart({ points, xLabels = [], range }) {
   const [hi, setHi] = useState(null)
+  const isMobile = useIsMobile()
+  // Only the 1Y view on mobile widens past the panel and scrolls. 30D/90D fit,
+  // so they keep visible overflow — no scrollbar, no clipped edge labels.
+  const scrollable = isMobile && range === '1Y'
   const values = points.map((p) => p.value)
   const { axisMin, axisMax, ticks } = followerAxisScale(values.length ? values : [0])
   const span = axisMax - axisMin || 1
@@ -210,108 +228,134 @@ function FollowerGrowthChart({ points, xLabels = [] }) {
   }
   return (
     <div className="pt-3">
-      <div className="relative" style={{ height: CHART_H }}>
-        {ticks.map((v) => (
-          <div
-            key={v}
-            className="absolute left-0 right-0 flex items-center"
-            style={{ top: `${((axisMax - v) / span) * BASELINE_Y}%`, transform: 'translateY(-50%)' }}
-          >
-            <span className="text-white text-[11px]" style={{ fontFamily: MONO, width: AXIS_W }}>{formatFollowerTick(v)}</span>
-            <span className="flex-1 border-t border-dashed" style={{ borderColor: 'rgba(255,255,255,0.45)' }} />
-          </div>
-        ))}
-        <div className="absolute left-0 right-0 flex items-center" style={{ top: `${BASELINE_Y}%`, transform: 'translateY(-50%)' }}>
-          <span style={{ width: AXIS_W }} />
-          <span className="flex-1 border-t border-dashed" style={{ borderColor: 'rgba(255,255,255,0.45)' }} />
-        </div>
-
-        <svg
-          className="absolute top-0"
-          style={{ left: AXIS_W, width: `calc(100% - ${AXIS_W}px)`, height: '100%' }}
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
-          <motion.path
-            d={d}
-            fill="none"
-            stroke="#ffffff"
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-            initial={{ d: dFlat, opacity: 0 }}
-            whileInView={{ d, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
-          />
-        </svg>
-
-        {/* Hover layer over the plot area: a hit column + dot per snapshot.
-            Width must match the SVG exactly (left AXIS_W → right 0) or the dots
-            drift off the line, increasingly toward the right edge. */}
-        <div
-          className="absolute top-0 bottom-0"
-          style={{ left: AXIS_W, right: 0, cursor: 'pointer', touchAction: 'pan-y' }}
-          onMouseMove={(e) => scrubAt(e.clientX, e.currentTarget)}
-          onMouseLeave={() => setHi(null)}
-          onTouchStart={(e) => scrubAt(e.touches[0].clientX, e.currentTarget)}
-          onTouchMove={(e) => scrubAt(e.touches[0].clientX, e.currentTarget)}
-          onTouchEnd={() => setHi(null)}
-        >
-          {/* One dot that transitions its position between points on hover. */}
-          {hi != null && points[hi] && (
+      <div className="flex">
+        {/* Fixed Y-axis: follower tick labels on the left (don't scroll). */}
+        <div className="relative shrink-0" style={{ height: CHART_H, width: AXIS_W }}>
+          {ticks.map((v) => (
             <span
-              className="absolute rounded-full pointer-events-none"
-              style={{
-                left: `${points[hi].x}%`,
-                top: `${yFor(points[hi].value)}%`,
-                width: 11, height: 11,
-                transform: 'translate(-50%, -50%)',
-                background: '#fff',
-                boxShadow: '0 0 0 4px rgba(255,255,255,0.18)',
-                transition: 'left 160ms ease-out, top 160ms ease-out',
-              }}
-            />
-          )}
-
-          {hi != null && points[hi] && (
-            <div
-              className="absolute z-20 rounded-lg px-3 py-2 pointer-events-none whitespace-nowrap"
-              style={{
-                left: `${points[hi].x}%`,
-                top: `${yFor(points[hi].value)}%`,
-                transform: 'translate(-50%, calc(-100% - 12px))',
-                background: 'rgba(10,12,30,0.96)',
-                border: '1px solid rgba(255,255,255,0.18)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-                transition: 'left 160ms ease-out, top 160ms ease-out',
-              }}
+              key={v}
+              className="absolute left-0 text-white text-[11px]"
+              style={{ fontFamily: MONO, top: `${((axisMax - v) / span) * BASELINE_Y}%`, transform: 'translateY(-50%)' }}
             >
-              <div className="text-white/55 text-[10px]" style={{ fontFamily: MONO }}>{points[hi].label}</div>
-              <div className="text-white font-semibold text-sm" style={{ fontFamily: FONT }}>{fmtCount(points[hi].count)} followers</div>
-              {hi > 0 && (
-                <div className="text-[11px] font-semibold" style={{ fontFamily: MONO, color: points[hi].delta >= 0 ? '#4DE0B0' : '#FF8FB0' }}>
-                  {points[hi].delta >= 0 ? `▲ +${points[hi].delta}` : `▼ ${points[hi].delta}`} vs {points[hi - 1].label}
-                </div>
-              )}
-            </div>
-          )}
+              {formatFollowerTick(v)}
+            </span>
+          ))}
         </div>
-      </div>
 
-      {/* X-axis markers spanning the whole window (weekly for 30D, monthly for
-          90D/1Y) so months always show even when the data spans only a few days. */}
-      <div className="relative mt-2 h-4" style={{ marginLeft: AXIS_W, marginRight: 0 }}>
-        {xLabels.map((l, i) => (
-          <span
-            key={i}
-            className="absolute -translate-x-1/2 text-white text-[10px] whitespace-nowrap"
-            style={{ left: `${l.x}%`, fontFamily: MONO }}
-          >
-            {l.label}
-          </span>
-        ))}
+        {/* Scrollable plot: gridlines + line + hover layer + month labels share
+            the same inner min-width so they scroll together. Only the 1Y view on
+            mobile widens (12 months); 30D/90D fit the panel and never scroll. */}
+        <div className={`flex-1 pb-1 ${scrollable ? 'overflow-x-auto [scrollbar-width:thin]' : 'overflow-x-visible'}`} style={{ marginRight: 6 }}>
+          <div style={{ minWidth: scrollable ? `max(100%, ${n * 44}px)` : '100%' }}>
+            <div className="relative" style={{ height: CHART_H }}>
+              {/* Dashed gridlines (full inner width). */}
+              {ticks.map((v) => (
+                <div
+                  key={v}
+                  className="absolute left-0 right-0 border-t border-dashed"
+                  style={{ top: `${((axisMax - v) / span) * BASELINE_Y}%`, borderColor: 'rgba(255,255,255,0.45)' }}
+                />
+              ))}
+              {/* Baseline (x-axis). */}
+              <div
+                className="absolute left-0 right-0 border-t border-dashed"
+                style={{ top: `${BASELINE_Y}%`, borderColor: 'rgba(255,255,255,0.45)' }}
+              />
+
+              <svg
+                className="absolute top-0 left-0"
+                style={{ width: '100%', height: '100%' }}
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+              >
+                <motion.path
+                  d={d}
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
+                  initial={{ d: dFlat, opacity: 0 }}
+                  whileInView={{ d, opacity: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+                />
+              </svg>
+
+              {/* Hover layer spans the full plot width; the dot snaps to the
+                  nearest snapshot under the cursor/finger. */}
+              <div
+                className="absolute inset-0"
+                style={{ cursor: 'pointer', touchAction: 'pan-y' }}
+                onMouseMove={(e) => scrubAt(e.clientX, e.currentTarget)}
+                onMouseLeave={() => setHi(null)}
+                onTouchStart={(e) => scrubAt(e.touches[0].clientX, e.currentTarget)}
+                onTouchMove={(e) => scrubAt(e.touches[0].clientX, e.currentTarget)}
+                onTouchEnd={() => setHi(null)}
+              >
+                {/* One dot that transitions its position between points on hover. */}
+                {hi != null && points[hi] && (
+                  <span
+                    className="absolute rounded-full pointer-events-none"
+                    style={{
+                      left: `${points[hi].x}%`,
+                      top: `${yFor(points[hi].value)}%`,
+                      width: 11, height: 11,
+                      transform: 'translate(-50%, -50%)',
+                      background: '#fff',
+                      boxShadow: '0 0 0 4px rgba(255,255,255,0.18)',
+                      transition: 'left 160ms ease-out, top 160ms ease-out',
+                    }}
+                  />
+                )}
+
+                {hi != null && points[hi] && (
+                  <div
+                    className="absolute z-20 rounded-lg px-3 py-2 pointer-events-none whitespace-nowrap"
+                    style={{
+                      left: `${points[hi].x}%`,
+                      top: `${yFor(points[hi].value)}%`,
+                      transform: 'translate(-50%, calc(-100% - 12px))',
+                      background: 'rgba(10,12,30,0.96)',
+                      border: '1px solid rgba(255,255,255,0.18)',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                      transition: 'left 160ms ease-out, top 160ms ease-out',
+                    }}
+                  >
+                    <div className="text-white/55 text-[10px]" style={{ fontFamily: MONO }}>{points[hi].label}</div>
+                    <div className="text-white font-semibold text-sm" style={{ fontFamily: FONT }}>{fmtCount(points[hi].count)} followers</div>
+                    {hi > 0 && (
+                      <div className="text-[11px] font-semibold" style={{ fontFamily: MONO, color: points[hi].delta >= 0 ? '#4DE0B0' : '#FF8FB0' }}>
+                        {points[hi].delta >= 0 ? `▲ +${points[hi].delta}` : `▼ ${points[hi].delta}`} vs {points[hi - 1].label}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* X-axis markers spanning the whole window (weekly for 30D, monthly
+                for 90D/1Y) — same inner width as the plot, so they line up and
+                scroll together. */}
+            <div className="relative mt-2 h-4">
+              {xLabels.map((l, i) => {
+                // Center labels, but anchor the first/last inward so their halves
+                // aren't clipped by the scroll container's edges.
+                const tx = i === 0 ? '0' : i === xLabels.length - 1 ? '-100%' : '-50%'
+                return (
+                  <span
+                    key={i}
+                    className="absolute text-white text-[10px] whitespace-nowrap"
+                    style={{ left: `${l.x}%`, transform: `translateX(${tx})`, fontFamily: MONO }}
+                  >
+                    {l.label}
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -337,6 +381,7 @@ function engagementAxis(bars) {
 
 function EngagementChart({ bars, months }) {
   const { axisMax, ticks } = engagementAxis(bars)
+  const isMobile = useIsMobile()
   // The long 1.15s base delay + 0.08s stagger is for the initial scroll-in
   // reveal only. Once the chart has revealed, range switches (e.g. 1Y, which
   // adds more bars) should animate the new bars in quickly instead of replaying
@@ -373,7 +418,10 @@ function EngagementChart({ bars, months }) {
         {/* Scrollable chart: dashed gridlines + bars + month labels, all sharing
             the same inner min-width so they scroll together and stay aligned. */}
         <div className="flex-1 overflow-x-auto md:overflow-x-visible pb-1 [scrollbar-width:thin]" style={{ marginRight: 6 }}>
-          <div style={{ minWidth: '100%' }}>
+          {/* On mobile the inner widens to fit all bars (≈44px each) so the
+              dashed gridlines span the full scrolled chart (e.g. 1Y's 12 months);
+              desktop stays 100% and the bars shrink to fit. */}
+          <div style={{ minWidth: isMobile ? `max(100%, ${bars.length * 44}px)` : '100%' }}>
             <div className="relative" style={{ height: CHART_H }}>
               {/* Dashed gridlines (full inner width). */}
               {ticks.map((v) => (
@@ -401,11 +449,14 @@ function EngagementChart({ bars, months }) {
                       onMouseLeave={() => setHi(null)}
                     >
                       {hi === i && (
+                        // Anchored just inside the bar's top so it never overflows
+                        // the chart — a tooltip placed ABOVE a tall bar gets clipped
+                        // by the scroll container into an empty dark box.
                         <div
-                          className="absolute left-1/2 -translate-x-1/2 -top-1.5 -translate-y-full px-2.5 py-1.5 rounded-lg whitespace-nowrap pointer-events-none z-20 text-center"
+                          className="absolute left-1/2 -translate-x-1/2 top-1.5 px-2.5 py-1.5 rounded-lg whitespace-nowrap pointer-events-none z-20 text-center"
                           style={{ background: '#0B0B27', border: '1px solid rgba(255,255,255,0.15)', fontFamily: MONO, boxShadow: '0 6px 18px rgba(0,0,0,0.5)' }}
                         >
-                          <div className="text-white/55 text-[10px]">{months[i]}</div>
+                          {months[i] && <div className="text-white/55 text-[10px]">{months[i]}</div>}
                           <div className="text-white font-semibold text-[12px]">{b}%</div>
                         </div>
                       )}
@@ -466,19 +517,21 @@ export default function LiveAnalytics() {
   } = useInfluence()
   const [range, setRange] = useState('30D')
 
-  // Engagement: 30D reuses the headline 30-day rate (account-level interactions
-  // ÷ reach we already compute), shown across the weekly bars — so it reflects
-  // real 30-day engagement instead of empty per-week post buckets. 90D/1Y use
-  // the per-month series (exact value, 0 where no posts). No real data → fall
-  // back to the carry-forward series.
+  // Engagement: prefer the REAL per-period rates (per-week for 30D, per-month for
+  // 90D/1Y) so the bars actually vary. Only when there's no real per-period data
+  // do we fall back to the flat 30-day headline rate (better than empty bars).
   let engSeries
-  if (range === '30D' && ENG_RATE != null) {
-    const ws = weeklyEngSeries(ENG_POINTS_WEEKLY || [])
-    engSeries = { values: ws.labels.map(() => ENG_RATE), labels: ws.labels }
-  } else if (ENG_FROM_POSTS) {
-    engSeries = range === '30D'
+  if (ENG_FROM_POSTS) {
+    const real = range === '30D'
       ? weeklyEngSeries(ENG_POINTS_WEEKLY || [])
       : monthlyEngSeries(ENG_POINTS || [], range === '1Y' ? 12 : 3)
+    engSeries =
+      range === '30D' && ENG_RATE != null && real.values.every((v) => !v)
+        ? { values: real.labels.map(() => ENG_RATE), labels: real.labels }
+        : real
+  } else if (range === '30D' && ENG_RATE != null) {
+    const ws = weeklyEngSeries(ENG_POINTS_WEEKLY || [])
+    engSeries = { values: ws.labels.map(() => ENG_RATE), labels: ws.labels }
   } else {
     engSeries = buildTimeSeries(ENG_POINTS || [], range, 'rate', (value) => Math.round(value * 10) / 10)
   }
@@ -594,7 +647,7 @@ export default function LiveAnalytics() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pl-4 md:pl-8">
           <Panel title="Follower Growth" from="left" style={{ background: 'linear-gradient(155deg, #1b2052 0%, #10133C 60%)' }}>
-            <FollowerGrowthChart points={growthPoints} xLabels={growthXLabels} />
+            <FollowerGrowthChart points={growthPoints} xLabels={growthXLabels} range={range} />
             <p className="mt-3 ml-3 text-[11px] italic text-white/60" style={{ fontFamily: MONO }}>
               &ldquo;This chart only shows the follower growth of the creator after joining Creasume.&rdquo;
             </p>
