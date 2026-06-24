@@ -355,7 +355,7 @@ export default function ProfileHero() {
     if (pdfing) return
     const username = resolveUsername()
     if (!username) {
-      alert('PDF export is available on a live creator page (/influence/<username>).')
+      alert('PDF export is available on a live creator page (/<username>).')
       return
     }
     setPdfing(true)

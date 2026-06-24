@@ -69,9 +69,10 @@ function Root() {
   const route = useRoute()
   if (route === '/privacy-policy') return <PrivacyPolicy />
   if (route === '/terms') return <TermsConditions />
-  // `/influence` (env default creator) and `/influence/<username>` (any creator
-  // by clean URL) both render the media kit; the username is read in influenceApi.
-  if (route === '/influence' || route.startsWith('/influence/')) return <InfluenceCard />
+  // Home at '/'. ANY other clean path is a creator handle → media kit
+  // (e.g. `/finding.rhythm`). The username is read in influenceApi. Legacy
+  // `/influence/<username>` links still resolve (handled in resolveUsername).
+  if (route !== '/') return <InfluenceCard />
   return <App />
 }
 

@@ -461,20 +461,27 @@ function Panel({ title, children, from = 'up', className = '', bare = false, sty
 
 export default function LiveAnalytics() {
   const {
-    GROWTH, MONTHS, ENGAGEMENT_BARS, ENG_MONTHS, GROWTH_POINTS, ENG_POINTS, ENG_POINTS_WEEKLY, ENG_FROM_POSTS,
+    GROWTH, MONTHS, ENGAGEMENT_BARS, ENG_MONTHS, GROWTH_POINTS, ENG_POINTS, ENG_POINTS_WEEKLY, ENG_FROM_POSTS, ENG_RATE,
     AGE_GROUPS, TOP_LOCATIONS, TOP_COUNTRIES, GENDER_SPLIT,
   } = useInfluence()
   const [range, setRange] = useState('30D')
 
-  // Engagement: with real per-post data, show each period's EXACT value (0 where
-  // there were no posts) — 30D by week, 90D/1Y by month — so empty periods read
-  // 0 instead of carrying the previous value forward (which made every month
-  // look identical). Without real data, fall back to the carry-forward series.
-  const engSeries = ENG_FROM_POSTS
-    ? (range === '30D'
-        ? weeklyEngSeries(ENG_POINTS_WEEKLY || [])
-        : monthlyEngSeries(ENG_POINTS || [], range === '1Y' ? 12 : 3))
-    : buildTimeSeries(ENG_POINTS || [], range, 'rate', (value) => Math.round(value * 10) / 10)
+  // Engagement: 30D reuses the headline 30-day rate (account-level interactions
+  // ÷ reach we already compute), shown across the weekly bars — so it reflects
+  // real 30-day engagement instead of empty per-week post buckets. 90D/1Y use
+  // the per-month series (exact value, 0 where no posts). No real data → fall
+  // back to the carry-forward series.
+  let engSeries
+  if (range === '30D' && ENG_RATE != null) {
+    const ws = weeklyEngSeries(ENG_POINTS_WEEKLY || [])
+    engSeries = { values: ws.labels.map(() => ENG_RATE), labels: ws.labels }
+  } else if (ENG_FROM_POSTS) {
+    engSeries = range === '30D'
+      ? weeklyEngSeries(ENG_POINTS_WEEKLY || [])
+      : monthlyEngSeries(ENG_POINTS || [], range === '1Y' ? 12 : 3)
+  } else {
+    engSeries = buildTimeSeries(ENG_POINTS || [], range, 'rate', (value) => Math.round(value * 10) / 10)
+  }
   const engBars = engSeries.values.length ? engSeries.values : ENGAGEMENT_BARS
   const engMonths = engSeries.labels.length ? engSeries.labels : (ENG_MONTHS || MONTHS)
 

@@ -7,18 +7,21 @@ import { summariseCampaigns } from '../components/influence/influenceData.js'
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
-// Which creator the page loads — taken ONLY from a clean `/influence/<username>`
-// path. A bare `/influence` has no creator, so it renders the bundled demo;
-// real data shows only at `/influence/<username>`. The SPA rewrite in
-// vercel.json makes those deep links / refreshes serve index.html.
+// Which creator the page loads — taken from the FIRST path segment, so the
+// media kit lives at a clean `/<username>` (e.g. `/finding.rhythm`). The home
+// page (`/`) and the legal pages are reserved and return no creator. Legacy
+// `/influence/<username>` links still work (the `influence` prefix is skipped).
+// The SPA rewrite in vercel.json makes these deep links / refreshes serve
+// index.html.
+const RESERVED_PATHS = ['privacy-policy', 'terms', 'influence']
 export function resolveUsername() {
   if (typeof window === 'undefined') return ''
   const path = window.location.pathname.replace(/\/+$/, '')
-  if (path.startsWith('/influence/')) {
-    const seg = path.slice('/influence/'.length).split('/')[0]
-    if (seg) return decodeURIComponent(seg)
-  }
-  return ''
+  const parts = path.split('/').filter(Boolean)
+  // Skip a leading `influence` segment for backward compatibility.
+  let seg = parts[0] === 'influence' ? parts[1] : parts[0]
+  if (!seg || RESERVED_PATHS.includes(seg)) return ''
+  return decodeURIComponent(seg)
 }
 
 // 1234567 → "1.2M", 12500 → "12.5K". Returns null for missing/NaN so callers
@@ -175,6 +178,9 @@ export function mapInfluenceData(api, d) {
   // bundled demo number. formatCount(0) is "0"; formatCount(null) is null.
   const fc0 = (v) => formatCount(v) ?? '0'
   const eng = s.engagementRate != null ? `${s.engagementRate}%` : '0%'
+  // Numeric 30-day engagement rate (the headline value) — used to fill the 30D
+  // chart so it reflects the real 30-day engagement instead of empty weekly buckets.
+  const ENG_RATE = s.engagementRate != null ? s.engagementRate : null
 
   // ---- Hero pills (followers / engagement / views / reach) ----
   const pills = d.CREATOR.pills.map((p) => ({ ...p }))
@@ -522,6 +528,7 @@ export function mapInfluenceData(api, d) {
     ENG_POINTS,
     ENG_POINTS_WEEKLY,
     ENG_FROM_POSTS,
+    ENG_RATE,
     AGE_GROUPS,
     TOP_LOCATIONS,
     TOP_COUNTRIES,
