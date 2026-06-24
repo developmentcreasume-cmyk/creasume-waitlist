@@ -245,8 +245,8 @@ function FollowerGrowthChart({ points, xLabels = [], range }) {
         {/* Scrollable plot: gridlines + line + hover layer + month labels share
             the same inner min-width so they scroll together. Only the 1Y view on
             mobile widens (12 months); 30D/90D fit the panel and never scroll. */}
-        <div className={`flex-1 pb-1 ${scrollable ? 'overflow-x-auto [scrollbar-width:thin]' : 'overflow-x-visible'}`} style={{ marginRight: 6 }}>
-          <div style={{ minWidth: scrollable ? `max(100%, ${n * 34}px)` : '100%' }}>
+        <div className={`flex-1 min-w-0 pb-1 ${scrollable ? 'overflow-x-auto [scrollbar-width:thin]' : 'overflow-x-visible'}`} style={{ marginRight: 6 }}>
+          <div style={{ minWidth: scrollable ? `max(100%, ${n * 40}px)` : '100%' }}>
             <div className="relative" style={{ height: CHART_H }}>
               {/* Dashed gridlines (full inner width). */}
               {ticks.map((v) => (
@@ -417,7 +417,7 @@ function EngagementChart({ bars, months }) {
 
         {/* Scrollable chart: dashed gridlines + bars + month labels, all sharing
             the same inner min-width so they scroll together and stay aligned. */}
-        <div className="flex-1 overflow-x-auto md:overflow-x-visible pb-1 [scrollbar-width:thin]" style={{ marginRight: 6 }}>
+        <div className="flex-1 min-w-0 overflow-x-auto md:overflow-x-visible pb-1 [scrollbar-width:thin]" style={{ marginRight: 6 }}>
           {/* On mobile the inner widens to fit all bars (≈44px each) so the
               dashed gridlines span the full scrolled chart (e.g. 1Y's 12 months);
               desktop stays 100% and the bars shrink to fit. */}
