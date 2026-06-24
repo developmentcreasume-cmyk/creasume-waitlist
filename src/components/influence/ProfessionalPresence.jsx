@@ -118,16 +118,16 @@ export default function ProfessionalPresence() {
             // the handle.
             const url = s.url || getSocialUrl(s.name, s.handle)
             const content = (
-              <div className="group w-full flex items-center gap-3 rounded-xl px-4 py-3.5 cursor-pointer transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.03]"
+              <div className="group w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 cursor-pointer transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.03]"
                 style={{ background: 'rgba(40,46,112,0.30)', border: '1px solid rgba(255,255,255,0.08)' }}
               >
-                <span className="shrink-0 transition-transform duration-300 group-hover:scale-110">{PLATFORM_ICON[s.name] || DEFAULT_ICON}</span>
+                <span className="shrink-0 transition-transform duration-300 group-hover:scale-110 [&>svg]:w-[18px] [&>svg]:h-[18px]">{PLATFORM_ICON[s.name] || DEFAULT_ICON}</span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-white text-sm font-medium truncate" style={{ fontFamily: FONT }}>{s.name}</div>
-                  <div className="text-white text-[11px] truncate" style={{ fontFamily: MONO }}>{s.handle}</div>
+                  <div className="text-white text-[13px] font-medium truncate" style={{ fontFamily: FONT }}>{s.name}</div>
+                  <div className="text-white text-[10px] truncate" style={{ fontFamily: MONO }}>{s.handle}</div>
                 </div>
                 <span
-                  className="shrink-0 text-[13px] font-semibold"
+                  className="shrink-0 text-[12px] font-semibold"
                   style={{ fontFamily: MONO, color: '#D85A9E' }}
                 >
                   {s.status}

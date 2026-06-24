@@ -195,7 +195,9 @@ function FollowerGrowthChart({ points, xLabels = [], range }) {
   // Only the 1Y view can scroll (its 12 months need ~44px each). The CSS max()
   // below means it only actually scrolls where the panel is too narrow to fit
   // them — wide panels keep 100% and show no scrollbar. 30D/90D never widen.
-  const scrollable = range === '1Y'
+  // Widen + horizontally scroll the 12-month 1Y view on mobile only; on desktop
+  // the panel is wide enough to fit all months, so no scrollbar.
+  const scrollable = range === '1Y' && isMobile
   const values = points.map((p) => p.value)
   const { axisMin, axisMax, ticks } = followerAxisScale(values.length ? values : [0])
   const span = axisMax - axisMin || 1
