@@ -265,6 +265,21 @@ function StatsGrid({ includeScore = false, onLearnMore }) {
   )
 }
 
+// Splits text on `**…**` and wraps those segments in <strong>, so modal copy
+// can mark inline bold (e.g. "A **low engagement rate** does not mean low reach").
+function renderInlineBold(text) {
+  return String(text)
+    .split(/(\*\*[^*]+\*\*)/g)
+    .filter(Boolean)
+    .map((seg, i) =>
+      seg.startsWith('**') && seg.endsWith('**') ? (
+        <strong key={i} className="font-semibold text-white">{seg.slice(2, -2)}</strong>
+      ) : (
+        <span key={i}>{seg}</span>
+      ),
+    )
+}
+
 // Shared "Learn more" detail modal (e.g. how to build your Creasume Score).
 // Rendered through a portal so it overlays the whole page.
 function LearnMoreModal({ data, onClose }) {
@@ -302,6 +317,26 @@ function LearnMoreModal({ data, onClose }) {
               <img src="/creasume-c.png" alt="" className="w-6 h-6 object-contain shrink-0" />
               <h3 className="text-white font-bold leading-tight" style={{ fontFamily: FONT, fontSize: 19 }}>{data.title}</h3>
             </div>
+            {data.blocks && (
+              <div className="flex flex-col gap-3">
+                {data.blocks.map((b, bi) =>
+                  b.type === 'bullet' ? (
+                    <div key={bi} className="flex items-start gap-2.5 text-white/80" style={{ fontFamily: FONT, fontSize: 14 }}>
+                      <span className="mt-1.5 shrink-0 rounded-full" style={{ width: 6, height: 6, background: 'linear-gradient(90deg,#A35CE1,#E731A2)' }} />
+                      <span className="leading-snug">{renderInlineBold(b.text)}</span>
+                    </div>
+                  ) : (
+                    <p
+                      key={bi}
+                      className={b.bold ? 'text-white leading-relaxed' : 'text-white/75 leading-relaxed'}
+                      style={{ fontFamily: FONT, fontSize: 14, fontWeight: b.bold ? 600 : 400 }}
+                    >
+                      {renderInlineBold(b.text)}
+                    </p>
+                  ),
+                )}
+              </div>
+            )}
             {data.intro && (
               <p className="text-white/75 leading-relaxed mb-3.5" style={{ fontFamily: FONT, fontSize: 14 }}>{data.intro}</p>
             )}

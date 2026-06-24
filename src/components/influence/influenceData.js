@@ -48,9 +48,18 @@ export const CREATOR = {
         type: 'calculated',
         text: 'Total interactions ÷ total accounts reached × 100 (last 30 days).',
         more: {
-          title: 'How this engagement rate works',
-          intro: "This engagement rate is the creator's profile-wide average across their recent posts — not the engagement of a single post.",
-          outro: 'The conventional Instagram engagement formula is a different calculation that checks engagement for each individual post, rather than averaging across the whole profile.',
+          title: 'Understanding your Engagement Rate',
+          // `blocks` render in order; `**bold**` marks inline bold, `bold: true`
+          // makes a whole paragraph bold.
+          blocks: [
+            { type: 'p', text: 'Your engagement rate is the average across your recent posts, not a single post. We calculate it as the ratio between your total audience reached and your total audience that interacted over the last 30 days.' },
+            { type: 'p', bold: true, text: 'This is the industry standard, and the correct way to measure overall engagement, which is why brands trust it.' },
+            { type: 'p', text: 'Here is the important part:' },
+            { type: 'bullet', text: 'A **low engagement rate does not mean low reach**.' },
+            { type: 'p', text: 'It often means your content is reaching a very large audience, and the reach is higher than impressions. A higher reach is exactly what many brands want.' },
+            { type: 'bullet', text: 'A **high engagement** rate means a tight, loyal audience that interacts a lot.' },
+            { type: 'p', bold: true, text: 'Both are valuable. Brands simply look for different goals.' },
+          ],
         },
       },
     },
