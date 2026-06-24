@@ -250,7 +250,7 @@ function StatsGrid({ includeScore = false, onLearnMore }) {
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onLearnMore?.(source.more) }}
                     className="mt-2 inline-flex items-center gap-1 text-[10px] md:text-xs font-semibold hover:underline"
-                    style={{ color: src?.color || '#5AA9FF' }}
+                    style={{ color: '#5AA9FF' }}
                   >
                     ~ Learn more
                   </button>
