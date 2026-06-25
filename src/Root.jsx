@@ -70,6 +70,34 @@ function useLenis() {
 function Root() {
   useLenis()
   const route = useRoute()
+
+  // Clean `/waitlist` URL: render the home page and glide to the waitlist
+  // section (no `#` in the address bar). Wait a frame so the section is laid
+  // out, then use Lenis if present, else native smooth scroll.
+  useEffect(() => {
+    if (route !== '/waitlist') return
+    const id = requestAnimationFrame(() => {
+      const el = document.getElementById('waitlist')
+      if (!el) return
+      if (window.__lenis) window.__lenis.scrollTo(el)
+      else el.scrollIntoView({ behavior: 'smooth' })
+    })
+    return () => cancelAnimationFrame(id)
+  }, [route])
+
+  // Legacy `/influence/<username>` links are retired — rewrite them in place to
+  // the clean `/<username>` so old links auto-correct instead of opening here.
+  const legacyInfluence = route.startsWith('/influence/')
+  useEffect(() => {
+    if (!legacyInfluence) return
+    const clean = route.replace(/^\/influence/, '') || '/'
+    window.history.replaceState({}, '', clean)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }, [legacyInfluence, route])
+  // Hold a blank frame while the rewrite above swaps the route, so the broken
+  // `/influence/...` card never flashes.
+  if (legacyInfluence) return <div className="min-h-screen bg-black" />
+
   if (route === '/privacy-policy') return <PrivacyPolicy />
   if (route === '/terms') return <TermsConditions />
   if (route.startsWith('/dashboard/inquiries/')) {
@@ -77,9 +105,11 @@ function Root() {
   }
   if (route === '/dashboard/inquiries') return <InfluenceInquiries />
   if (route === '/dashboard') return <InfluenceDashboard />
+  // `/waitlist` is the home page anchored to the waitlist section (scroll
+  // handled by the effect above) — kept clean so the URL has no `#`.
+  if (route === '/waitlist') return <App />
   // Home at '/'. ANY other clean path is a creator handle → media kit
-  // (e.g. `/finding.rhythm`). The username is read in influenceApi. Legacy
-  // `/influence/<username>` links still resolve (handled in resolveUsername).
+  // (e.g. `/finding.rhythm`). The username is read in influenceApi.
   if (route !== '/') return <InfluenceCard />
   return <App />
 }

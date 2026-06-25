@@ -47,10 +47,10 @@ function InfluenceCardInner() {
   )
 }
 
-// Public-facing Influence Card (creator media kit). Reached at
-// `/influence/<username>`, which loads that creator's live data from the
-// Creasume backend. Each section lives under components/influence/ and reads
-// from InfluenceDataProvider.
+// Public-facing Influence Card (creator media kit). Reached at the clean
+// `/<username>`, which loads that creator's live data from the Creasume
+// backend. Each section lives under components/influence/ and reads from
+// InfluenceDataProvider.
 export default function InfluenceCard() {
   return (
     <InfluenceDataProvider>

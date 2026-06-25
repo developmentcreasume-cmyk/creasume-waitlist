@@ -9,17 +9,15 @@ export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 // Which creator the page loads — taken from the FIRST path segment, so the
 // media kit lives at a clean `/<username>` (e.g. `/finding.rhythm`). The home
-// page (`/`) and the legal pages are reserved and return no creator. Legacy
-// `/influence/<username>` links still work (the `influence` prefix is skipped).
-// The SPA rewrite in vercel.json makes these deep links / refreshes serve
-// index.html.
-const RESERVED_PATHS = ['privacy-policy', 'terms', 'influence', 'dashboard']
+// page (`/`), the legal pages, and the app routes are reserved and return no
+// creator. The SPA rewrite in vercel.json makes these deep links / refreshes
+// serve index.html.
+const RESERVED_PATHS = ['privacy-policy', 'terms', 'influence', 'dashboard', 'waitlist']
 export function resolveUsername() {
   if (typeof window === 'undefined') return ''
   const path = window.location.pathname.replace(/\/+$/, '')
   const parts = path.split('/').filter(Boolean)
-  // Skip a leading `influence` segment for backward compatibility.
-  let seg = parts[0] === 'influence' ? parts[1] : parts[0]
+  const seg = parts[0]
   if (!seg || RESERVED_PATHS.includes(seg)) return ''
   return decodeURIComponent(seg)
 }
