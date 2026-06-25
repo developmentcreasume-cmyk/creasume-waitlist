@@ -602,7 +602,7 @@ function App() {
         >
           <motion.div
             variants={outlineDraw}
-            className="shine-border cursor-pointer inline-flex items-center justify-center rounded-full backdrop-blur-sm shrink px-2.5 sm:px-6 h-[34px] sm:h-[40px]"
+            className="shine-border shine-animate-mobile cursor-pointer inline-flex items-center justify-center rounded-full backdrop-blur-sm shrink px-2.5 sm:px-6 h-[34px] sm:h-[40px]"
             style={{
               backgroundColor: 'rgba(125, 113, 201, 0.09)',
             }}
@@ -624,7 +624,7 @@ function App() {
 
           <motion.div
             variants={outlineDraw}
-            className="shine-border shine-border--tint inline-flex items-center justify-center shrink-0 gap-2 sm:gap-3 rounded-full bg-white px-3 sm:px-0 h-[30px] sm:h-[35.46px] w-auto sm:w-[244.95px]"
+            className="shine-border shine-border--tint shine-animate-mobile inline-flex items-center justify-center shrink-0 gap-2 sm:gap-3 rounded-full bg-white px-3 sm:px-0 h-[30px] sm:h-[35.46px] w-auto sm:w-[244.95px]"
           >
             <img
               src="/Group%201707480613.png"

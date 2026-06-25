@@ -28,6 +28,13 @@ html, body, #root {
   max-width: 100%;
 }
 
+/* Stop the scroll at the content edges so the page can't rubber-band past the
+   footer/CREASUME wordmark and reveal a black strip below it (read as the
+   wordmark "not sticking" to the bottom on mobile). */
+html, body {
+  overscroll-behavior-y: none;
+}
+
 /* ===== Download PDF = native print (Save as PDF). Renders the real page, so
    colours / gradients / charts come out right (html2canvas left them blank). */
 @media print {
