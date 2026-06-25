@@ -164,13 +164,17 @@ function smoothPath(pts) {
     const p1 = pts[i]
     const p2 = pts[i + 1]
     const p3 = pts[i + 2] || p2
-    // Clamp the control points' x to the segment's own x-range so the curve can
-    // never loop back on itself (a big x-gap — e.g. the flat carry before the
-    // recent data — otherwise pushes a control point past the data and curls it).
+    // Clamp the control points to the segment's own bounding box. Clamping x
+    // stops the curve looping back on itself across a big x-gap (e.g. the flat
+    // carry before the recent data); clamping y stops it overshooting past a
+    // steep peak/valley into a vertical spike when the next point holds the
+    // same value (the follower-graph glitch).
+    const loY = Math.min(p1.y, p2.y)
+    const hiY = Math.max(p1.y, p2.y)
     const c1x = Math.min(p2.x, Math.max(p1.x, p1.x + (p2.x - p0.x) / 6))
-    const c1y = p1.y + (p2.y - p0.y) / 6
+    const c1y = Math.min(hiY, Math.max(loY, p1.y + (p2.y - p0.y) / 6))
     const c2x = Math.min(p2.x, Math.max(p1.x, p2.x - (p3.x - p1.x) / 6))
-    const c2y = p2.y - (p3.y - p1.y) / 6
+    const c2y = Math.min(hiY, Math.max(loY, p2.y - (p3.y - p1.y) / 6))
     d += ` C${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`
   }
   return d

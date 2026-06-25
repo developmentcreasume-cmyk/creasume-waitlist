@@ -13,7 +13,7 @@ export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 // `/influence/<username>` links still work (the `influence` prefix is skipped).
 // The SPA rewrite in vercel.json makes these deep links / refreshes serve
 // index.html.
-const RESERVED_PATHS = ['privacy-policy', 'terms', 'influence']
+const RESERVED_PATHS = ['privacy-policy', 'terms', 'influence', 'dashboard']
 export function resolveUsername() {
   if (typeof window === 'undefined') return ''
   const path = window.location.pathname.replace(/\/+$/, '')

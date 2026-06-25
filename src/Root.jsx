@@ -4,6 +4,9 @@ import App from './App.jsx'
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
 import TermsConditions from './pages/TermsConditions.jsx'
 import InfluenceCard from './pages/InfluenceCard.jsx'
+import InfluenceDashboard from './components/influence-dashboard/InfluenceDashboard.jsx'
+import InfluenceInquiries from './components/influence-dashboard/InfluenceInquiries.jsx'
+import InfluenceInquiryDetail from './components/influence-dashboard/InfluenceInquiryDetail.jsx'
 import { useRoute } from './router.js'
 
 // Site-wide Lenis smooth scrolling. Lenis scrolls the real document, so
@@ -69,6 +72,11 @@ function Root() {
   const route = useRoute()
   if (route === '/privacy-policy') return <PrivacyPolicy />
   if (route === '/terms') return <TermsConditions />
+  if (route.startsWith('/dashboard/inquiries/')) {
+    return <InfluenceInquiryDetail id={route.slice('/dashboard/inquiries/'.length)} />
+  }
+  if (route === '/dashboard/inquiries') return <InfluenceInquiries />
+  if (route === '/dashboard') return <InfluenceDashboard />
   // Home at '/'. ANY other clean path is a creator handle → media kit
   // (e.g. `/finding.rhythm`). The username is read in influenceApi. Legacy
   // `/influence/<username>` links still resolve (handled in resolveUsername).
