@@ -177,8 +177,8 @@ export default function WorkWithMe() {
       >
         &ldquo;Create a similar influence card for your Instagram profile{' '}
         <a
-          href="/waitlist"
-          onClick={(e) => { e.preventDefault(); goToPath('/waitlist') }}
+          href="/"
+          onClick={(e) => { e.preventDefault(); goToPath('/') }}
           className="text-white hover:opacity-80 whitespace-nowrap inline-flex items-center gap-1"
         >
           here
@@ -199,8 +199,8 @@ export default function WorkWithMe() {
         className="relative z-10 flex justify-center mt-6 md:mt-8"
       >
         <motion.a
-          href="/waitlist"
-          onClick={(e) => { e.preventDefault(); goToPath('/waitlist') }}
+          href="/"
+          onClick={(e) => { e.preventDefault(); goToPath('/') }}
           whileHover={{ scale: 1.04 }}
           transition={{ duration: 0.2, ease: 'easeInOut' }}
           className="no-underline inline-flex items-center rounded-full px-7 py-3.5 font-semibold whitespace-nowrap"
