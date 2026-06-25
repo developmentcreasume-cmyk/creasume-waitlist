@@ -1069,9 +1069,27 @@ function App() {
               transition={{ duration: 0.5, ease: 'easeOut' }}
               viewport={{ once: true, margin: '-60px' }}
             >
-              <img src="/Group%201707480613.png" alt="Creasume" style={{ height: '28px', width: 'auto', objectFit: 'contain' }} />
+              {/* Hi-res wordmark darkened → crisp on scaled/retina displays. */}
+              <img src="/creasumelogo.png" alt="Creasume" style={{ height: '24px', width: 'auto', objectFit: 'contain', filter: 'brightness(0)' }} />
               <span className="text-[#9EA5E2] text-lg">×</span>
-              <img src="/image/image%204.png" alt="Instagram" style={{ height: '28px', width: 'auto', objectFit: 'contain' }} />
+              {/* Instagram glyph as inline SVG (vector → no blur) + wordmark. */}
+              <span className="inline-flex items-center gap-2">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="igGrad" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
+                      <stop offset="0" stopColor="#FEDA75" />
+                      <stop offset="0.25" stopColor="#FA7E1E" />
+                      <stop offset="0.5" stopColor="#D62976" />
+                      <stop offset="0.75" stopColor="#962FBF" />
+                      <stop offset="1" stopColor="#4F5BD5" />
+                    </linearGradient>
+                  </defs>
+                  <rect x="2" y="2" width="20" height="20" rx="6" stroke="url(#igGrad)" strokeWidth="2" />
+                  <circle cx="12" cy="12" r="5" stroke="url(#igGrad)" strokeWidth="2" />
+                  <circle cx="17.4" cy="6.6" r="1.4" fill="url(#igGrad)" />
+                </svg>
+                <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: '20px', color: '#262626', letterSpacing: '-0.01em' }}>Instagram</span>
+              </span>
             </motion.div>
             <p className="text-xl md:text-2xl text-white font-normal mx-auto whitespace-normal md:whitespace-nowrap">
               We fetch your verified statistics with your consent directly through Instagram permissions.
