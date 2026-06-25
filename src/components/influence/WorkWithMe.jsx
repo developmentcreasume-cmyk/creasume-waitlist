@@ -171,15 +171,18 @@ export default function WorkWithMe() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: '-40px' }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="relative z-10 text-center mt-12 md:mt-16 px-4 text-base md:text-lg font-medium"
+        className="relative z-10 text-center mt-24 md:mt-32 px-4 text-base md:text-lg font-medium"
         style={{ fontFamily: FONT, color: 'rgba(255,255,255,0.72)' }}
       >
         &ldquo;Create a similar influence card for your Instagram profile{' '}
         <a
           href="/#waitlist"
-          className="text-white hover:opacity-80 whitespace-nowrap"
+          className="text-white hover:opacity-80 whitespace-nowrap inline-flex items-center gap-1"
         >
           here
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 5v14M19 12l-7 7-7-7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </a>
         &rdquo;
       </motion.p>
