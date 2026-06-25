@@ -1053,13 +1053,15 @@ function App() {
 
           <div className="mt-28 md:mt-40 text-center">
             <p className="text-3xl md:text-4xl font-bold text-white mb-6">
-              <img
-                src="/Vector%20(5).png"
-                alt=""
+              <svg
                 aria-hidden="true"
                 className="inline-block mr-3 align-middle"
-                style={{ width: '34px', height: '34px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
-              />
+                width="34" height="34" viewBox="0 0 24 24" fill="none"
+                stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="m8.5 12 2.5 2.5 4.5-5" />
+              </svg>
               Your consent matters to us
             </p>
             <motion.div
