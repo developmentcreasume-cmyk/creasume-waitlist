@@ -29,12 +29,6 @@ const STATS = [
   { label: 'Brand Inquiries', value: CREATOR.inquiries, sub: 'Total Received', icon: 'inbox' },
 ]
 
-const INQUIRIES = [
-  { brand: 'Lumina Cosmetics', detail: 'Summer Collection · Reel + Story', status: 'PENDING' },
-  { brand: 'FitLife', detail: 'Life Routine · Reel + Story', status: 'PENDING' },
-  { brand: 'Tech Verse', detail: 'Tech Products · Reel + Story', status: 'ACCEPTED' },
-]
-
 const NAV = [
   { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
   { key: 'edit', label: 'Edit Profile', icon: 'user' },
@@ -502,19 +496,21 @@ export default function InfluenceDashboard() {
               </div>
               <div className="flex flex-col gap-3">
                 {INQUIRIES.map((q) => (
-                  <div
-                    key={q.brand}
-                    className="flex items-center justify-between rounded-xl px-5 py-4"
+                  <button
+                    key={q.id}
+                    type="button"
+                    onClick={() => goToPath(`/dashboard/inquiries/${q.id}`)}
+                    className="flex items-center justify-between rounded-xl px-5 py-4 text-left w-full cursor-pointer transition-colors hover:bg-white/6"
                     style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-white text-base font-semibold truncate" style={{ fontFamily: FONT }}>{q.brand}</span>
+                        <span className="text-white text-base font-semibold truncate" style={{ fontFamily: FONT }}>{q.brand.name}</span>
                         <StatusBadge status={q.status} />
                       </div>
                       <div className="text-white/50 text-sm truncate" style={{ fontFamily: FONT }}>{q.detail}</div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>

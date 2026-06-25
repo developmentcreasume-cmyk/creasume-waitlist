@@ -550,10 +550,16 @@ export default function LiveAnalytics() {
   // include more history when it exists; the x-axis labels span the whole range.
   const totalDays = range === '1Y' ? 365 : range === '90D' ? 90 : 30
   const winStart = Date.now() - totalDays * 86400000
-  const realGrowth = (GROWTH_POINTS || [])
+  // Dedupe to one snapshot per calendar day (keep the latest reading of the
+  // day) — multiple syncs on the same day would otherwise plot on top of each
+  // other and draw a vertical line.
+  const byDay = new Map()
+  ;(GROWTH_POINTS || [])
     .map((p) => ({ t: new Date(p.date).getTime(), f: Number(p.followers) }))
-    .filter((p) => !Number.isNaN(p.t) && p.t >= winStart && Number.isFinite(p.f))
+    .filter((p) => !Number.isNaN(p.t) && p.t >= winStart && Number.isFinite(p.f) && p.f > 0)
     .sort((a, b) => a.t - b.t)
+    .forEach((p) => byDay.set(new Date(p.t).toISOString().slice(0, 10), p))
+  const realGrowth = [...byDay.values()].sort((a, b) => a.t - b.t)
 
   let growthPoints
   let growthXLabels
@@ -572,6 +578,17 @@ export default function LiveAnalytics() {
       count: p.f,
       delta: i ? p.f - realGrowth[i - 1].f : 0,
     }))
+    // Keep consecutive points at least MIN_GAP apart horizontally so a big
+    // jump between near-dated snapshots reads as a slope, never a vertical line.
+    const MIN_GAP = 6
+    for (let i = 1; i < growthPoints.length; i += 1) {
+      if (growthPoints[i].x - growthPoints[i - 1].x < MIN_GAP) {
+        growthPoints[i].x = growthPoints[i - 1].x + MIN_GAP
+      }
+    }
+    // If the nudging pushed past the right edge, rescale all points back into 0–100.
+    const maxX = growthPoints[growthPoints.length - 1].x
+    if (maxX > 100) growthPoints.forEach((p) => { p.x = (p.x / maxX) * 100 })
     const now = new Date()
     if (range === '30D') {
       const weeks = 5
