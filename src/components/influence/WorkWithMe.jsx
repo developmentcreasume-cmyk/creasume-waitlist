@@ -179,10 +179,38 @@ export default function WorkWithMe() {
           href="/#waitlist"
           className="text-white hover:opacity-80 whitespace-nowrap"
         >
-          here →
+          here
         </a>
         &rdquo;
       </motion.p>
+
+      {/* CTA button → home waitlist. Arrow points down, inviting the viewer to
+          join below. */}
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-40px' }}
+        transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
+        className="relative z-10 flex justify-center mt-6 md:mt-8"
+      >
+        <motion.a
+          href="/#waitlist"
+          whileHover={{ scale: 1.04 }}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
+          className="no-underline inline-flex items-center gap-2 rounded-full px-7 py-3.5 font-semibold whitespace-nowrap"
+          style={{
+            fontFamily: FONT,
+            fontSize: '17px',
+            background: 'linear-gradient(180deg, #5D65DC 0%, #9CA2E1 100%)',
+            color: '#0B0B27',
+          }}
+        >
+          Create Your Influence Card
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 5v14M19 12l-7 7-7-7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </motion.a>
+      </motion.div>
 
       {/* Giant CREASUME wordmark — clip horizontal only so the letters aren't
           cut off at the bottom on mobile. */}
