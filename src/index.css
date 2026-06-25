@@ -83,6 +83,11 @@ html.lenis body {
 .lenis.lenis-smooth iframe {
   pointer-events: none;
 }
+/* …but keep the Edit-Profile device-preview iframes interactive so the embedded
+   influence card can be scrolled. */
+.lenis.lenis-smooth iframe.device-preview-frame {
+  pointer-events: auto;
+}
 
 .gradient-text {
   background: linear-gradient(#1823D5 0%, #6068DC 50%, #A7ADE3 100%);
@@ -387,24 +392,29 @@ input::placeholder {
   height: 1px;
 }
 
-/* Slim, on-brand scrollbar for the live-demo card (replaces the chunky native
-   one). Firefox uses scrollbar-width/color; WebKit/Blink use the pseudo-els. */
+/* Live-demo card stays scrollable but hides the scrollbar entirely so the phone
+   mockup looks clean. Firefox uses scrollbar-width; WebKit/Blink use the pseudo. */
 .demo-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(156, 162, 225, 0.45) transparent;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .demo-scroll::-webkit-scrollbar {
-  width: 6px;
+  width: 0;
+  height: 0;
+  display: none;
 }
-.demo-scroll::-webkit-scrollbar-track {
-  background: transparent;
+
+/* Hide the native page scrollbar app-wide (scrolling still works) so it never
+   shows beside the phone mockups / cards. */
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-.demo-scroll::-webkit-scrollbar-thumb {
-  background: rgba(156, 162, 225, 0.45);
-  border-radius: 9999px;
-}
-.demo-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 162, 225, 0.7);
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 /* ===== Revolving shine border (hero badge pills) =====

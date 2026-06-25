@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { FONT, MONO } from '../influence/influenceData.js'
 import { goToPath } from '../../router.js'
 import { INQUIRIES } from './inquiriesData.js'
+import EditProfileView from './EditProfileView.jsx'
 
 // ---- Sample data (replace with live data once wired) ----
 const CREATOR = {
@@ -58,6 +59,12 @@ const ICONS = {
   alert: (<svg {...ic}><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4M12 17h.01" /></svg>),
   fbMark: (<svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.25-1.5 1.55-1.5H17V3.6c-.3-.04-1.3-.13-2.46-.13-2.43 0-4.1 1.49-4.1 4.22v2.2H7.7V13h2.74v8h3.06z" /></svg>),
   ytMark: (<svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M21.6 7.2c-.2-.9-.9-1.6-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4c-.9.2-1.6.9-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8c.2.9.9 1.6 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4c.9-.2 1.6-.9 1.8-1.8C22 15.2 22 12 22 12s0-3.2-.4-4.8zM10 15V9l5 3-5 3z" /></svg>),
+  sparkle: (<svg {...ic}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" /><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2Z" /></svg>),
+  share: (<svg {...ic}><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6" /></svg>),
+  message: (<svg {...ic}><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.8L3 21l1.9-5.2A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z" /></svg>),
+  handshake: (<svg {...ic}><path d="m11 17 2 2a1 1 0 0 0 1.4 0l3.6-3.6" /><path d="M14 14l2.5 2.5a1 1 0 0 0 1.4-1.4L13 10l-2.5 2a2 2 0 0 1-2.6-3L11 7l3-1 6 5" /><path d="M4 12l3 3M4 6l3-1 2 1" /></svg>),
+  info: (<svg {...ic} width="15" height="15"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>),
+  trendUp: (<svg {...ic} width="14" height="14"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" /></svg>),
 }
 
 // Dark URL pill with a copy button (shows a check on success).
@@ -115,6 +122,124 @@ function StatusBadge({ status }) {
     >
       {status}
     </span>
+  )
+}
+
+// ===== Creasume Stats (credibility score) =====
+const CREASUME = {
+  score: 74.3,
+  tier: 'Established',
+  shareBonus: 4.3,
+  totalPoints: 350,
+  benchmark: 500,
+  metrics: [
+    { key: 'views', icon: 'eye', mult: '×1', value: 190, label: 'Card Views', pts: '+190 pts', color: '#4DE0B0' },
+    { key: 'shares', icon: 'share', mult: '×4', value: 33, label: 'Card Shares', pts: '+132 pts', color: '#A78BFA' },
+    { key: 'inquiries', icon: 'message', mult: '×6', value: 3, label: 'Brand Inquiries', pts: '+18 pts', color: '#F472B6' },
+    { key: 'accepted', icon: 'handshake', mult: '×10', value: 1, label: 'Inquiries Accepted', pts: '+10 pts', color: '#FB923C' },
+  ],
+}
+
+// Circular score gauge (SVG ring filled to score/100).
+function ScoreRing({ score, size = 168 }) {
+  const r = (size - 16) / 2
+  const c = 2 * Math.PI * r
+  const pct = Math.max(0, Math.min(100, score)) / 100
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="9" />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke="#EC4899" strokeWidth="9" strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={c * (1 - pct)}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-white font-bold text-[40px] leading-none" style={{ fontFamily: FONT }}>{score}</span>
+        <span className="text-white/45 text-[11px] tracking-wider mt-1" style={{ fontFamily: MONO }}>/ 100 SCORE</span>
+      </div>
+    </div>
+  )
+}
+
+function CreasumeStats() {
+  const c = CREASUME
+  const pct = Math.round((c.totalPoints / c.benchmark) * 100)
+  return (
+    <div className="rounded-2xl p-6 md:p-8" style={PANEL}>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 mb-7">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <span style={{ color: '#A78BFA' }}>{ICONS.sparkle}</span>
+            <h3 className="text-white font-bold text-xl" style={{ fontFamily: FONT }}>Creasume Stats</h3>
+          </div>
+          <p className="mt-1 text-white/55 text-sm" style={{ fontFamily: FONT }}>Your credibility, earned from activity on Creasume.</p>
+        </div>
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-white/80 transition-colors hover:bg-white/5 shrink-0"
+          style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.14)' }}
+        >
+          {ICONS.info} Learn more
+        </button>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-stretch">
+        {/* Score gauge */}
+        <div className="flex flex-col items-center justify-center gap-4 shrink-0 lg:w-[230px]">
+          <ScoreRing score={c.score} />
+          <span
+            className="rounded-full px-4 py-1.5 text-[13px] font-bold"
+            style={{ fontFamily: FONT, color: '#F472B6', background: 'rgba(236,72,153,0.12)', border: '1px solid rgba(236,72,153,0.4)' }}
+          >
+            {c.tier}
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold" style={{ fontFamily: MONO, color: '#4DE0B0' }}>
+            {ICONS.trendUp} +{c.shareBonus} share-rate bonus
+          </span>
+        </div>
+
+        {/* Breakdown */}
+        <div className="flex-1 min-w-0 flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {c.metrics.map((m) => (
+              <div
+                key={m.key}
+                className="relative rounded-2xl p-5"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}
+              >
+                <span style={{ color: m.color, opacity: 0.9 }}>{ICONS[m.icon]}</span>
+                <span
+                  className="absolute top-4 right-4 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-white/60"
+                  style={{ fontFamily: MONO, background: 'rgba(255,255,255,0.06)' }}
+                >
+                  {m.mult}
+                </span>
+                <div className="mt-3 text-white font-bold text-[30px] leading-none" style={{ fontFamily: FONT }}>{m.value}</div>
+                <div className="mt-1.5 text-white/65 text-sm" style={{ fontFamily: FONT }}>{m.label}</div>
+                <div className="mt-2 text-[13px] font-semibold" style={{ fontFamily: MONO, color: m.color }}>{m.pts}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Total points progress */}
+          <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-white/65 text-sm" style={{ fontFamily: FONT }}>Total points</span>
+              <span className="text-sm" style={{ fontFamily: MONO }}>
+                <span className="text-white font-bold">{c.totalPoints}</span>
+                <span className="text-white/40"> / {c.benchmark} benchmark</span>
+              </span>
+            </div>
+            <div className="rounded-full overflow-hidden" style={{ height: 10, background: 'rgba(255,255,255,0.06)' }}>
+              <div className="h-full rounded-full" style={{ width: `${pct}%`, background: 'linear-gradient(90deg,#7C5CFF 0%,#C04DCC 55%,#EC4899 100%)' }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -371,7 +496,7 @@ export default function InfluenceDashboard() {
 
         {/* ===== Main ===== */}
         <main className="flex-1 min-w-0">
-          {view === 'settings' ? <SettingsView /> : (
+          {view === 'settings' ? <SettingsView /> : view === 'edit' ? <EditProfileView /> : (
           <>
           {/* Header band */}
           <header
@@ -423,6 +548,9 @@ export default function InfluenceDashboard() {
               ))}
             </section>
 
+            {/* Creasume credibility score */}
+            <CreasumeStats />
+
             {/* Posts + side column */}
             <section className="grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-6">
               {/* Recent Instagram posts */}
@@ -454,16 +582,6 @@ export default function InfluenceDashboard() {
 
               {/* Right column */}
               <div className="flex flex-col gap-6">
-                {/* Creasume score */}
-                <div className="rounded-2xl p-6" style={PANEL}>
-                  <h3 className="text-white font-semibold text-lg mb-1" style={{ fontFamily: FONT }}>Creasume Stats</h3>
-                  <p className="text-white/50 text-sm mb-5" style={{ fontFamily: FONT }}>Your Creasume Score:</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white font-bold text-[56px] leading-none" style={{ fontFamily: FONT }}>{CREATOR.creasumeScore}</span>
-                    <span className="rounded-lg" style={{ width: 36, height: 36, background: 'linear-gradient(135deg,#8B5CF6,#C04DCC)' }} />
-                  </div>
-                </div>
-
                 {/* Platforms */}
                 <div className="rounded-2xl p-6" style={PANEL}>
                   <div className="flex items-center justify-between mb-5">
@@ -509,6 +627,12 @@ export default function InfluenceDashboard() {
                         <StatusBadge status={q.status} />
                       </div>
                       <div className="text-white/50 text-sm truncate" style={{ fontFamily: FONT }}>{q.detail}</div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 pl-4">
+                      <span className="text-[13px] text-[#9EA5E2] whitespace-nowrap" style={{ fontFamily: MONO }}>{q.date}</span>
+                      <span className="text-white/50">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                      </span>
                     </div>
                   </button>
                 ))}

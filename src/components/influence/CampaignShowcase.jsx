@@ -292,7 +292,7 @@ export default function CampaignShowcase() {
   // manually; auto-scroll pauses while a finger is down. Cards are duplicated,
   // so we wrap back at the halfway point for a seamless loop.
   useEffect(() => {
-    if (DATA.length <= 1) return // need 2+ cards to scroll
+    if (DATA.length <= 2) return // 1–2 cards are static; marquee needs 3+
     const el = scrollerRef.current
     if (!el) return
     let raf = 0
@@ -333,10 +333,13 @@ export default function CampaignShowcase() {
 
   return (
     <section className="relative z-10 py-20 md:py-28 overflow-hidden" style={{ background: 'transparent' }}>
-      {DATA.length === 1 ? (
-        // Single card: centered, no scroll.
-        <div className="flex justify-center px-6">
-          <CampaignCard data={DATA[0]} onClick={() => setOpenIdx(0)} />
+      {DATA.length <= 2 ? (
+        // One or two cards: centered, no marquee/duplication (duplicating a
+        // couple of cards into a loop reads as repeated/fake entries).
+        <div className="flex justify-center flex-wrap gap-6 px-6">
+          {DATA.map((data, i) => (
+            <CampaignCard key={i} data={data} onClick={() => setOpenIdx(i)} />
+          ))}
         </div>
       ) : (
         <>

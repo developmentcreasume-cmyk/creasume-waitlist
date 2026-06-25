@@ -168,7 +168,16 @@ export function mapInfluenceData(api, d) {
   const s = api.stats || {}
   const demo = api.demographics || {}
   const media = api.media || []
-  const collabs = api.collaborations || []
+  // Dedupe collaborations so an accidental duplicate entry doesn't render the
+  // same campaign card twice (which the looping marquee then doubles to four).
+  const collabsRaw = api.collaborations || []
+  const collabSeen = new Set()
+  const collabs = collabsRaw.filter((x) => {
+    const key = x?._id || `${x?.brandName || ''}|${x?.campaignTitle || ''}|${x?.reach || ''}`
+    if (collabSeen.has(key)) return false
+    collabSeen.add(key)
+    return true
+  })
   const packages = api.packages || []
   const growth = api.growth || []
 
