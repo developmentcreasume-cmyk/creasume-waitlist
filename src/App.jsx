@@ -502,7 +502,7 @@ function App() {
       {/* ============ NAVIGATION ============ */}
       <nav id="home" className="relative z-50 flex items-center justify-between px-8 sm:px-12 md:px-20 lg:px-28 pt-6 pb-4 md:pb-8 border-b-2 border-white/40">
         <div className="flex items-center gap-2">
-          <img src="/creasumelogo.png" alt="Creasume" className="h-12 md:h-14 w-auto" />
+          <img src="/creasumelogo.svg" alt="Creasume" className="h-12 md:h-14 w-auto" />
         </div>
         <div
           className="hidden md:flex items-center justify-between gap-1 px-2 rounded-full bg-[#020423] backdrop-blur-sm ml-auto"
