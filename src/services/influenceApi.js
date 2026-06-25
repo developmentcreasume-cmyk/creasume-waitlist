@@ -454,8 +454,18 @@ export function mapInfluenceData(api, d) {
         : sliced.length >= 2
         ? i === 1
         : i === 0,
-      features:
-        p.deliverables?.length ? p.deliverables : [p.description].filter(Boolean),
+      // Deliverables should be a string[], but tolerate a legacy comma/newline
+      // string so a single bad record can't crash the whole Packages section
+      // (PackageCard maps over this). Fall back to the description if empty.
+      features: (() => {
+        const dl = p.deliverables
+        const list = Array.isArray(dl)
+          ? dl
+          : typeof dl === 'string'
+          ? dl.split(/[,\n]/).map((x) => x.trim()).filter(Boolean)
+          : []
+        return list.length ? list : [p.description].filter(Boolean)
+      })(),
     }))
 
     // Move the "most popular" card to the centre of the row.
