@@ -794,6 +794,59 @@ function App() {
        </div>
       </section>
 
+      {/* ============ SECURITY / TRUST ============ */}
+      <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-12 md:pt-20 pb-4 md:pb-8">
+        <div className="text-center relative z-10">
+          <p
+            className="mb-7"
+            style={{
+              fontFamily: "'Outfit', sans-serif",
+              fontWeight: 700,
+              fontSize: '25px',
+              color: '#FFFFFF',
+              lineHeight: '97.6%',
+            }}
+          >
+            <img src="/Vector%20(5).png" alt="" className="inline-block mr-2 align-middle" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+            Security of your data is our utmost priority
+          </p>
+          <div
+            className="inline-flex items-center justify-center gap-4 rounded-full bg-white mb-10"
+            style={{ width: '340px', maxWidth: '100%', height: '50px' }}
+          >
+            <img
+              src="/Group%201707480613.png"
+              alt="Creasume"
+              width="96"
+              height="26"
+              style={{ display: 'block', width: '96px', height: '26px', objectFit: 'contain', imageRendering: 'auto' }}
+            />
+            <span className="text-[#9EA5E2] text-base">×</span>
+            <img
+              src="/image%202%20(1).png"
+              alt="Meta"
+              width="75"
+              height="21"
+              style={{ display: 'block', width: '75px', height: '21px', objectFit: 'contain', imageRendering: 'auto' }}
+            />
+          </div>
+          <p
+            className="mx-auto md:whitespace-nowrap"
+            style={{
+              fontFamily: "'Gelion', 'Outfit', sans-serif",
+              fontWeight: 300,
+              fontSize: 'clamp(15px, 1.7vw, 26px)',
+              maxWidth: '100%',
+              color: 'rgba(255, 255, 255, 0.75)',
+              lineHeight: '120%',
+            }}
+          >
+            Your data is secure and provided directly by Meta APIs. Creasume is a Meta-verified business with view-only<br />
+            access to your profile statistics. No third party or even us can access your personal data.
+          </p>
+        </div>
+      </section>
+
       {/* ============ STATS BAR ============ */}
       <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-12 md:pt-24 pb-12 md:pb-24 flex justify-center">
         <div
@@ -1399,56 +1452,6 @@ function App() {
               <JoinedProof />
             </div>
           </form>
-        </div>
-
-        <div className="text-center mt-32 md:mt-64 mb-16 md:mb-28 relative z-10">
-          <p
-            className="mb-7"
-            style={{
-              fontFamily: "'Outfit', sans-serif",
-              fontWeight: 700,
-              fontSize: '25px',
-              color: '#FFFFFF',
-              lineHeight: '97.6%',
-            }}
-          >
-            <img src="/Vector%20(5).png" alt="" className="inline-block mr-2 align-middle" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-            Security of your data is our utmost priority
-          </p>
-          <div
-            className="inline-flex items-center justify-center gap-4 rounded-full bg-white mb-10"
-            style={{ width: '340px', maxWidth: '100%', height: '50px' }}
-          >
-            <img
-              src="/Group%201707480613.png"
-              alt="Creasume"
-              width="96"
-              height="26"
-              style={{ display: 'block', width: '96px', height: '26px', objectFit: 'contain', imageRendering: 'auto' }}
-            />
-            <span className="text-[#9EA5E2] text-base">×</span>
-            <img
-              src="/image%202%20(1).png"
-              alt="Meta"
-              width="75"
-              height="21"
-              style={{ display: 'block', width: '75px', height: '21px', objectFit: 'contain', imageRendering: 'auto' }}
-            />
-          </div>
-          <p
-            className="mx-auto md:whitespace-nowrap"
-            style={{
-              fontFamily: "'Gelion', 'Outfit', sans-serif",
-              fontWeight: 300,
-              fontSize: 'clamp(15px, 1.7vw, 26px)',
-              maxWidth: '100%',
-              color: 'rgba(255, 255, 255, 0.75)',
-              lineHeight: '120%',
-            }}
-          >
-            Your data is secure and provided directly by Meta APIs. Creasume is a Meta-verified business with view-only<br />
-            access to your profile statistics. No third party or even us can access your personal data.
-          </p>
         </div>
       </section>
 

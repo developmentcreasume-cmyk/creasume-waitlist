@@ -50,9 +50,24 @@ function CampaignCard({ data, onClick, sizeW = CARD_W }) {
       style={{ width: sizeW, WebkitUserSelect: 'none', userSelect: 'none', WebkitTouchCallout: 'none', ...GLASS_RING }}
     >
       <div className="rounded-[19px] p-7 flex flex-col h-full" style={{ ...GLASS_PANEL, minHeight: 415 }}>
-        {/* Brand + date */}
-        <div className="text-white leading-none" style={{ fontFamily: FONT, fontSize: 34, fontWeight: 700 }}>{data.brand}</div>
-        <div className="text-white/40 mt-2.5 uppercase tracking-[0.15em]" style={{ fontFamily: MONO, fontSize: 11, fontWeight: 400 }}>{data.date}</div>
+        {/* Profile photo + brand + date — mirrors the detail modal header so the
+            outside card shows the same avatar as the inside view. */}
+        <div className="flex items-center gap-3.5">
+          <div
+            className="shrink-0 rounded-lg flex items-center justify-center overflow-hidden"
+            style={{ width: 52, height: 52, background: 'linear-gradient(135deg,#2a2f6b 0%,#16183c 100%)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            {data.logo ? (
+              <img src={data.logo} alt={data.brand} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-white font-bold" style={{ fontFamily: FONT, fontSize: 24, lineHeight: 1 }}>{data.brand.charAt(0)}</span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="text-white leading-none truncate" style={{ fontFamily: FONT, fontSize: 29, fontWeight: 700 }}>{data.brand}</div>
+            <div className="text-white/40 mt-2 uppercase tracking-[0.15em]" style={{ fontFamily: MONO, fontSize: 11, fontWeight: 400 }}>{data.date}</div>
+          </div>
+        </div>
 
         {/* Stat boxes */}
         <div className="grid grid-cols-3 gap-2.5 mt-7">

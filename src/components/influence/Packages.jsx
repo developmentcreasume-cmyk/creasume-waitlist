@@ -77,7 +77,7 @@ function PackageCard({ p, i, isPopular, showCta, noId = false, carousel = false 
         <a
           id={!noId && isPopular ? 'pkg-book-now' : undefined}
           href="#work-with-me"
-          className="no-underline mt-auto w-full rounded-full font-semibold text-sm py-3.5 text-center text-white"
+          className="pkg-book-btn no-underline mt-auto w-full rounded-full font-semibold text-sm py-3.5 text-center text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_12px_30px_rgba(9,24,229,0.55)]"
           style={{ fontFamily: FONT, background: '#0918E5' }}
         >
           Book Now
@@ -371,7 +371,7 @@ export default function Packages() {
       >
         {PACKAGES.map((p, i) => {
           const isPopular = p.popular && n > 1
-          const showCta = isPopular || n === 1
+          const showCta = true // Book Now on every package card
           return (
             <motion.div key={p.tier} variants={fadeUp}>
               <PackageCard p={p} i={i} isPopular={isPopular} showCta={showCta} />
@@ -404,7 +404,7 @@ export default function Packages() {
               const realIndex = ((k % n) + n) % n
               const p = PACKAGES[realIndex]
               const isPopular = p.popular && n > 1
-              const showCta = isPopular || n === 1
+              const showCta = true // Book Now on every package card
               const isCenter = k === pos
               return (
                 <div
