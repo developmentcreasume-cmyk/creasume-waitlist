@@ -1,10 +1,22 @@
-// Brand Inquiry detail page (route: /dashboard/inquiries/:id). Shows the full
-// brand + campaign details and lets the creator accept (opens the "Accept
-// Collaboration" modal) or decline. Static sample data for now.
-import { useState } from 'react'
+// Brand Inquiry detail page (route: /<username>/dashboard/inquiries/:id). Shows
+// the brand + campaign details and lets the creator accept (opens the "Accept
+// Collaboration" modal → marks the inquiry actioned) or decline. Live data from
+// GET /inquiry/my-inquiries; status writes via PUT /inquiry/update-status/:id.
+import { useState, useEffect } from 'react'
 import { FONT, MONO } from '../influence/influenceData.js'
 import { goToPath } from '../../router.js'
-import { getInquiry, CREATOR_CONTACT } from './inquiriesData.js'
+import {
+  fetchMyInquiries,
+  fetchMe,
+  setInquiryStatus,
+  mapInquiry,
+  isLoggedIn,
+  loginUrl,
+  clearAuth,
+  dashboardUsername,
+  dashboardBase,
+  inquiriesPath,
+} from '../../services/dashboardApi.js'
 
 const ic = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round' }
 const ICONS = {
@@ -53,7 +65,7 @@ function SectionHeader({ icon, label, color }) {
 }
 
 // ===== Accept Collaboration modal =====
-function AcceptModal({ onClose, onSend }) {
+function AcceptModal({ onClose, onSend, contact, sending }) {
   const [message, setMessage] = useState(
     "Hi, I'd love to collaborate. You can reach me on Instagram.\nLooking forward to discussing details.",
   )
@@ -96,8 +108,8 @@ function AcceptModal({ onClose, onSend }) {
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           <p className="text-white font-bold text-[15px] mb-2" style={{ fontFamily: FONT }}>Preferred Contact:</p>
-          <p className="text-white/90 text-[15px]" style={{ fontFamily: FONT }}>Instagram: {CREATOR_CONTACT.instagram}</p>
-          <p className="text-white/90 text-[15px]" style={{ fontFamily: FONT }}>Email: {CREATOR_CONTACT.email}</p>
+          <p className="text-white/90 text-[15px]" style={{ fontFamily: FONT }}>Instagram: {contact.instagram}</p>
+          <p className="text-white/90 text-[15px]" style={{ fontFamily: FONT }}>Email: {contact.email}</p>
           <p className="text-white/45 text-[13px] mt-3 leading-snug" style={{ fontFamily: FONT }}>
             This contact information will be shared with the brand so you can continue the conversation outside.
           </p>
@@ -106,20 +118,91 @@ function AcceptModal({ onClose, onSend }) {
         <button
           type="button"
           onClick={() => onSend(message)}
-          className="w-full rounded-xl py-4 mt-6 text-white font-bold text-lg transition-transform hover:scale-[1.01]"
+          disabled={sending}
+          className="w-full rounded-xl py-4 mt-6 text-white font-bold text-lg transition-transform hover:scale-[1.01] disabled:opacity-60"
           style={{ fontFamily: FONT, background: '#1FBF57' }}
         >
-          Send & Share Contact
+          {sending ? 'Sending…' : 'Send & Share Contact'}
         </button>
       </div>
     </div>
   )
 }
 
-export default function InfluenceInquiryDetail({ id }) {
-  const inquiry = getInquiry(id)
-  const [status, setStatus] = useState(inquiry ? inquiry.status : 'PENDING')
+export default function InfluenceInquiryDetail({ username, id }) {
+  const handle = username || dashboardUsername()
+  const [inquiry, setInquiry] = useState(null)
+  const [contact, setContact] = useState({ instagram: '', email: '' })
+  const [status, setStatus] = useState('PENDING')
   const [showAccept, setShowAccept] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let alive = true
+    if (!isLoggedIn()) { setLoading(false); return }
+    Promise.all([fetchMyInquiries(), fetchMe().catch(() => null)])
+      .then(([inqRes, meRes]) => {
+        if (!alive) return
+        const found = (inqRes.inquiries || []).map(mapInquiry).find((q) => q.id === id) || null
+        setInquiry(found)
+        if (found) setStatus(found.status)
+        const creator = meRes?.creator || {}
+        setContact({
+          instagram: creator.username ? `@${creator.username}` : (handle ? `@${handle}` : ''),
+          email: creator.email || '',
+        })
+      })
+      .catch((e) => {
+        if (e.status === 401) { clearAuth(); window.location.reload(); return }
+        if (alive) setError(e.message || 'Failed to load inquiry')
+      })
+      .finally(() => { if (alive) setLoading(false) })
+    return () => { alive = false }
+  }, [id, handle])
+
+  const accept = async (/* message */) => {
+    setSaving(true)
+    try {
+      await setInquiryStatus(id, 'actioned')
+      setStatus('ACCEPTED')
+      setShowAccept(false)
+    } catch (e) {
+      setError(e.message || 'Failed to accept inquiry')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const decline = async () => {
+    setSaving(true)
+    try {
+      await setInquiryStatus(id, 'declined')
+      setStatus('DECLINED')
+    } catch (e) {
+      setError(e.message || 'Failed to decline inquiry')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!isLoggedIn()) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 gap-5" style={{ background: '#05060f' }}>
+        <p className="text-white text-xl font-semibold" style={{ fontFamily: FONT }}>Sign in to view this inquiry.</p>
+        <a href={loginUrl()} className="rounded-xl px-6 py-3 text-[15px] font-semibold text-white no-underline" style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#8B5CF6 0%, #EC4899 100%)' }}>Connect Instagram</a>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#05060f' }}>
+        <p className="text-white/50 text-[15px]" style={{ fontFamily: FONT }}>Loading inquiry…</p>
+      </div>
+    )
+  }
 
   // Unknown id → simple not-found state with a way back to the list.
   if (!inquiry) {
@@ -128,7 +211,7 @@ export default function InfluenceInquiryDetail({ id }) {
         <p className="text-white text-xl font-semibold mb-4" style={{ fontFamily: FONT }}>Inquiry not found.</p>
         <button
           type="button"
-          onClick={() => goToPath('/dashboard/inquiries')}
+          onClick={() => goToPath(inquiriesPath(handle))}
           className="text-[#9C7CF0] font-medium bg-transparent border-0 cursor-pointer"
           style={{ fontFamily: FONT }}
         >
@@ -140,11 +223,6 @@ export default function InfluenceInquiryDetail({ id }) {
 
   const { brand, campaign, date } = inquiry
 
-  const handleSend = () => {
-    setStatus('ACCEPTED')
-    setShowAccept(false)
-  }
-
   return (
     <div className="relative min-h-screen text-white" style={{ background: '#05060f' }}>
       {/* ===== Top bar ===== */}
@@ -154,14 +232,14 @@ export default function InfluenceInquiryDetail({ id }) {
       >
         <button
           type="button"
-          onClick={() => goToPath('/dashboard')}
+          onClick={() => goToPath(dashboardBase(handle))}
           className="flex items-center gap-3 bg-transparent border-0 cursor-pointer p-0"
         >
           <img src="/creasumelogo.png" alt="Creasume" className="h-8 w-auto" style={{ objectFit: 'contain' }} />
         </button>
         <button
           type="button"
-          onClick={() => goToPath('/dashboard/inquiries')}
+          onClick={() => goToPath(inquiriesPath(handle))}
           className="flex items-center gap-2 text-[15px] font-medium text-white/70 hover:text-white transition-colors bg-transparent border-0 cursor-pointer"
           style={{ fontFamily: FONT }}
         >
@@ -186,6 +264,10 @@ export default function InfluenceInquiryDetail({ id }) {
 
           <div className="h-px w-full mb-8" style={{ background: 'rgba(255,255,255,0.08)' }} />
 
+          {error && (
+            <div className="rounded-xl px-5 py-4 mb-8 text-[14px]" style={{ fontFamily: FONT, color: '#FB7185', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>{error}</div>
+          )}
+
           {/* Brand Details */}
           <SectionHeader icon={ICONS.building} label="Brand Details" color="#8B5CF6" />
           <div
@@ -194,28 +276,33 @@ export default function InfluenceInquiryDetail({ id }) {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-7">
               <Field label="Brand Name">{brand.name}</Field>
-              <Field label="Contact Email">
-                <a
-                  href={`mailto:${brand.email}`}
-                  className="inline-flex items-center gap-2 no-underline"
-                  style={{ color: '#3DDC84' }}
-                >
-                  {ICONS.mail} {brand.email}
-                </a>
-              </Field>
-              <Field label="Brand Type">{brand.type}</Field>
-              <Field label="Website">
-                <a href={brand.website} target="_blank" rel="noopener noreferrer" className="no-underline break-all" style={{ color: '#E731A2' }}>
-                  {brand.website}
-                </a>
-              </Field>
-              <Field label="Social Links">{brand.social}</Field>
-              <div className="hidden md:block" />
-              <div className="md:col-span-2">
-                <Field label="Brand Description">
-                  <span className="font-medium text-white/90">{brand.description}</span>
+              {brand.email && (
+                <Field label="Contact Email">
+                  <a
+                    href={`mailto:${brand.email}`}
+                    className="inline-flex items-center gap-2 no-underline break-all"
+                    style={{ color: '#3DDC84' }}
+                  >
+                    {ICONS.mail} {brand.email}
+                  </a>
                 </Field>
-              </div>
+              )}
+              {brand.type && <Field label="Brand Type">{brand.type}</Field>}
+              {brand.website && (
+                <Field label="Website">
+                  <a href={brand.website} target="_blank" rel="noopener noreferrer" className="no-underline break-all" style={{ color: '#E731A2' }}>
+                    {brand.website}
+                  </a>
+                </Field>
+              )}
+              {brand.social && <Field label="Social Links">{brand.social}</Field>}
+              {brand.description && (
+                <div className="md:col-span-2">
+                  <Field label="Brand Description">
+                    <span className="font-medium text-white/90">{brand.description}</span>
+                  </Field>
+                </div>
+              )}
             </div>
           </div>
 
@@ -226,25 +313,27 @@ export default function InfluenceInquiryDetail({ id }) {
             style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}
           >
             <div className="flex flex-col gap-6">
-              <Field label="Campaign Name">{campaign.name}</Field>
-              <div>
-                <p className="text-white/45 text-[15px] mb-2" style={{ fontFamily: FONT }}>Campaign Type</p>
-                <span
-                  className="inline-block text-white font-semibold text-[15px] px-4 py-2 rounded-lg"
-                  style={{ fontFamily: FONT, background: '#0a0b14', border: '1px solid rgba(255,255,255,0.1)' }}
-                >
-                  {campaign.type}
-                </span>
-              </div>
+              {campaign.name && <Field label="Campaign Name">{campaign.name}</Field>}
+              {campaign.type && (
+                <div>
+                  <p className="text-white/45 text-[15px] mb-2" style={{ fontFamily: FONT }}>Campaign Type</p>
+                  <span
+                    className="inline-block text-white font-semibold text-[15px] px-4 py-2 rounded-lg"
+                    style={{ fontFamily: FONT, background: '#0a0b14', border: '1px solid rgba(255,255,255,0.1)' }}
+                  >
+                    {campaign.type}
+                  </span>
+                </div>
+              )}
               <div>
                 <div className="flex items-center gap-2 mb-2 text-white/45" style={{ fontFamily: FONT }}>
                   {ICONS.message} <span className="text-[15px]">Message from Brand</span>
                 </div>
                 <div
-                  className="rounded-xl px-5 py-4 text-white/90 text-[15px] md:text-base leading-relaxed"
+                  className="rounded-xl px-5 py-4 text-white/90 text-[15px] md:text-base leading-relaxed whitespace-pre-line"
                   style={{ fontFamily: FONT, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.08)' }}
                 >
-                  {campaign.message}
+                  {campaign.message || 'No message provided.'}
                 </div>
               </div>
             </div>
@@ -266,11 +355,11 @@ export default function InfluenceInquiryDetail({ id }) {
                 <p className="text-white/45 text-[15px] mb-3" style={{ fontFamily: FONT }}>Contact Shared</p>
                 <p className="text-[17px] mb-2" style={{ fontFamily: FONT }}>
                   <span style={{ color: '#9EA5E2' }}>Instagram: </span>
-                  <span className="text-white font-bold">{CREATOR_CONTACT.instagram}</span>
+                  <span className="text-white font-bold">{contact.instagram}</span>
                 </p>
                 <p className="text-[17px]" style={{ fontFamily: FONT }}>
                   <span style={{ color: '#9EA5E2' }}>Email: </span>
-                  <span className="text-white font-bold">{CREATOR_CONTACT.email}</span>
+                  <span className="text-white font-bold">{contact.email}</span>
                 </p>
               </div>
             </div>
@@ -286,15 +375,17 @@ export default function InfluenceInquiryDetail({ id }) {
               <button
                 type="button"
                 onClick={() => setShowAccept(true)}
-                className="flex items-center justify-center gap-2 rounded-xl py-4 text-white font-bold text-lg transition-transform hover:scale-[1.01]"
+                disabled={saving}
+                className="flex items-center justify-center gap-2 rounded-xl py-4 text-white font-bold text-lg transition-transform hover:scale-[1.01] disabled:opacity-60"
                 style={{ fontFamily: FONT, background: '#1FBF57' }}
               >
                 {ICONS.check} Accept Inquiry
               </button>
               <button
                 type="button"
-                onClick={() => setStatus('DECLINED')}
-                className="flex items-center justify-center gap-2 rounded-xl py-4 text-white font-bold text-lg transition-colors hover:bg-white/5"
+                onClick={decline}
+                disabled={saving}
+                className="flex items-center justify-center gap-2 rounded-xl py-4 text-white font-bold text-lg transition-colors hover:bg-white/5 disabled:opacity-60"
                 style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.14)' }}
               >
                 {ICONS.close} Decline
@@ -304,7 +395,7 @@ export default function InfluenceInquiryDetail({ id }) {
         </div>
       </main>
 
-      {showAccept && <AcceptModal onClose={() => setShowAccept(false)} onSend={handleSend} />}
+      {showAccept && <AcceptModal onClose={() => setShowAccept(false)} onSend={accept} contact={contact} sending={saving} />}
     </div>
   )
 }

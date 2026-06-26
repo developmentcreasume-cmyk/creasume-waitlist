@@ -1,0 +1,170 @@
+// Talks to the Creasume backend for the creator-facing Influence Dashboard
+// (/<username>/dashboard). Two kinds of calls:
+//   • PUBLIC  — GET /public/:username, the same payload the live card reads. No
+//     auth; used for the display stats, posts, platforms and card link.
+//   • PRIVATE — the creator's own data + writes (/creator, /inquiry, /packages,
+//     /collaborations). These need the JWT issued by the Instagram login flow,
+//     which /auth-success stores in localStorage.
+//
+// Editing here writes through the SAME models the public card renders, so a save
+// shows up on the card on its next load (the card refetches on window focus).
+
+import { API_BASE, formatCount } from './influenceApi.js'
+
+const TOKEN_KEY = 'creasume_token'
+const USERNAME_KEY = 'creasume_username'
+
+// ---- Auth token (set by /auth-success after Instagram login) ----
+export function getToken() {
+  try { return localStorage.getItem(TOKEN_KEY) || '' } catch { return '' }
+}
+export function setToken(token) {
+  try { localStorage.setItem(TOKEN_KEY, token) } catch { /* storage unavailable */ }
+}
+export function clearAuth() {
+  try {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USERNAME_KEY)
+  } catch { /* storage unavailable */ }
+}
+export function setStoredUsername(username) {
+  try { localStorage.setItem(USERNAME_KEY, username) } catch { /* storage unavailable */ }
+}
+export function getStoredUsername() {
+  try { return localStorage.getItem(USERNAME_KEY) || '' } catch { return '' }
+}
+export function isLoggedIn() {
+  return Boolean(getToken())
+}
+
+// Begin the Instagram login flow on the backend. It returns here via
+// /auth-success?token=…&username=… once the creator authorises.
+export function loginUrl() {
+  return `${API_BASE}/auth/instagram`
+}
+
+// Which dashboard we're on: the FIRST path segment (e.g. `/hetvi/dashboard` →
+// "hetvi"). Falls back to the logged-in creator's stored username.
+export function dashboardUsername() {
+  if (typeof window === 'undefined') return getStoredUsername()
+  const parts = window.location.pathname.replace(/\/+$/, '').split('/').filter(Boolean)
+  if (parts[0] && parts[0] !== 'dashboard') return decodeURIComponent(parts[0])
+  return getStoredUsername()
+}
+
+// Path helpers so navigation always carries the username segment.
+export const dashboardBase = (username) => `/${encodeURIComponent(username)}/dashboard`
+export const inquiriesPath = (username) => `${dashboardBase(username)}/inquiries`
+export const inquiryDetailPath = (username, id) => `${dashboardBase(username)}/inquiries/${id}`
+
+function authHeaders() {
+  const token = getToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+// Authenticated JSON request. Throws on failure; a 401 is tagged so callers can
+// show the "sign in again" state instead of a generic error.
+async function request(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+      ...(options.headers || {}),
+    },
+  })
+  const data = await res.json().catch(() => ({}))
+  if (res.status === 401) {
+    const err = new Error(data.error || 'Not authorized')
+    err.status = 401
+    throw err
+  }
+  if (!res.ok || data.success === false) {
+    throw new Error(data.error || `Request failed (${res.status})`)
+  }
+  return data
+}
+
+export const dapi = {
+  get: (path) => request(path),
+  post: (path, body) => request(path, { method: 'POST', body: JSON.stringify(body) }),
+  put: (path, body) => request(path, { method: 'PUT', body: JSON.stringify(body) }),
+  del: (path) => request(path, { method: 'DELETE' }),
+}
+
+// ---- Public display data (no auth) ----
+export async function fetchPublic(username) {
+  if (!username) return null
+  const res = await fetch(`${API_BASE}/public/${encodeURIComponent(username)}`, { cache: 'no-store' })
+  const data = await res.json().catch(() => null)
+  if (!data?.success) return null
+  return data
+}
+
+// ---- Creator (private) ----
+export const fetchMe = () => dapi.get('/creator/me')
+export const fetchDashboardStats = () => dapi.get('/creator/dashboard-stats')
+export const updateProfile = (body) => dapi.put('/creator/update', body)
+
+// ---- Inquiries (private) ----
+export const fetchMyInquiries = () => dapi.get('/inquiry/my-inquiries')
+export const setInquiryStatus = (id, status) =>
+  dapi.put(`/inquiry/update-status/${id}`, { status })
+
+// ---- Packages (private) ----
+export const fetchMyPackages = () => dapi.get('/packages/my-packages')
+export const createPackage = (body) => dapi.post('/packages/create', body)
+export const updatePackage = (id, body) => dapi.put(`/packages/update/${id}`, body)
+export const deletePackage = (id) => dapi.del(`/packages/delete/${id}`)
+
+// ---- Collaborations / Portfolio (private) ----
+export const fetchMyCollaborations = () => dapi.get('/collaborations/my-collaborations')
+export const createCollaboration = (body) => dapi.post('/collaborations/create', body)
+export const deleteCollaboration = (id) => dapi.del(`/collaborations/delete/${id}`)
+
+// ---- Mappers: backend payloads → the shapes the dashboard renders ----
+
+// "2024-08-01T…" → "01/08/2024" (the inquiry list/detail date format).
+export function inquiryDate(d) {
+  const dt = new Date(d)
+  if (Number.isNaN(dt.getTime())) return ''
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${pad(dt.getDate())}/${pad(dt.getMonth() + 1)}/${dt.getFullYear()}`
+}
+
+// Backend inquiry status → the UI's PENDING / ACCEPTED / DECLINED.
+export function inquiryStatusLabel(status) {
+  if (status === 'actioned') return 'ACCEPTED'
+  if (status === 'declined') return 'DECLINED'
+  return 'PENDING'
+}
+
+// One backend inquiry → the brand/campaign shape the inquiry pages render. The
+// backend stores { brandName, email, brief, campaignType }; the brief carries
+// any campaign-type / agency lines the brand typed (see influenceApi.sendInquiry).
+export function mapInquiry(q) {
+  const brief = q.brief || ''
+  const firstLine = brief.split('\n').map((l) => l.trim()).find(Boolean) || 'Brand inquiry'
+  return {
+    id: q._id,
+    status: inquiryStatusLabel(q.status),
+    rawStatus: q.status,
+    date: inquiryDate(q.createdAt),
+    detail: firstLine,
+    brand: {
+      name: q.brandName || 'Brand',
+      email: q.email || '',
+      type: q.campaignType || '',
+      website: '',
+      social: '',
+      description: '',
+    },
+    campaign: {
+      name: q.campaignType || firstLine,
+      type: q.campaignType || '',
+      message: brief,
+    },
+  }
+}
+
+export { formatCount, API_BASE }

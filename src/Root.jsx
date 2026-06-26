@@ -7,6 +7,7 @@ import InfluenceCard from './pages/InfluenceCard.jsx'
 import InfluenceDashboard from './components/influence-dashboard/InfluenceDashboard.jsx'
 import InfluenceInquiries from './components/influence-dashboard/InfluenceInquiries.jsx'
 import InfluenceInquiryDetail from './components/influence-dashboard/InfluenceInquiryDetail.jsx'
+import AuthSuccess from './components/influence-dashboard/AuthSuccess.jsx'
 import { useRoute } from './router.js'
 
 // Site-wide Lenis smooth scrolling. Lenis scrolls the real document, so
@@ -100,11 +101,23 @@ function Root() {
 
   if (route === '/privacy-policy') return <PrivacyPolicy />
   if (route === '/terms') return <TermsConditions />
-  if (route.startsWith('/dashboard/inquiries/')) {
-    return <InfluenceInquiryDetail id={route.slice('/dashboard/inquiries/'.length)} />
+
+  // Instagram login redirect target — stores the token, then forwards to the
+  // creator's dashboard. Query string lives in window.location.search.
+  if (route === '/auth-success') return <AuthSuccess />
+
+  // Creator dashboard at /<username>/dashboard[/…]. Matched BEFORE the bare
+  // `/<username>` card fallback below so the dashboard wins over the public card.
+  const dash = route.match(/^\/([^/]+)\/dashboard(?:\/(.*))?$/)
+  if (dash) {
+    const username = decodeURIComponent(dash[1])
+    const sub = dash[2] || ''
+    if (sub.startsWith('inquiries/')) {
+      return <InfluenceInquiryDetail username={username} id={sub.slice('inquiries/'.length)} />
+    }
+    if (sub === 'inquiries') return <InfluenceInquiries username={username} />
+    return <InfluenceDashboard username={username} />
   }
-  if (route === '/dashboard/inquiries') return <InfluenceInquiries />
-  if (route === '/dashboard') return <InfluenceDashboard />
   // `/waitlist` is the home page anchored to the waitlist section (scroll
   // handled by the effect above) — kept clean so the URL has no `#`.
   if (route === '/waitlist') return <App />

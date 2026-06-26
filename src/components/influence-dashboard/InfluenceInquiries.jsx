@@ -1,9 +1,19 @@
 // All Brand Inquiries — full list page reached from the dashboard's "View All"
-// (route: /dashboard/inquiries). Static sample data for now; wire to the
-// backend later. Layout: top bar (logo + back link) + header + inquiry list.
+// (route: /<username>/dashboard/inquiries). Live data from GET
+// /inquiry/my-inquiries (the logged-in creator's inquiries).
+import { useState, useEffect } from 'react'
 import { FONT, MONO } from '../influence/influenceData.js'
 import { goToPath } from '../../router.js'
-import { INQUIRIES } from './inquiriesData.js'
+import {
+  fetchMyInquiries,
+  mapInquiry,
+  isLoggedIn,
+  loginUrl,
+  clearAuth,
+  dashboardUsername,
+  dashboardBase,
+  inquiryDetailPath,
+} from '../../services/dashboardApi.js'
 
 const ic = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round' }
 const ICONS = {
@@ -14,22 +24,39 @@ const ICONS = {
 
 function StatusBadge({ status }) {
   const accepted = status === 'ACCEPTED'
+  const declined = status === 'DECLINED'
+  const color = accepted ? '#4DE0B0' : declined ? '#F4607A' : '#F4C13B'
+  const bg = accepted ? 'rgba(77,224,176,0.12)' : declined ? 'rgba(244,96,122,0.12)' : 'rgba(244,193,59,0.12)'
+  const border = accepted ? 'rgba(77,224,176,0.35)' : declined ? 'rgba(244,96,122,0.35)' : 'rgba(244,193,59,0.35)'
   return (
     <span
       className="text-[11px] font-bold tracking-wider px-3 py-1 rounded-full"
-      style={{
-        fontFamily: MONO,
-        color: accepted ? '#4DE0B0' : '#F4C13B',
-        background: accepted ? 'rgba(77,224,176,0.12)' : 'rgba(244,193,59,0.12)',
-        border: `1px solid ${accepted ? 'rgba(77,224,176,0.35)' : 'rgba(244,193,59,0.35)'}`,
-      }}
+      style={{ fontFamily: MONO, color, background: bg, border: `1px solid ${border}` }}
     >
       {status}
     </span>
   )
 }
 
-export default function InfluenceInquiries() {
+export default function InfluenceInquiries({ username }) {
+  const handle = username || dashboardUsername()
+  const [inquiries, setInquiries] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let alive = true
+    if (!isLoggedIn()) { setLoading(false); return }
+    fetchMyInquiries()
+      .then((res) => { if (alive) setInquiries((res.inquiries || []).map(mapInquiry)) })
+      .catch((e) => {
+        if (e.status === 401) { clearAuth(); window.location.reload(); return }
+        if (alive) setError(e.message || 'Failed to load inquiries')
+      })
+      .finally(() => { if (alive) setLoading(false) })
+    return () => { alive = false }
+  }, [])
+
   return (
     <div className="relative min-h-screen text-white" style={{ background: '#05060f' }}>
       {/* ===== Top bar ===== */}
@@ -39,14 +66,14 @@ export default function InfluenceInquiries() {
       >
         <button
           type="button"
-          onClick={() => goToPath('/dashboard')}
+          onClick={() => goToPath(dashboardBase(handle))}
           className="flex items-center gap-3 bg-transparent border-0 cursor-pointer p-0"
         >
           <img src="/creasumelogo.png" alt="Creasume" className="h-8 w-auto" style={{ objectFit: 'contain' }} />
         </button>
         <button
           type="button"
-          onClick={() => goToPath('/dashboard')}
+          onClick={() => goToPath(dashboardBase(handle))}
           className="flex items-center gap-2 text-[15px] font-medium text-white/70 hover:text-white transition-colors bg-transparent border-0 cursor-pointer"
           style={{ fontFamily: FONT }}
         >
@@ -60,13 +87,7 @@ export default function InfluenceInquiries() {
         <div className="flex items-start gap-4 mb-10">
           <span
             className="shrink-0 grid place-items-center rounded-xl"
-            style={{
-              width: '52px',
-              height: '52px',
-              color: '#9C7CF0',
-              background: 'rgba(124,92,240,0.12)',
-              border: '1px solid rgba(124,92,240,0.3)',
-            }}
+            style={{ width: '52px', height: '52px', color: '#9C7CF0', background: 'rgba(124,92,240,0.12)', border: '1px solid rgba(124,92,240,0.3)' }}
           >
             {ICONS.inbox}
           </span>
@@ -80,42 +101,56 @@ export default function InfluenceInquiries() {
           </div>
         </div>
 
-        {/* Inquiry list */}
-        <div className="flex flex-col gap-5">
-          {INQUIRIES.map((q) => (
-            <div
-              key={q.id}
-              className="group rounded-2xl px-6 md:px-8 py-6 transition-colors"
-              style={{ background: 'rgba(13,16,45,0.55)', border: '1px solid rgba(255,255,255,0.08)' }}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-3 mb-3">
-                    <StatusBadge status={q.status} />
-                    <span className="text-white/45 text-sm font-medium" style={{ fontFamily: MONO }}>{q.date}</span>
+        {!isLoggedIn() ? (
+          <div className="rounded-2xl px-6 py-12 text-center" style={{ background: 'rgba(13,16,45,0.55)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <p className="text-white/70 text-[16px] mb-5" style={{ fontFamily: FONT }}>Sign in to view your brand inquiries.</p>
+            <a href={loginUrl()} className="inline-flex rounded-xl px-6 py-3 text-[15px] font-semibold text-white no-underline" style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#8B5CF6 0%, #EC4899 100%)' }}>Connect Instagram</a>
+          </div>
+        ) : loading ? (
+          <div className="text-white/50 text-[15px]" style={{ fontFamily: FONT }}>Loading inquiries…</div>
+        ) : error ? (
+          <div className="rounded-xl px-5 py-4 text-[14px]" style={{ fontFamily: FONT, color: '#FB7185', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>{error}</div>
+        ) : inquiries.length === 0 ? (
+          <div className="rounded-2xl px-6 py-12 text-center text-white/45 text-[15px]" style={{ fontFamily: FONT, background: 'rgba(13,16,45,0.55)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            No brand inquiries yet. Share your Influence Card to start receiving them.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-5">
+            {inquiries.map((q) => (
+              <div
+                key={q.id}
+                className="group rounded-2xl px-6 md:px-8 py-6 transition-colors"
+                style={{ background: 'rgba(13,16,45,0.55)', border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3 mb-3">
+                      <StatusBadge status={q.status} />
+                      <span className="text-white/45 text-sm font-medium" style={{ fontFamily: MONO }}>{q.date}</span>
+                    </div>
+                    <h3
+                      className="text-xl md:text-2xl font-bold mb-1 truncate"
+                      style={{ fontFamily: FONT, color: q.status === 'PENDING' ? '#B89DF5' : '#fff' }}
+                    >
+                      {q.brand.name}
+                    </h3>
+                    <p className="text-white/55 text-[15px] md:text-base truncate" style={{ fontFamily: FONT }}>
+                      {q.detail}
+                    </p>
                   </div>
-                  <h3
-                    className="text-xl md:text-2xl font-bold mb-1 truncate"
-                    style={{ fontFamily: FONT, color: q.status === 'PENDING' ? '#B89DF5' : '#fff' }}
+                  <button
+                    type="button"
+                    onClick={() => goToPath(inquiryDetailPath(handle, q.id))}
+                    className="shrink-0 flex items-center gap-2 text-[15px] font-semibold text-white/65 hover:text-white transition-colors bg-transparent border-0 cursor-pointer mt-1"
+                    style={{ fontFamily: FONT }}
                   >
-                    {q.brand.name}
-                  </h3>
-                  <p className="text-white/55 text-[15px] md:text-base truncate" style={{ fontFamily: FONT }}>
-                    {q.detail}
-                  </p>
+                    View Details {ICONS.external}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => goToPath(`/dashboard/inquiries/${q.id}`)}
-                  className="shrink-0 flex items-center gap-2 text-[15px] font-semibold text-white/65 hover:text-white transition-colors bg-transparent border-0 cursor-pointer mt-1"
-                  style={{ fontFamily: FONT }}
-                >
-                  View Details {ICONS.external}
-                </button>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   )
