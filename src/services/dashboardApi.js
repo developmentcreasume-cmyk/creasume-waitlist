@@ -92,10 +92,16 @@ export const dapi = {
   del: (path) => request(path, { method: 'DELETE' }),
 }
 
-// ---- Public display data (no auth) ----
+// ---- Public display data ----
+// Sends the auth token when present so the OWNER can read their own card payload
+// (stats, posts, demographics) even before an admin sets the card live; visitors
+// without a token still get the public-only behaviour.
 export async function fetchPublic(username) {
   if (!username) return null
-  const res = await fetch(`${API_BASE}/public/${encodeURIComponent(username)}`, { cache: 'no-store' })
+  const res = await fetch(`${API_BASE}/public/${encodeURIComponent(username)}`, {
+    cache: 'no-store',
+    headers: { ...authHeaders() },
+  })
   const data = await res.json().catch(() => null)
   if (!data?.success) return null
   return data

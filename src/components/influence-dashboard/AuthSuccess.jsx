@@ -20,8 +20,17 @@ export default function AuthSuccess() {
     // Replace (not push) so the back button skips this throwaway screen. Land on
     // the creator's dashboard if we know the username, else the home page.
     const dest = token && username ? dashboardBase(username) : '/'
-    window.history.replaceState({}, '', dest)
-    window.dispatchEvent(new PopStateEvent('popstate'))
+
+    // Defer to a macrotask: React runs CHILD effects before PARENT effects, so
+    // on first load the router's popstate listener (registered in Root's effect)
+    // isn't attached yet. Firing popstate synchronously here would be missed and
+    // the screen would hang on this spinner. setTimeout(0) lets the parent effect
+    // run first, so the route actually switches to the dashboard.
+    const id = setTimeout(() => {
+      window.history.replaceState({}, '', dest)
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    }, 0)
+    return () => clearTimeout(id)
   }, [])
 
   return (
