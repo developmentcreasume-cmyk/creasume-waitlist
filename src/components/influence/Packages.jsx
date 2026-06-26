@@ -77,7 +77,7 @@ function PackageCard({ p, i, isPopular, showCta, noId = false, carousel = false 
         <a
           id={!noId && isPopular ? 'pkg-book-now' : undefined}
           href="#work-with-me"
-          className="pkg-book-btn no-underline mt-auto w-full rounded-full font-semibold text-sm py-3.5 text-center text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_12px_30px_rgba(9,24,229,0.55)]"
+          className="pkg-book-btn no-underline mt-auto w-full rounded-full font-semibold text-sm py-3.5 text-center text-white transition-[filter] duration-200 ease-out hover:brightness-110"
           style={{ fontFamily: FONT, background: '#0918E5' }}
         >
           Book Now
@@ -373,7 +373,12 @@ export default function Packages() {
           const isPopular = p.popular && n > 1
           const showCta = true // Book Now on every package card
           return (
-            <motion.div key={p.tier} variants={fadeUp}>
+            <motion.div
+              key={p.tier}
+              variants={fadeUp}
+              whileHover={{ y: -10, scale: 1.02 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+            >
               <PackageCard p={p} i={i} isPopular={isPopular} showCta={showCta} />
             </motion.div>
           )

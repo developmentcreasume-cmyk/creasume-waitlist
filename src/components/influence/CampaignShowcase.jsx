@@ -138,9 +138,10 @@ function CampaignBody({ data, ctaIcon = true, pinCta = false, statColors = false
         ))}
       </div>
 
-      {/* Linked post thumbnail (falls back to the audience line when a campaign
-          has no linked post — e.g. the bundled demo cards). */}
-      {showThumb ? (
+      {/* Linked post thumbnail — shown only when the campaign has one. No
+          audience-insights fallback; the thumbnail is fetched when the detail
+          opens, so nothing renders here until it's available. */}
+      {showThumb && (
         <>
           <SectionLabel>CONTENT</SectionLabel>
           <div className="rounded-xl overflow-hidden mb-6" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -152,13 +153,6 @@ function CampaignBody({ data, ctaIcon = true, pinCta = false, statColors = false
               className="w-full object-cover"
               style={{ maxHeight: 150, display: 'block' }}
             />
-          </div>
-        </>
-      ) : (
-        <>
-          <SectionLabel>AUDIENCE INSIGHTS</SectionLabel>
-          <div className="rounded-xl px-4 py-3.5 mb-6" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <p className="text-white/70 leading-relaxed" style={{ fontFamily: FONT, fontSize: 13.5, fontWeight: 300 }}>{data.audience}</p>
           </div>
         </>
       )}
