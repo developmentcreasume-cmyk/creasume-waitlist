@@ -75,6 +75,10 @@ async function request(path, options = {}) {
   })
   const data = await res.json().catch(() => ({}))
   if (res.status === 401) {
+    // The stored token is invalid/expired, or the account no longer exists.
+    // Drop it so the app falls back to the logged-out state instead of looping
+    // on a token that will never work again.
+    clearAuth()
     const err = new Error(data.error || 'Not authorized')
     err.status = 401
     throw err
