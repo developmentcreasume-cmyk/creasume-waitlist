@@ -497,12 +497,12 @@ function SettingsView({ creator }) {
   return (
     <>
       {/* Header band — blue gradient like the mockup */}
-      <header className="px-8 md:px-24 py-7 md:py-8" style={{ background: 'linear-gradient(110deg,#0A0E26 0%,#15205C 55%,#283AA8 100%)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      <header className="px-5 sm:px-8 md:px-24 py-7 md:py-8" style={{ background: 'linear-gradient(110deg,#0A0E26 0%,#15205C 55%,#283AA8 100%)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <h1 className="font-bold leading-none mb-2" style={{ fontFamily: FONT, fontSize: 'clamp(22px, 2.6vw, 30px)' }}>Settings</h1>
         <p className="text-white/65 text-base" style={{ fontFamily: FONT }}>Manage your account preferences and billing.</p>
       </header>
 
-      <div className="px-8 md:px-24 py-6 md:py-10 flex flex-col md:flex-row gap-6">
+      <div className="px-5 sm:px-8 md:px-24 py-6 md:py-10 flex flex-col md:flex-row gap-6">
         {/* Sub-nav */}
         <nav className="flex md:flex-col gap-2 shrink-0 md:w-56">
           {SUBNAV.map((s) => {
@@ -536,6 +536,7 @@ function SettingsView({ creator }) {
 
 export default function InfluenceDashboard({ username }) {
   const [view, setView] = useState('dashboard')
+  const [mobileNav, setMobileNav] = useState(false) // mobile menu open/closed
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [me, setMe] = useState(null)        // GET /creator/me → the signed-in account
@@ -619,12 +620,22 @@ export default function InfluenceDashboard({ username }) {
   }
 
   // Toggle a metric's visibility on the public card and persist it. Optimistic:
-  // flips locally, then saves the whole map via /creator/update.
+  // flips locally, then saves the whole map via /creator/update. On failure we
+  // revert the flip and surface why — a 401 means the token is invalid/expired,
+  // so we clear it and prompt a fresh sign-in instead of failing silently.
   const toggleMetric = (key, nextOn) => {
-    setVisibility((prev) => {
-      const next = { ...prev, [key]: nextOn }
-      if (isLoggedIn()) updateProfile({ metricVisibility: next }).catch(() => {})
-      return next
+    if (!isLoggedIn()) return
+    const prev = visibility
+    const next = { ...prev, [key]: nextOn }
+    setVisibility(next)
+    updateProfile({ metricVisibility: next }).catch((e) => {
+      setVisibility(prev) // revert the optimistic change
+      if (e.status === 401) {
+        clearAuth()
+        setError('Your session expired — please sign in again to change what shows on your card.')
+      } else {
+        setError(e.message || 'Could not save your change. Please try again.')
+      }
     })
   }
 
@@ -708,7 +719,9 @@ export default function InfluenceDashboard({ username }) {
       <div className="flex min-h-screen">
         {/* ===== Sidebar ===== */}
         <aside
-          className="hidden md:flex flex-col shrink-0 w-[210px] lg:w-[240px]"
+          // Sticky + full viewport height so the bottom "Log out / Sign in"
+          // button is always visible instead of scrolling off with the page.
+          className="hidden md:flex md:sticky md:top-0 md:h-screen flex-col shrink-0 w-[210px] lg:w-[240px]"
           style={{ background: 'rgba(10,12,30,0.9)', borderRight: '1px solid rgba(255,255,255,0.08)' }}
         >
           <div className="h-27 flex items-center justify-center border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
@@ -767,11 +780,79 @@ export default function InfluenceDashboard({ username }) {
 
         {/* ===== Main ===== */}
         <main className="flex-1 min-w-0">
+          {/* Mobile top bar — the sidebar is hidden on phones, so nav + auth live
+              here. Logo on the left, hamburger opens the menu. */}
+          <div
+            className="md:hidden sticky top-0 z-30 flex items-center justify-between px-5 py-3 border-b"
+            style={{ background: 'rgba(10,12,30,0.96)', borderColor: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)' }}
+          >
+            <img src="/creasumelogo.png" alt="Creasume" className="h-7 w-auto" style={{ objectFit: 'contain' }} />
+            <button
+              type="button"
+              onClick={() => setMobileNav((o) => !o)}
+              aria-label="Menu"
+              aria-expanded={mobileNav}
+              className="grid place-items-center rounded-lg w-10 h-10 text-white"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {mobileNav ? <><path d="M18 6 6 18" /><path d="M6 6l12 12" /></> : <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>}
+              </svg>
+            </button>
+          </div>
+
+          {/* Mobile menu — nav items + sign in/out. Closes on selection. */}
+          {mobileNav && (
+            <div
+              className="md:hidden sticky top-[57px] z-20 flex flex-col gap-1 px-4 py-3 border-b"
+              style={{ background: 'rgba(10,12,30,0.98)', borderColor: 'rgba(255,255,255,0.08)' }}
+            >
+              {navItems.map((n) => (
+                <button
+                  key={n.key}
+                  type="button"
+                  onClick={() => { setView(n.key); setMobileNav(false) }}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-left text-[15px] font-medium"
+                  style={{
+                    fontFamily: FONT,
+                    color: n.key === view ? '#fff' : 'rgba(255,255,255,0.6)',
+                    background: n.key === view ? 'linear-gradient(90deg,#5D65DC 0%, #8B5CF6 100%)' : 'transparent',
+                  }}
+                >
+                  <span className={n.key === view ? 'text-white' : 'text-white/55'}>{ICONS[n.icon]}</span>
+                  {n.label}
+                </button>
+              ))}
+              <div className="mt-1 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                {loggedIn ? (
+                  <button
+                    type="button"
+                    onClick={() => { clearAuth(); window.location.href = '/' }}
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 w-full text-left text-[15px] font-medium text-white/70 hover:bg-red-500/10 transition-colors"
+                    style={{ fontFamily: FONT }}
+                  >
+                    <span className="text-white/60">{ICONS.logout}</span>
+                    Log out
+                  </button>
+                ) : (
+                  <a
+                    href={loginUrl()}
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 w-full text-left text-[15px] font-medium text-white/80 hover:bg-white/5 transition-colors no-underline"
+                    style={{ fontFamily: FONT }}
+                  >
+                    <span className="text-white/55">{ICONS.igMark}</span>
+                    Sign in to manage
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
           {view === 'settings' ? <SettingsView creator={creator} /> : view === 'edit' ? <EditProfileView creator={creator} username={handle} onSaved={load} /> : (
           <>
           {/* Header band */}
           <header
-            className="px-8 md:px-24 py-5 md:py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-5"
+            className="px-5 sm:px-8 md:px-24 py-5 md:py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-5"
             style={{ background: 'transparent', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
           >
             <div>
@@ -809,7 +890,7 @@ export default function InfluenceDashboard({ username }) {
                 Here's what's happening with your creator business today.
               </p>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
               <button
                 ref={refreshRef}
                 type="button"
@@ -833,7 +914,7 @@ export default function InfluenceDashboard({ username }) {
             </div>
           </header>
 
-          <div className="px-8 md:px-24 py-6 md:py-10 flex flex-col gap-6">
+          <div className="px-5 sm:px-8 md:px-24 py-6 md:py-10 flex flex-col gap-6">
             {error && (
               <div className="rounded-xl px-5 py-4 text-[14px]" style={{ fontFamily: FONT, color: '#FB7185', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
                 {error}
@@ -876,8 +957,8 @@ export default function InfluenceDashboard({ username }) {
                   <a href={`/${handle}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium no-underline" style={{ fontFamily: FONT, color: '#9C7CF0' }}>View All</a>
                 </div>
                 <div
-                  className="grid justify-center gap-x-12 gap-y-6"
-                  style={{ gridTemplateColumns: 'repeat(2, 292px)', gridAutoRows: '262px' }}
+                  className="grid gap-x-4 sm:gap-x-12 gap-y-4 sm:gap-y-6"
+                  style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gridAutoRows: '262px' }}
                 >
                   {POSTS.map((p, i) => (
                     <div
