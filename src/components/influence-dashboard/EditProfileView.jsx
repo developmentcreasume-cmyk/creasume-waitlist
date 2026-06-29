@@ -648,7 +648,7 @@ function parseTheme(raw) {
     return { ...DEFAULT_THEME }
   }
 }
-const mapPkg = (p) => ({
+const mapPkg = (p) => p && {
   id: p._id,
   _id: p._id,
   tier: p.title || 'Starter',
@@ -656,8 +656,8 @@ const mapPkg = (p) => ({
   deliverables: Array.isArray(p.deliverables) ? p.deliverables.join(', ') : (p.deliverables || ''),
   revisions: String(p.revisions ?? '1'),
   isPopular: Boolean(p.isPopular),
-})
-const mapCollab = (c) => ({
+}
+const mapCollab = (c) => c && {
   id: c._id,
   _id: c._id,
   brand: c.brandName || '',
@@ -666,7 +666,7 @@ const mapCollab = (c) => ({
   url: c.link || '',
   image: c.postImage || c.campaignImage || c.logo || '',
   reach: c.reach || 0,
-})
+}
 
 export default function EditProfileView({ creator = {}, username = '', onSaved }) {
   const [tab, setTab] = useState('Profile')
@@ -717,8 +717,8 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
   useEffect(() => {
     if (!isLoggedIn()) return
     let alive = true
-    fetchMyPackages().then((r) => { if (alive) setPkgs((r.packages || []).map(mapPkg)) }).catch(() => {})
-    fetchMyCollaborations().then((r) => { if (alive) setCollabs((r.collaborations || []).map(mapCollab)) }).catch(() => {})
+    fetchMyPackages().then((r) => { if (alive) setPkgs((r?.packages || []).map(mapPkg).filter(Boolean)) }).catch(() => {})
+    fetchMyCollaborations().then((r) => { if (alive) setCollabs((r?.collaborations || []).map(mapCollab).filter(Boolean)) }).catch(() => {})
     return () => { alive = false }
   }, [])
 
@@ -777,7 +777,7 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
       else await createPackage(body)
     }
     const r = await fetchMyPackages()
-    setPkgs((r.packages || []).map(mapPkg))
+    setPkgs((r?.packages || []).map(mapPkg).filter(Boolean))
   }
 
   // Save packages + refresh the preview (used by the in-section "Save Packages").
@@ -832,7 +832,8 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
       })
     }
     const r = await createCollaboration(body)
-    setCollabs((c) => [...c, mapCollab(r.collaboration)])
+    const mapped = mapCollab(r?.collaboration)
+    if (mapped) setCollabs((c) => [...c, mapped])
     setPreviewKey((k) => k + 1)
     onSaved?.()
   }
