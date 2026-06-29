@@ -4,11 +4,11 @@ import App from './App.jsx'
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
 import TermsConditions from './pages/TermsConditions.jsx'
 import InfluenceCard from './pages/InfluenceCard.jsx'
-// TEMPORARILY DISABLED: creator dashboard imports (re-enable with the route block below)
-// import InfluenceDashboard from './components/influence-dashboard/InfluenceDashboard.jsx'
-// import InfluenceInquiries from './components/influence-dashboard/InfluenceInquiries.jsx'
-// import InfluenceInquiryDetail from './components/influence-dashboard/InfluenceInquiryDetail.jsx'
-// import AuthSuccess from './components/influence-dashboard/AuthSuccess.jsx'
+import InfluenceDashboard from './components/influence-dashboard/InfluenceDashboard.jsx'
+import InfluenceInquiries from './components/influence-dashboard/InfluenceInquiries.jsx'
+import InfluenceInquiryDetail from './components/influence-dashboard/InfluenceInquiryDetail.jsx'
+import AuthSuccess from './components/influence-dashboard/AuthSuccess.jsx'
+import DevLogin from './components/influence-dashboard/DevLogin.jsx'
 import { useRoute } from './router.js'
 
 // Site-wide Lenis smooth scrolling. Lenis scrolls the real document, so
@@ -103,19 +103,31 @@ function Root() {
   if (route === '/privacy-policy') return <PrivacyPolicy />
   if (route === '/terms') return <TermsConditions />
 
-  // --- TEMPORARILY DISABLED: creator dashboard (/auth-success + /<username>/dashboard).
-  // Re-enable by uncommenting this block and the imports at the top of the file.
-  // if (route === '/auth-success') return <AuthSuccess />
-  // const dash = route.match(/^\/([^/]+)\/dashboard(?:\/(.*))?$/)
-  // if (dash) {
-  //   const username = decodeURIComponent(dash[1])
-  //   const sub = dash[2] || ''
-  //   if (sub.startsWith('inquiries/')) {
-  //     return <InfluenceInquiryDetail username={username} id={sub.slice('inquiries/'.length)} />
-  //   }
-  //   if (sub === 'inquiries') return <InfluenceInquiries username={username} />
-  //   return <InfluenceDashboard username={username} />
-  // }
+  // Instagram login redirect target — stores the token, then forwards to the
+  // creator's dashboard. Query string lives in window.location.search.
+  if (route === '/auth-success') return <AuthSuccess />
+
+  // Dev-only local sign-in (see DevLogin.jsx). Stores a creator token on this
+  // origin and forwards to the dashboard. The backend route is disabled in prod.
+  if (route === '/dev-login') return <DevLogin />
+
+  // Bare `/dashboard` (no username) is NOT a real dashboard URL — render nothing
+  // instead of falling through to the public card. The dashboard lives at
+  // /<username>/dashboard.
+  if (route === '/dashboard') return null
+
+  // Creator dashboard at /<username>/dashboard[/…]. Matched BEFORE the bare
+  // `/<username>` card fallback below so the dashboard wins over the public card.
+  const dash = route.match(/^\/([^/]+)\/dashboard(?:\/(.*))?$/)
+  if (dash) {
+    const username = decodeURIComponent(dash[1])
+    const sub = dash[2] || ''
+    if (sub.startsWith('inquiries/')) {
+      return <InfluenceInquiryDetail username={username} id={sub.slice('inquiries/'.length)} />
+    }
+    if (sub === 'inquiries') return <InfluenceInquiries username={username} />
+    return <InfluenceDashboard username={username} />
+  }
   // `/waitlist` is the home page anchored to the waitlist section (scroll
   // handled by the effect above) — kept clean so the URL has no `#`.
   if (route === '/waitlist') return <App />

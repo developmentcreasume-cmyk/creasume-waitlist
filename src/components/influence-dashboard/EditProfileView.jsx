@@ -8,6 +8,7 @@
 // Saving bumps the preview iframe and calls onSaved() so the dashboard refreshes.
 import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { FONT, MONO } from '../influence/influenceData.js'
+import DashboardTour from './DashboardTour.jsx'
 import {
   API_BASE,
   isLoggedIn,
@@ -19,6 +20,7 @@ import {
   fetchMyCollaborations,
   createCollaboration,
   deleteCollaboration,
+  fetchCollabMetrics,
 } from '../../services/dashboardApi.js'
 
 const TABS = ['Profile', 'Portfolio', 'Packages', 'Design']
@@ -104,6 +106,23 @@ function PurpleBtn({ children, onClick }) {
 }
 const PANEL = { background: 'rgba(10,12,30,0.45)', border: '1px solid rgba(255,255,255,0.08)' }
 
+// Small on/off switch (same pattern as the admin category toggles).
+function MiniToggle({ on, onChange }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors"
+      style={{ background: on ? 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#9D7BFF))' : 'rgba(255,255,255,0.16)' }}
+      title={on ? 'Shown on card' : 'Hidden from card'}
+    >
+      <span className="rounded-full bg-white" style={{ width: 18, height: 18, transform: on ? 'translateX(22px)' : 'translateX(3px)', transition: 'transform 0.2s' }} />
+    </button>
+  )
+}
+
 // ---- Live preview mockup (phone or laptop, per the device toggle) ----
 
 // Fills the device's screen area with the real Influence Card (in an iframe) at
@@ -126,6 +145,7 @@ function DeviceScreen({ logicalWidth, src }) {
       {scale > 0 && (
         <iframe
           src={src}
+          id="creasume-preview-frame"
           title="Influence card live preview"
           className="device-preview-frame"
           style={{
@@ -181,11 +201,20 @@ function LivePreview({ device, src }) {
 }
 
 // ===== Profile tab (controlled by the parent) =====
-function ProfilePanel({ profile, setProfile, socials, setSocials, username, avatarSrc }) {
+function ProfilePanel({ profile, setProfile, socials, setSocials, username, avatarSrc, onSaveLinks }) {
   const set = (k, v) => setProfile((p) => ({ ...p, [k]: v }))
   const removeSocial = (key) => setSocials((s) => s.filter((x) => x.key !== key))
-  const addSocial = () => setSocials((s) => [...s, { key: Date.now(), platform: '', url: '' }])
+  const addSocial = () => setSocials((s) => [...s, { key: Date.now(), platform: '', url: '', enabled: true }])
   const updateSocial = (key, field, v) => setSocials((s) => s.map((x) => (x.key === key ? { ...x, [field]: v } : x)))
+  const [savingLinks, setSavingLinks] = useState(false)
+  const [linksMsg, setLinksMsg] = useState('')
+  const saveLinks = async () => {
+    if (savingLinks) return
+    setSavingLinks(true)
+    try { await onSaveLinks?.(); setLinksMsg('Saved ✓') }
+    catch (e) { setLinksMsg(e.message || 'Save failed') }
+    finally { setSavingLinks(false); setTimeout(() => setLinksMsg(''), 2400) }
+  }
   return (
     <div className="flex flex-col gap-12">
       <section>
@@ -223,15 +252,27 @@ function ProfilePanel({ profile, setProfile, socials, setSocials, username, avat
       <section>
         <SectionHead title="Social Links" sub="Add links to your other platforms. These show on your card's Professional Presence." />
         <div className="flex flex-col gap-3">
-          {socials.map((s) => (
-            <div key={s.key} className="flex items-center gap-3 rounded-xl p-2.5" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <span className="grid place-items-center rounded-lg shrink-0 text-white/60" style={{ width: 40, height: 40, background: 'rgba(255,255,255,0.06)' }}>{I.link}</span>
-              <input value={s.platform} onChange={(e) => updateSocial(s.key, 'platform', e.target.value)} placeholder="Platform" className="w-40 shrink-0 rounded-lg px-3 h-10 text-white text-[14px] outline-none" style={inputStyle} />
-              <input value={s.url} onChange={(e) => updateSocial(s.key, 'url', e.target.value)} placeholder="https://" className="flex-1 min-w-0 rounded-lg px-3 h-10 text-white/80 text-[14px] outline-none" style={inputStyle} />
-              <button type="button" onClick={() => removeSocial(s.key)} className="grid place-items-center rounded-lg shrink-0 text-white/50 hover:text-[#FB7185] hover:bg-white/5 transition-colors" style={{ width: 40, height: 40 }}>{I.trash}</button>
-            </div>
-          ))}
+          {socials.map((s) => {
+            const on = s.enabled !== false
+            return (
+              <div key={s.key} className="flex items-center gap-3 rounded-xl p-2.5 transition-opacity" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', opacity: on ? 1 : 0.5 }}>
+                <span className="grid place-items-center rounded-lg shrink-0 text-white/60" style={{ width: 40, height: 40, background: 'rgba(255,255,255,0.06)' }}>{I.link}</span>
+                <input value={s.platform} onChange={(e) => updateSocial(s.key, 'platform', e.target.value)} placeholder="Platform" className="w-40 shrink-0 rounded-lg px-3 h-10 text-white text-[14px] outline-none" style={inputStyle} />
+                <input value={s.url} onChange={(e) => updateSocial(s.key, 'url', e.target.value)} placeholder="https://" className="flex-1 min-w-0 rounded-lg px-3 h-10 text-white/80 text-[14px] outline-none" style={inputStyle} />
+                {/* Show / hide this link on the card */}
+                <MiniToggle on={on} onChange={(v) => updateSocial(s.key, 'enabled', v)} />
+                <button type="button" onClick={() => removeSocial(s.key)} className="grid place-items-center rounded-lg shrink-0 text-white/50 hover:text-[#FB7185] hover:bg-white/5 transition-colors" style={{ width: 40, height: 40 }}>{I.trash}</button>
+              </div>
+            )
+          })}
           <button type="button" onClick={addSocial} className="inline-flex items-center justify-center gap-2 rounded-xl py-3 text-[14px] font-semibold text-white/70 hover:text-white hover:bg-white/5 transition-colors" style={{ fontFamily: FONT, border: '1px dashed rgba(255,255,255,0.2)' }}>{I.plus} Add Link</button>
+        </div>
+        {/* Save the links so they appear on the public card */}
+        <div className="flex items-center gap-3 mt-4">
+          <button type="button" onClick={saveLinks} disabled={savingLinks} className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60" style={{ fontFamily: FONT, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}>
+            {I.save} {savingLinks ? 'Saving…' : 'Save Links'}
+          </button>
+          {linksMsg && <span className="text-[13px] font-semibold" style={{ fontFamily: FONT, color: linksMsg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{linksMsg}</span>}
         </div>
       </section>
     </div>
@@ -239,21 +280,86 @@ function ProfilePanel({ profile, setProfile, socials, setSocials, username, avat
 }
 
 // ===== Portfolio tab (Brand Collabs) — persists on add / remove =====
-const EMPTY_COLLAB = { link: '', brand: '', overview: '', category: '', url: '' }
+const EMPTY_COLLAB = { link: '', brand: '', overview: '', category: '', url: '', logo: '' }
 function PortfolioPanel({ collabs, onAdd, onRemove }) {
   const [form, setForm] = useState(EMPTY_COLLAB)
   const [busy, setBusy] = useState(false)
+  const [fetched, setFetched] = useState(null)   // metrics from the Fetch button
+  const [fetching, setFetching] = useState(false)
+  const [fetchErr, setFetchErr] = useState('')
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
+
+  // Icon shown on the collab card. Defaults to the fetched Instagram post
+  // thumbnail; uploading an image overrides it. We downscale to a 160×160 cover
+  // JPEG so the stored data URL stays tiny (no upload server needed).
+  const iconPreview = form.logo || fetched?.postImage || ''
+  const onPickIcon = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow re-picking the same file
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const S = 160
+        const canvas = document.createElement('canvas')
+        canvas.width = S; canvas.height = S
+        const ctx = canvas.getContext('2d')
+        const scale = Math.max(S / img.width, S / img.height)
+        const w = img.width * scale, h = img.height * scale
+        ctx.drawImage(img, (S - w) / 2, (S - h) / 2, w, h)
+        set('logo', canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.src = reader.result
+    }
+    reader.readAsDataURL(file)
+  }
+
+  // Pull live per-post metrics for the pasted Instagram link (must be one of the
+  // creator's own posts). Pre-fills the overview from the caption if empty.
+  const doFetch = async () => {
+    const url = form.link.trim()
+    if (!url || fetching) return
+    setFetching(true)
+    setFetchErr('')
+    setFetched(null)
+    try {
+      const res = await fetchCollabMetrics(url)
+      const post = res.post || null
+      // Pull metrics + thumbnail only. Campaign overview is written manually,
+      // so we never auto-fill it from the post caption.
+      setFetched(post)
+      // Auto-fill the "Link" field with the resolved Instagram post URL.
+      const postUrl = post?.instagramUrl || post?.permalink || url
+      if (postUrl) set('url', postUrl)
+    } catch (e) {
+      setFetchErr(e.message || 'Could not fetch this post.')
+    } finally {
+      setFetching(false)
+    }
+  }
+
   const addEntry = async () => {
     if (!form.brand.trim() || busy) return
     setBusy(true)
     try {
-      await onAdd(form)
+      await onAdd(form, fetched)
       setForm(EMPTY_COLLAB)
+      setFetched(null)
+      setFetchErr('')
     } finally {
       setBusy(false)
     }
   }
+
+  const metrics = fetched && [
+    ['Reach', fetched.reach],
+    ['Views', fetched.views],
+    ['Likes', fetched.likes],
+    ['Comments', fetched.comments],
+    ['ER', `${fetched.engagementRate || 0}%`],
+  ]
+
   return (
     <section>
       <SectionHead title="Brand Collabs" sub="Showcase your best sponsored content. Added collabs appear on your card." />
@@ -263,13 +369,57 @@ function PortfolioPanel({ collabs, onAdd, onRemove }) {
           <h3 className="text-white font-bold text-lg mb-5" style={{ fontFamily: FONT }}>Add collaboration</h3>
 
           <Field label="Instagram collab post link">
-            <input value={form.link} onChange={(e) => set('link', e.target.value)} placeholder="https://instagram.com/p/…" className="w-full rounded-xl px-4 h-12 text-white text-[15px] outline-none focus:border-white/30 transition-colors placeholder:text-white/30" style={inputStyle} />
+            <div className="flex items-stretch gap-2">
+              <input value={form.link} onChange={(e) => set('link', e.target.value)} placeholder="https://instagram.com/p/…" className="flex-1 min-w-0 rounded-xl px-4 h-12 text-white text-[15px] outline-none focus:border-white/30 transition-colors placeholder:text-white/30" style={inputStyle} />
+              <GhostBtn onClick={doFetch}>{I.fetch} {fetching ? 'Fetching…' : 'Fetch'}</GhostBtn>
+            </div>
           </Field>
-          <p className="mt-2 mb-5 text-white/40 text-[12px] leading-relaxed" style={{ fontFamily: FONT }}>
-            Optional — link to one of your own posts so brands can see the original.
+          <p className="mt-2 mb-3 text-white/40 text-[12px] leading-relaxed" style={{ fontFamily: FONT }}>
+            Must be one of your own posts — insights aren't available for other accounts.
           </p>
 
+          {fetchErr && (
+            <p className="mb-4 text-[12px] leading-relaxed" style={{ fontFamily: FONT, color: '#FB7185' }}>{fetchErr}</p>
+          )}
+          {fetched && (
+            <div className="mb-5 rounded-xl p-3 flex items-center gap-3" style={{ background: 'rgba(77,224,176,0.06)', border: '1px solid rgba(77,224,176,0.3)' }}>
+              {fetched.postImage && <img src={fetched.postImage} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />}
+              <div className="min-w-0">
+                <div className="text-[#4DE0B0] text-[12px] font-semibold mb-1" style={{ fontFamily: MONO }}>Post metrics fetched ✓</div>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-white/65 text-[12px]" style={{ fontFamily: MONO }}>
+                  {metrics.map(([k, v]) => (
+                    <span key={k}>{k}: <span className="text-white">{v}</span></span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="mb-5"><Field label="Brand / Campaign name"><TextInput value={form.brand} onChange={(e) => set('brand', e.target.value)} placeholder="e.g. Summer Escapes" /></Field></div>
+
+          {/* Collab icon — defaults to the Instagram thumbnail, optional override */}
+          <div className="mb-5">
+            <Label>Collab icon</Label>
+            <div className="flex items-center gap-3">
+              <div className="shrink-0 grid place-items-center rounded-xl overflow-hidden" style={{ width: 56, height: 56, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                {iconPreview
+                  ? <img src={iconPreview} alt="" className="w-full h-full object-cover" />
+                  : <span className="text-white/35 text-[10px] text-center px-1" style={{ fontFamily: MONO }}>No icon</span>}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="cursor-pointer inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-semibold text-white/80 hover:bg-white/5 transition-colors" style={{ fontFamily: FONT, border: '1px solid rgba(255,255,255,0.18)' }}>
+                  {I.upload} {form.logo ? 'Change icon' : 'Upload icon'}
+                  <input type="file" accept="image/*" className="sr-only" onChange={onPickIcon} />
+                </label>
+                {form.logo && (
+                  <button type="button" onClick={() => set('logo', '')} className="text-[12px] text-white/45 hover:text-white text-left transition-colors" style={{ fontFamily: FONT }}>
+                    Reset to Instagram thumbnail
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="mt-2 text-white/40 text-[12px] leading-relaxed" style={{ fontFamily: FONT }}>Defaults to your Instagram post thumbnail. Upload a brand logo to override it.</p>
+          </div>
           <div className="mb-5">
             <Field label="Campaign overview">
               <textarea rows={3} value={form.overview} onChange={(e) => set('overview', e.target.value)} placeholder="Write a short summary of this collaboration…" className="w-full rounded-xl px-4 py-3 text-white text-[15px] outline-none focus:border-white/30 transition-colors resize-none placeholder:text-white/30" style={inputStyle} />
@@ -294,14 +444,19 @@ function PortfolioPanel({ collabs, onAdd, onRemove }) {
             <div className="flex flex-col gap-4">
               {collabs.map((c) => (
                 <div key={c.id} className="rounded-2xl p-4 flex items-start gap-4" style={PANEL}>
-                  <span className="grid place-items-center rounded-lg shrink-0 text-white/45" style={{ width: 56, height: 56, background: 'rgba(255,255,255,0.06)' }}>{I.image}</span>
+                  {c.image ? (
+                    <img src={c.image} alt="" className="rounded-lg shrink-0 object-cover" style={{ width: 56, height: 56 }} />
+                  ) : (
+                    <span className="grid place-items-center rounded-lg shrink-0 text-white/45" style={{ width: 56, height: 56, background: 'rgba(255,255,255,0.06)' }}>{I.image}</span>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-white font-semibold text-[15px] truncate" style={{ fontFamily: FONT }}>{c.brand}</span>
                       {c.category && <span className="text-[11px] px-2 py-0.5 rounded-full text-white/70" style={{ background: 'rgba(255,255,255,0.08)', fontFamily: MONO }}>{c.category}</span>}
                     </div>
                     {c.overview && <p className="text-white/50 text-[13px] mt-1 line-clamp-2" style={{ fontFamily: FONT }}>{c.overview}</p>}
-                    {c.url && <span className="text-[#9C7CF0] text-[12px] mt-1 inline-block truncate max-w-full" style={{ fontFamily: MONO }}>{c.url}</span>}
+                    {c.reach > 0 && <span className="text-white/45 text-[12px] mt-1 inline-block" style={{ fontFamily: MONO }}>Reach: {Number(c.reach).toLocaleString()}</span>}
+                    {c.url && <span className="text-[#9C7CF0] text-[12px] mt-1 block truncate max-w-full" style={{ fontFamily: MONO }}>{c.url}</span>}
                   </div>
                   <button type="button" onClick={() => onRemove(c)} className="grid place-items-center rounded-lg shrink-0 text-white/50 hover:text-[#FB7185] hover:bg-white/5 transition-colors" style={{ width: 40, height: 40 }}>{I.trash}</button>
                 </div>
@@ -328,10 +483,19 @@ function Toggle({ on, onClick, label }) {
   )
 }
 
-function PackagesPanel({ pkgs, setPkgs, onRemove }) {
+function PackagesPanel({ pkgs, setPkgs, onRemove, onSave }) {
   const update = (id, k, v) => setPkgs((p) => p.map((x) => (x.id === id ? { ...x, [k]: v } : x)))
   const setPopular = (id) => setPkgs((p) => p.map((x) => ({ ...x, isPopular: x.id === id ? !x.isPopular : false })))
   const addTier = () => setPkgs((p) => (p.length >= 3 ? p : [...p, { id: `tmp-${Date.now()}`, _id: null, tier: 'Starter', price: '0', deliverables: '', revisions: '1', isPopular: false }]))
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+  const save = async () => {
+    if (saving) return
+    setSaving(true)
+    try { await onSave?.(); setMsg('Saved ✓') }
+    catch (e) { setMsg(e.message || 'Save failed') }
+    finally { setSaving(false); setTimeout(() => setMsg(''), 2400) }
+  }
   return (
     <section>
       <div className="flex items-start justify-between gap-4 mb-2">
@@ -360,6 +524,13 @@ function PackagesPanel({ pkgs, setPkgs, onRemove }) {
           </div>
         ))}
       </div>
+      {/* Save packages so they appear on the public card / preview */}
+      <div className="flex items-center gap-3 mt-6">
+        <button type="button" onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60" style={{ fontFamily: FONT, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}>
+          {I.save} {saving ? 'Saving…' : 'Save Packages'}
+        </button>
+        {msg && <span className="text-[13px] font-semibold" style={{ fontFamily: FONT, color: msg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{msg}</span>}
+      </div>
     </section>
   )
 }
@@ -385,7 +556,7 @@ function DesignPanel({ theme, setTheme }) {
   const secondary = theme.secondary
   const accentBg = `linear-gradient(90deg, ${primary} 0%, ${secondary} 100%)`
   return (
-    <section className="max-w-3xl">
+    <section className="max-w-3xl mx-auto text-center">
       <SectionHead title="Theme & Design" sub="Customize how your Influence Card looks." />
 
       <Label>Accent Colour</Label>
@@ -402,14 +573,14 @@ function DesignPanel({ theme, setTheme }) {
       </button>
 
       <div className="mt-7 mb-2"><Label>Quick colours</Label></div>
-      <div className="flex flex-wrap gap-3 mb-7">
+      <div className="flex flex-wrap justify-center gap-3 mb-7">
         {QUICK_COLOURS.map((c) => (
           <button key={c} type="button" onClick={() => setTheme((t) => ({ ...t, primary: c, secondary: c }))} aria-label={c} className="rounded-full transition-transform hover:scale-110" style={{ width: 34, height: 34, background: c, border: c === '#FFFFFF' ? '1px solid rgba(255,255,255,0.3)' : 'none', outline: primary === c && secondary === c ? '2px solid #fff' : 'none', outlineOffset: 2 }} />
         ))}
       </div>
 
       <Label>Gradient presets</Label>
-      <div className="flex flex-wrap gap-3 mb-9">
+      <div className="flex flex-wrap justify-center gap-3 mb-9">
         {GRADIENT_PRESETS.map(([a, b]) => (
           <button key={a + b} type="button" onClick={() => setTheme((t) => ({ ...t, primary: a, secondary: b }))} className="rounded-xl transition-transform hover:scale-105" style={{ width: 66, height: 40, background: `linear-gradient(90deg, ${a}, ${b})`, outline: primary === a && secondary === b ? '2px solid #fff' : 'none', outlineOffset: 2 }} />
         ))}
@@ -467,7 +638,7 @@ function DesignPanel({ theme, setTheme }) {
 }
 
 // ---- mappers: backend record <-> editor row ----
-const DEFAULT_THEME = { primary: '#8B5CF6', secondary: '#8B5CF6', bg: 'mesh', font: 'outfit' }
+const DEFAULT_THEME = { primary: '#8B5CF6', secondary: '#8B5CF6', bg: 'solid', font: 'outfit' }
 function parseTheme(raw) {
   if (!raw) return { ...DEFAULT_THEME }
   try {
@@ -493,6 +664,8 @@ const mapCollab = (c) => ({
   overview: c.description || '',
   category: c.category || '',
   url: c.link || '',
+  image: c.postImage || c.campaignImage || c.logo || '',
+  reach: c.reach || 0,
 })
 
 export default function EditProfileView({ creator = {}, username = '', onSaved }) {
@@ -509,6 +682,20 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
   const [pkgs, setPkgs] = useState([])
   const [collabs, setCollabs] = useState([])
 
+  // Guided tour for the editor (tabs → device toggle → save).
+  const [showTour, setShowTour] = useState(false)
+  const tabsRef = useRef(null)
+  const deviceRef = useRef(null)
+  const saveRef = useRef(null)
+  // Shown on every editor open (for testing). To show once, gate on a
+  // localStorage flag like `creasume_edit_tour_done`.
+  useEffect(() => { setShowTour(true) }, [])
+  const tourSteps = [
+    { ref: tabsRef, title: 'Navigate Sections', desc: 'Switch between profile details, your portfolio, and custom packages.' },
+    { ref: deviceRef, title: 'Toggle Preview', desc: 'Check how your card looks on mobile and desktop instantly.' },
+    { ref: saveRef, title: 'Save & Publish', desc: "Don't forget to save your changes to update your live link." },
+  ]
+
   const handle = creator.username || username || ''
   const previewSrc = handle ? `/${encodeURIComponent(handle)}?preview=${previewKey}` : `/?preview=${previewKey}`
   const avatarSrc = handle ? `${API_BASE}/public/avatar/${encodeURIComponent(handle)}` : ''
@@ -522,7 +709,7 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
       location: creator.location || '',
     })
     const links = Array.isArray(creator.socialLinks) ? creator.socialLinks : []
-    setSocials(links.map((l, i) => ({ key: i + 1, platform: l.platform || '', url: l.url || '' })))
+    setSocials(links.map((l, i) => ({ key: i + 1, platform: l.platform || '', url: l.url || '', enabled: l.enabled !== false })))
     setTheme(parseTheme(creator.theme))
   }, [creator])
 
@@ -537,6 +724,24 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
 
   const flash = (msg) => { setSavedMsg(msg); setTimeout(() => setSavedMsg(''), 2200) }
 
+  // ---- Live preview sync ----
+  // Push the CURRENT (unsaved) edits into the preview iframe via postMessage, so
+  // the card restyles/updates instantly as you type or pick a colour — no save
+  // needed. Re-posts whenever the edits change or the iframe (re)loads & signals
+  // it's ready.
+  useEffect(() => {
+    const payload = { theme, profile }
+    const post = () => {
+      document
+        .getElementById('creasume-preview-frame')
+        ?.contentWindow?.postMessage({ source: 'creasume-edit', payload }, '*')
+    }
+    post()
+    const onReady = (e) => { if (e.data?.source === 'creasume-preview-ready') post() }
+    window.addEventListener('message', onReady)
+    return () => window.removeEventListener('message', onReady)
+  }, [theme, profile])
+
   // ---- Persistence ----
   const saveProfile = async () => {
     await updateProfile({
@@ -547,8 +752,16 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
       theme: JSON.stringify(theme),
       socialLinks: socials
         .filter((s) => s.platform.trim() && s.url.trim())
-        .map((s) => ({ platform: s.platform.trim(), url: s.url.trim() })),
+        .map((s) => ({ platform: s.platform.trim(), url: s.url.trim(), enabled: s.enabled !== false })),
     })
+  }
+
+  // Save just the social links (used by the "Save Links" button in the Profile
+  // tab) and refresh the preview so they appear on the card.
+  const saveLinks = async () => {
+    await saveProfile()
+    setPreviewKey((k) => k + 1)
+    onSaved?.()
   }
 
   const savePackages = async () => {
@@ -565,6 +778,13 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
     }
     const r = await fetchMyPackages()
     setPkgs((r.packages || []).map(mapPkg))
+  }
+
+  // Save packages + refresh the preview (used by the in-section "Save Packages").
+  const savePackagesAndPreview = async () => {
+    await savePackages()
+    setPreviewKey((k) => k + 1)
+    onSaved?.()
   }
 
   const onSave = async () => {
@@ -584,14 +804,34 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
   }
 
   // ---- Portfolio actions (persist immediately) ----
-  const addCollab = async (form) => {
-    const r = await createCollaboration({
+  const addCollab = async (form, fetched) => {
+    const body = {
       brandName: form.brand,
       description: form.overview,
       category: form.category,
       link: form.url,
-      instagramUrl: form.link,
-    })
+      instagramUrl: fetched?.instagramUrl || form.link,
+      // Custom icon override; when empty the card falls back to the IG thumbnail.
+      ...(form.logo ? { logo: form.logo } : {}),
+    }
+    // Carry the fetched per-post metrics through so they show on the card.
+    if (fetched) {
+      Object.assign(body, {
+        mediaId: fetched.mediaId,
+        mediaType: fetched.mediaType,
+        postImage: fetched.postImage,
+        postCaption: fetched.postCaption,
+        reach: fetched.reach,
+        views: fetched.views,
+        likes: fetched.likes,
+        comments: fetched.comments,
+        saves: fetched.saves,
+        shares: fetched.shares,
+        engagementRate: fetched.engagementRate,
+        metricsFetchedAt: fetched.metricsFetchedAt,
+      })
+    }
+    const r = await createCollaboration(body)
     setCollabs((c) => [...c, mapCollab(r.collaboration)])
     setPreviewKey((k) => k + 1)
     onSaved?.()
@@ -609,12 +849,13 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
 
   return (
     <>
+      {showTour && <DashboardTour steps={tourSteps} onDone={() => setShowTour(false)} />}
       {/* Header: title + tabs + actions */}
       <header className="px-6 md:px-10 py-4 flex flex-wrap items-center gap-4 justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-5">
           <h1 className="font-bold text-lg whitespace-nowrap" style={{ fontFamily: FONT }}>Edit Influence Card</h1>
           <div className="hidden sm:block h-6 w-px bg-white/15" />
-          <nav className="flex items-center gap-1">
+          <nav ref={tabsRef} className="flex items-center gap-1">
             {TABS.map((t) => {
               const active = tab === t
               return (
@@ -628,12 +869,12 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
         <div className="flex items-center gap-3">
           {savedMsg && <span className="text-[13px] font-semibold" style={{ fontFamily: FONT, color: savedMsg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{savedMsg}</span>}
           {/* device toggle */}
-          <div className="flex items-center gap-1 rounded-xl p-1" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>
+          <div ref={deviceRef} className="flex items-center gap-1 rounded-xl p-1" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>
             <button type="button" onClick={() => setDevice('phone')} className="grid place-items-center rounded-lg transition-colors" style={{ width: 32, height: 30, color: '#fff', background: device === 'phone' ? 'rgba(139,92,246,0.6)' : 'transparent' }}>{I.phone}</button>
             <button type="button" onClick={() => setDevice('desktop')} className="grid place-items-center rounded-lg transition-colors" style={{ width: 32, height: 30, color: '#fff', background: device === 'desktop' ? 'rgba(139,92,246,0.6)' : 'transparent' }}>{I.monitor}</button>
           </div>
           <a href={handle ? `/${handle}` : '/'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 no-underline" style={{ fontFamily: FONT, background: '#fff' }}>{I.eye} Preview</a>
-          <button type="button" onClick={onSave} disabled={saving} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 disabled:opacity-60" style={{ fontFamily: FONT, background: '#fff' }}>{I.save} {saving ? 'Saving…' : 'Save Changes'}</button>
+          <button ref={saveRef} type="button" onClick={onSave} disabled={saving} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 disabled:opacity-60" style={{ fontFamily: FONT, background: '#fff' }}>{I.save} {saving ? 'Saving…' : 'Save Changes'}</button>
         </div>
       </header>
 
@@ -642,9 +883,9 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
         <div className="px-6 md:px-16 lg:px-24 pb-16">
           <LivePreview device={device} src={previewSrc} />
           <div className="pt-8">
-            {tab === 'Profile' && <ProfilePanel profile={profile} setProfile={setProfile} socials={socials} setSocials={setSocials} username={handle} avatarSrc={avatarSrc} />}
+            {tab === 'Profile' && <ProfilePanel profile={profile} setProfile={setProfile} socials={socials} setSocials={setSocials} username={handle} avatarSrc={avatarSrc} onSaveLinks={saveLinks} />}
             {tab === 'Portfolio' && <PortfolioPanel collabs={collabs} onAdd={addCollab} onRemove={removeCollab} />}
-            {tab === 'Packages' && <PackagesPanel pkgs={pkgs} setPkgs={setPkgs} onRemove={removePkg} />}
+            {tab === 'Packages' && <PackagesPanel pkgs={pkgs} setPkgs={setPkgs} onRemove={removePkg} onSave={savePackagesAndPreview} />}
             {tab === 'Design' && <DesignPanel theme={theme} setTheme={setTheme} />}
           </div>
         </div>

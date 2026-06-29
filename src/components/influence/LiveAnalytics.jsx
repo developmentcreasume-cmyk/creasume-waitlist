@@ -449,7 +449,7 @@ function EngagementChart({ bars, months }) {
                     <motion.div
                       key={i}
                       className="relative rounded-t-md origin-bottom cursor-default grow shrink-0 basis-[34px] md:shrink md:basis-0"
-                      style={{ height: `${h}%`, background: last ? '#89DFEC' : 'linear-gradient(180deg,#E731A2 0%,#C04DCC 50%,#A35CE1 100%)', opacity: hi !== null && hi !== i ? 0.55 : 1 }}
+                      style={{ height: `${h}%`, background: last ? '#89DFEC' : 'linear-gradient(180deg, var(--theme-1, #E731A2) 0%, var(--theme-2, #A35CE1) 100%)', opacity: hi !== null && hi !== i ? 0.55 : 1 }}
                       initial={{ scaleY: 0, opacity: 0 }}
                       whileInView={{ scaleY: 1, opacity: 1 }}
                       viewport={{ once: true }}
@@ -650,7 +650,7 @@ export default function LiveAnalytics() {
                     fontFamily: FONT,
                     color: '#fff',
                     background: active
-                      ? 'linear-gradient(180deg,#8B5CF6,#6D3FD6)'
+                      ? 'var(--theme-grad, linear-gradient(180deg,#8B5CF6,#6D3FD6))'
                       : hovered === p
                         ? 'rgba(255,255,255,0.08)'
                         : 'rgba(255,255,255,0.03)',
@@ -783,7 +783,7 @@ export default function LiveAnalytics() {
                 <div className="flex items-center justify-center gap-2 text-white font-semibold text-base mb-3" style={{ fontFamily: FONT }}>
                   <span aria-hidden="true">👥</span> Gender Ratio
                 </div>
-                <div className="grid grid-cols-2 rounded-2xl overflow-hidden w-full" style={{ background: '#7B45C9' }}>
+                <div className="grid grid-cols-2 rounded-2xl overflow-hidden w-full" style={{ background: 'var(--theme-1, #7B45C9)' }}>
                   {[
                     { label: 'FEMALE', value: GENDER_SPLIT.female },
                     { label: 'MALE', value: GENDER_SPLIT.male },

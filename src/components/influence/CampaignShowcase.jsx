@@ -272,6 +272,28 @@ export default function CampaignShowcase() {
 
   const [openIdx, setOpenIdx] = useState(null)
   const scrollerRef = useRef(null)
+  const wrapRef = useRef(null)
+
+  // Only run the duplicated marquee when the cards actually OVERFLOW the row.
+  // The seamless loop renders two copies of the set ([...DATA, ...DATA]); if the
+  // single set already fits (e.g. 2–3 cards on a wide desktop), BOTH copies are
+  // visible side by side and look like duplicated collaborations. So we measure
+  // the row and only loop/auto-scroll when the content is wider than the
+  // viewport; otherwise we show the set once, centered.
+  const [fits, setFits] = useState(false)
+  useEffect(() => {
+    const measure = () => {
+      const el = wrapRef.current
+      if (!el) return
+      const contentW = DATA.length * (CARD_W + 24) - 24 // last card has no trailing gap
+      setFits(contentW <= el.clientWidth)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [DATA.length])
+
+  const useMarquee = DATA.length > 1 && !fits
 
   // Lock page scroll while the detail modal is open so scrolling inside it
   // doesn't bleed through to the page behind. Lenis owns the scroll, so we stop
@@ -301,7 +323,7 @@ export default function CampaignShowcase() {
   // manually; auto-scroll pauses while a finger is down. Cards are duplicated,
   // so we wrap back at the halfway point for a seamless loop.
   useEffect(() => {
-    if (DATA.length <= 2) return // 1–2 cards are static; marquee needs 3+
+    if (!useMarquee) return // static when a single card, or all cards fit the row
     const el = scrollerRef.current
     if (!el) return
     let raf = 0
@@ -321,7 +343,7 @@ export default function CampaignShowcase() {
     }
     raf = requestAnimationFrame(step)
     return () => cancelAnimationFrame(raf)
-  }, [DATA.length])
+  }, [useMarquee])
 
   // When the row stops, snap to the nearest card boundary so it never rests
   // with a card sliced off at the edge. Cards are CARD_W wide with a 24px
@@ -342,9 +364,9 @@ export default function CampaignShowcase() {
 
   return (
     <section className="relative z-10 py-20 md:py-28 overflow-hidden" style={{ background: 'transparent' }}>
-      {DATA.length <= 2 ? (
-        // One or two cards: centered, no marquee/duplication (duplicating a
-        // couple of cards into a loop reads as repeated/fake entries).
+      <div ref={wrapRef}>
+      {!useMarquee ? (
+        // One card, or a set that fits the row: centered, no marquee/duplication.
         <div className="flex justify-center flex-wrap gap-6 px-6">
           {DATA.map((data, i) => (
             <CampaignCard key={i} data={data} onClick={() => setOpenIdx(i)} />
@@ -382,6 +404,7 @@ export default function CampaignShowcase() {
           </div>
         </>
       )}
+      </div>
 
       {/* Tap-to-open detail of a single card. Rendered through a portal on
           <body> so it escapes this section's `z-10` stacking context — otherwise

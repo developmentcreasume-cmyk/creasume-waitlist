@@ -59,7 +59,7 @@ function PackageCard({ p, i, isPopular, showCta, noId = false, carousel = false 
     >
       {isPopular && (
         <span
-          className="absolute -top-3 left-[72%] -translate-x-1/2 text-sm md:text-base font-semibold text-white px-2 py-0.5 rounded-full whitespace-nowrap"
+          className="absolute -top-3 left-[72%] -translate-x-1/2 text-[12.5px] md:text-[13.5px] font-semibold text-white px-3 py-1 rounded-full whitespace-nowrap"
           style={{ background: '#0918E5', fontFamily: FONT }}
         >
           Most Popular
@@ -78,7 +78,7 @@ function PackageCard({ p, i, isPopular, showCta, noId = false, carousel = false 
           id={!noId && isPopular ? 'pkg-book-now' : undefined}
           href="#work-with-me"
           className="pkg-book-btn no-underline mt-auto w-full rounded-full font-semibold text-sm py-3.5 text-center text-white transition-[filter] duration-200 ease-out hover:brightness-110"
-          style={{ fontFamily: FONT, background: '#0918E5' }}
+          style={{ fontFamily: FONT, background: 'var(--theme-1, #0918E5)' }}
         >
           Book Now
         </a>
@@ -311,7 +311,7 @@ export default function Packages() {
             transition={{ duration: 0.45, ease: 'easeOut', delay: 0.1 }}
             whileHover={{ scale: 1.04 }}
             className="inline-flex items-center justify-center whitespace-nowrap rounded-2xl px-10 py-3 font-bold tracking-wide leading-none"
-            style={{ fontFamily: FONT, fontSize: 18, color: '#15172b', background: 'linear-gradient(180deg, #5D65DC 0%, #5D65DC 32%, #9CA2E1 100%)', boxShadow: '0 12px 30px rgba(93,101,220,0.4)' }}
+            style={{ fontFamily: FONT, fontSize: 18, color: '#15172b', background: 'var(--theme-grad, linear-gradient(180deg, #5D65DC 0%, #5D65DC 32%, #9CA2E1 100%))', boxShadow: '0 12px 30px rgba(93,101,220,0.4)' }}
           >
             LET&apos;S WORK TOGETHER
           </motion.button>
@@ -376,7 +376,7 @@ export default function Packages() {
             <motion.div
               key={p.tier}
               variants={fadeUp}
-              whileHover={{ y: -10, scale: 1.02 }}
+              whileHover={{ y: -12, scale: 1.06 }}
               transition={{ type: 'spring', stiffness: 320, damping: 22 }}
             >
               <PackageCard p={p} i={i} isPopular={isPopular} showCta={showCta} />
@@ -441,7 +441,7 @@ export default function Packages() {
                 aria-label={`Go to ${p.tier}`}
                 onClick={() => goTo(pos - logical + i)}
                 className="rounded-full transition-all duration-300"
-                style={{ width: i === logical ? 26 : 8, height: 8, background: i === logical ? '#0918E5' : 'rgba(255,255,255,0.3)' }}
+                style={{ width: i === logical ? 26 : 8, height: 8, background: i === logical ? 'var(--theme-1, #0918E5)' : 'rgba(255,255,255,0.3)' }}
               />
             ))}
           </div>

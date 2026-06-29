@@ -3,7 +3,9 @@
 // across the hero tiles, analytics, brand reach, etc. Edit here to re-skin
 // the whole page.
 
-export const FONT = "'Outfit', sans-serif"
+// The card's display font. A CSS variable so the creator's Font Pairing choice
+// (Outfit / Inter, set on the card root) re-skins every label; defaults to Outfit.
+export const FONT = "var(--card-font, 'Outfit', sans-serif)"
 export const MONO = "ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace"
 
 // Shared dark panel surface, matching the metric tiles on the live demo card.
@@ -12,14 +14,21 @@ export const PANEL = {
   border: '1px solid rgba(255,255,255,0.08)',
 }
 
-// Purple→magenta→pink gradient used on the small caption labels page-wide
-// (metric tiles, package tiers, post-type tags). Applied as clipped text.
+// Accent gradient used on the small caption labels page-wide (metric tiles,
+// package tiers, post-type tags). Applied as clipped text. Reads the creator's
+// chosen theme via the `--theme-grad` CSS variable set on the card root, and
+// falls back to the default purple→magenta→pink when no theme is set.
+export const THEME_GRAD_DEFAULT = 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)'
 export const LABEL_GRADIENT = {
-  background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)',
+  background: `var(--theme-grad, ${THEME_GRAD_DEFAULT})`,
   WebkitBackgroundClip: 'text',
   WebkitTextFillColor: 'transparent',
   backgroundClip: 'text',
 }
+
+// Creator theme applied at runtime (null = card's default palette). Filled by the
+// API mapper from the creator's saved `theme` JSON ({ primary, secondary, … }).
+export const THEME = null
 
 export const CREATOR = {
   name: 'Sample.Creator',

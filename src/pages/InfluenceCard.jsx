@@ -24,11 +24,32 @@ function Loader() {
 
 // Inner page — reads `ready` from the provider and waits for it before painting.
 function InfluenceCardInner() {
-  const { ready } = useInfluence()
+  const { ready, THEME } = useInfluence()
   if (!ready) return <Loader />
+  // Apply the creator's chosen palette + font + background as CSS variables /
+  // inline styles on the root. Every themed element (LABEL_GRADIENT, accent
+  // buttons, the avatar ring, fonts, …) reads these, so changing the theme
+  // re-skins the whole card. No theme → fall back to the default palette/font/bg.
+  const FONT_MAP = { outfit: "'Outfit', sans-serif", inter: "'Inter', sans-serif" }
+  const BG_MAP = {
+    mesh: 'radial-gradient(120% 120% at 30% 10%, #2b3aa0 0%, #141a4d 45%, #0a0c1f 100%)',
+    solid: 'linear-gradient(160deg,#0b0d18 0%,#05060f 100%)',
+  }
+  const rootStyle = {
+    ...(THEME
+      ? {
+          '--theme-grad': THEME.grad,
+          '--theme-1': THEME.primary,
+          '--theme-2': THEME.secondary,
+          ...(THEME.font ? { '--card-font': FONT_MAP[THEME.font] || FONT_MAP.outfit } : {}),
+        }
+      : {}),
+    // Default the card background to Solid Dark; Mesh only when explicitly chosen.
+    background: BG_MAP[THEME?.bg] || BG_MAP.solid,
+  }
   return (
     <MotionConfig reducedMotion="user">
-      <div id="influence-card-root" className="relative min-h-screen overflow-x-clip bg-black text-white">
+      <div id="influence-card-root" className="relative min-h-screen overflow-x-clip bg-black text-white" style={rootStyle}>
         {/* Ambient brand background */}
         <div className="starfield" />
 

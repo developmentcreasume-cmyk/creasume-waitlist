@@ -9,7 +9,7 @@
 // Editing here writes through the SAME models the public card renders, so a save
 // shows up on the card on its next load (the card refetches on window focus).
 
-import { API_BASE, formatCount } from './influenceApi.js'
+import { API_BASE, formatCount, shortenLocation } from './influenceApi.js'
 
 const TOKEN_KEY = 'creasume_token'
 const USERNAME_KEY = 'creasume_username'
@@ -92,6 +92,25 @@ export const dapi = {
   del: (path) => request(path, { method: 'DELETE' }),
 }
 
+// DEV CONVENIENCE: when running `npm run dev` and there's no token yet, grab one
+// for the given creator from the backend's dev-login (which is disabled in
+// production, so this is a no-op there). This makes Save / Fetch work locally
+// without the manual /dev-login step or the localhost-vs-127.0.0.1 origin dance.
+export async function ensureDevToken(username) {
+  if (getToken()) return getToken()
+  if (!username || !import.meta.env.DEV) return ''
+  try {
+    const res = await fetch(`${API_BASE}/auth/dev-login?username=${encodeURIComponent(username)}`)
+    const data = await res.json().catch(() => ({}))
+    if (data?.success && data.token) {
+      setToken(data.token)
+      setStoredUsername(data.username)
+      return data.token
+    }
+  } catch { /* backend offline / dev-login disabled — ignore */ }
+  return ''
+}
+
 // ---- Public display data ----
 // Sends the auth token when present so the OWNER can read their own card payload
 // (stats, posts, demographics) even before an admin sets the card live; visitors
@@ -111,6 +130,7 @@ export async function fetchPublic(username) {
 export const fetchMe = () => dapi.get('/creator/me')
 export const fetchDashboardStats = () => dapi.get('/creator/dashboard-stats')
 export const updateProfile = (body) => dapi.put('/creator/update', body)
+export const deleteAccount = () => dapi.del('/creator/me')
 
 // ---- Inquiries (private) ----
 export const fetchMyInquiries = () => dapi.get('/inquiry/my-inquiries')
@@ -127,6 +147,9 @@ export const deletePackage = (id) => dapi.del(`/packages/delete/${id}`)
 export const fetchMyCollaborations = () => dapi.get('/collaborations/my-collaborations')
 export const createCollaboration = (body) => dapi.post('/collaborations/create', body)
 export const deleteCollaboration = (id) => dapi.del(`/collaborations/delete/${id}`)
+// Resolve an Instagram post/reel URL (one of the creator's own) to its live
+// per-post metrics + thumbnail. Returns { post }. Does not persist.
+export const fetchCollabMetrics = (url) => dapi.post('/collaborations/fetch-metrics', { url })
 
 // ---- Mappers: backend payloads → the shapes the dashboard renders ----
 
@@ -173,4 +196,4 @@ export function mapInquiry(q) {
   }
 }
 
-export { formatCount, API_BASE }
+export { formatCount, API_BASE, shortenLocation }

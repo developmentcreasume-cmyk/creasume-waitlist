@@ -12,7 +12,7 @@ export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 // page (`/`), the legal pages, and the app routes are reserved and return no
 // creator. The SPA rewrite in vercel.json makes these deep links / refreshes
 // serve index.html.
-const RESERVED_PATHS = ['privacy-policy', 'terms', 'influence', 'dashboard', 'waitlist', 'auth-success']
+const RESERVED_PATHS = ['privacy-policy', 'terms', 'influence', 'dashboard', 'waitlist', 'auth-success', 'dev-login']
 export function resolveUsername() {
   if (typeof window === 'undefined') return ''
   const path = window.location.pathname.replace(/\/+$/, '')
@@ -168,6 +168,26 @@ export function mapInfluenceData(api, d) {
   const s = api.stats || {}
   const demo = api.demographics || {}
   const media = api.media || []
+
+  // ---- Theme: the creator's saved color palette (JSON: { primary, secondary,
+  // bg, font }). Drives the whole card's accent via CSS variables on the root.
+  let THEME = null
+  if (c.theme) {
+    try {
+      const t = typeof c.theme === 'string' ? JSON.parse(c.theme) : c.theme
+      if (t && t.primary) {
+        const primary = t.primary
+        const secondary = t.secondary || t.primary
+        THEME = {
+          primary,
+          secondary,
+          grad: `linear-gradient(90deg, ${primary} 0%, ${secondary} 100%)`,
+          bg: t.bg || 'solid',
+          font: t.font || null,
+        }
+      }
+    } catch { /* malformed theme JSON → keep the default palette */ }
+  }
   // Dedupe collaborations so an accidental duplicate entry doesn't render the
   // same campaign card twice (which the looping marquee then doubles to four).
   const collabsRaw = api.collaborations || []
@@ -232,10 +252,24 @@ export function mapInfluenceData(api, d) {
     { icon: 'comment', value: fc0(commentT) },
     { icon: 'share', value: fc0(shareT) },
   ]
-  const tiles = d.CREATOR.tiles.map((t) => {
+  const tilesAll = d.CREATOR.tiles.map((t) => {
     const nt = tileValues[t.label] != null ? { ...t, value: tileValues[t.label] } : t
     return t.label === 'Total Impressions' ? { ...nt, details: impressionDetails } : nt
   })
+
+  // ---- Per-metric visibility (dashboard stat-card toggles) ----
+  // `metricVisibility` maps a metric key → boolean. A missing/true key shows the
+  // metric; false hides its hero pill AND its grid tile from the public card.
+  const VIS = c.metricVisibility || {}
+  const isOn = (key) => !key || VIS[key] !== false
+  const PILL_KEY = { Followers: 'followers', 'Eng. Rate': 'engagement', 'Total Views': 'views', 'Total Reach': 'reach' }
+  const TILE_KEY = {
+    'Total Followers': 'followers', 'Engagement Rate': 'engagement', 'Total Views': 'views',
+    Reach: 'reach', 'Total Post': 'posts', 'Total Impressions': 'impressions',
+    'Creasume Score': 'creasumeScore', 'Brand Deals Done': 'brandDeals', 'Top City': 'topCity',
+  }
+  const visiblePills = pills.filter((p) => isOn(PILL_KEY[p.label]))
+  const tiles = tilesAll.filter((t) => isOn(TILE_KEY[t.label]))
 
   const CREATOR = {
     ...d.CREATOR,
@@ -256,7 +290,7 @@ export function mapInfluenceData(api, d) {
     // Raw Instagram CDN URL — used as a fallback if the proxy isn't deployed yet
     // (ProfileHero tries it with referrerPolicy=no-referrer before the initial).
     avatarRaw: c.profilePicture || '',
-    pills,
+    pills: visiblePills,
     tiles,
   }
 
@@ -357,7 +391,7 @@ export function mapInfluenceData(api, d) {
   // split evenly to its left and right.
   // At most 5 admin-added links flank Instagram.
   const otherRows = (Array.isArray(c.socialLinks) ? c.socialLinks : [])
-    .filter((l) => l && l.platform && l.url && displayPlatform(l.platform) !== 'Instagram')
+    .filter((l) => l && l.platform && l.url && l.enabled !== false && displayPlatform(l.platform) !== 'Instagram')
     .slice(0, 5)
     .map((l) => ({
       name: displayPlatform(l.platform),
@@ -536,6 +570,7 @@ export function mapInfluenceData(api, d) {
 
   return {
     ...d,
+    THEME,
     CREATOR,
     GROWTH,
     MONTHS,

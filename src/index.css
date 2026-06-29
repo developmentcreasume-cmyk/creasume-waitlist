@@ -535,3 +535,51 @@ body::-webkit-scrollbar {
   from { opacity: 0; transform: scale(0.97); }
   to   { opacity: 1; transform: scale(1); }
 }
+
+/* Founding Creator badge — a bright highlight sweeps around the gold border.
+   The ::before is masked to just the 3px ring; a rotating conic-gradient inside
+   it makes a light travel around the edge. --fc-angle is registered via
+   @property so the angle actually interpolates (otherwise it would jump). */
+@property --fc-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+.founding-badge {
+  position: relative;
+  isolation: isolate;
+}
+.founding-badge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 3px;
+  background: conic-gradient(
+    from var(--fc-angle),
+    transparent 0deg,
+    transparent 230deg,
+    rgba(255, 244, 206, 0.85) 300deg,
+    #fffaf0 322deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: fc-rotate 2.8s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+@keyframes fc-rotate {
+  to { --fc-angle: 360deg; }
+}
+/* Browsers without @property: skip the angle animation (the static gold border
+   still shows) so it never sits frozen mid-sweep. */
+@supports not (background: conic-gradient(from var(--fc-angle), #000, #fff)) {
+  .founding-badge::before { animation: none; background: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .founding-badge::before { animation: none; }
+}

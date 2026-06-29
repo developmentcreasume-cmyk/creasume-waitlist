@@ -7,15 +7,19 @@
 //   • recent brand inquiries                              → GET /inquiry/my-inquiries
 // Edits made in "Edit Profile" write through to the same models the card reads,
 // so changes show up on the live card.
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, forwardRef } from 'react'
 import { FONT, MONO } from '../influence/influenceData.js'
 import { goToPath } from '../../router.js'
 import EditProfileView from './EditProfileView.jsx'
+import DashboardTour from './DashboardTour.jsx'
 import {
   fetchPublic,
   fetchMe,
   fetchDashboardStats,
   fetchMyInquiries,
+  updateProfile,
+  deleteAccount,
+  ensureDevToken,
   isLoggedIn,
   loginUrl,
   clearAuth,
@@ -24,6 +28,7 @@ import {
   inquiryDetailPath,
   mapInquiry,
   formatCount,
+  shortenLocation,
 } from '../../services/dashboardApi.js'
 
 const NAV = [
@@ -61,10 +66,11 @@ const ICONS = {
   handshake: (<svg {...ic}><path d="m11 17 2 2a1 1 0 0 0 1.4 0l3.6-3.6" /><path d="M14 14l2.5 2.5a1 1 0 0 0 1.4-1.4L13 10l-2.5 2a2 2 0 0 1-2.6-3L11 7l3-1 6 5" /><path d="M4 12l3 3M4 6l3-1 2 1" /></svg>),
   info: (<svg {...ic} width="15" height="15"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>),
   trendUp: (<svg {...ic} width="14" height="14"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" /></svg>),
+  pin: (<svg {...ic}><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10Z" /><circle cx="12" cy="11" r="2.5" /></svg>),
 }
 
 // Dark URL pill with a copy button (shows a check on success).
-function CardLinkPill({ url }) {
+const CardLinkPill = forwardRef(function CardLinkPill({ url }, ref) {
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
@@ -75,6 +81,7 @@ function CardLinkPill({ url }) {
   }
   return (
     <button
+      ref={ref}
       type="button"
       onClick={copy}
       aria-label="Copy link"
@@ -85,7 +92,7 @@ function CardLinkPill({ url }) {
       <span style={{ color: copied ? '#3DDC84' : '#fff' }}>{copied ? ICONS.check : ICONS.copy}</span>
     </button>
   )
-}
+})
 
 const PANEL = { background: 'rgba(13,16,45,0.55)', border: '1px solid rgba(255,255,255,0.08)' }
 const LABEL_GRADIENT = {
@@ -93,13 +100,51 @@ const LABEL_GRADIENT = {
   WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
 }
 
-function StatCard({ value, label, sub, icon }) {
+// Small on/off switch used on each stat card to control card visibility.
+function MiniToggle({ on, onChange, title }) {
   return (
-    <div className="relative rounded-2xl px-6 py-6 flex flex-col gap-2" style={PANEL}>
-      <span className="absolute top-4 right-4 text-white/40 scale-110">{ICONS[icon]}</span>
-      <span className="text-white/70 text-[13px] font-medium pr-6" style={{ fontFamily: FONT }}>{label}</span>
-      <span className="text-white font-bold text-[32px] leading-none" style={{ fontFamily: FONT }}>{value}</span>
-      <span className="text-[12px]" style={{ fontFamily: MONO, ...LABEL_GRADIENT }}>{sub}</span>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      title={title}
+      onClick={(e) => { e.stopPropagation(); onChange(!on) }}
+      className="relative inline-flex shrink-0 items-center rounded-full transition-colors"
+      style={{ width: 34, height: 19, background: on ? 'linear-gradient(90deg,#8B5CF6,#EC4899)' : 'rgba(255,255,255,0.32)', border: on ? '1px solid transparent' : '1px solid rgba(255,255,255,0.25)' }}
+    >
+      <span className="rounded-full bg-white transition-transform" style={{ width: 14, height: 14, transform: on ? 'translateX(16px)' : 'translateX(2px)', boxShadow: '0 1px 2px rgba(0,0,0,0.4)' }} />
+    </button>
+  )
+}
+
+function StatCard({ value, label, sub, icon, small, on, onToggle }) {
+  const hidden = onToggle && !on
+  return (
+    <div
+      className="rounded-2xl px-5 py-4 flex flex-col gap-1.5 transition-all hover:bg-white/[0.03]"
+      style={{ ...PANEL, minHeight: 116, opacity: hidden ? 0.5 : 1 }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <span className="text-white/65 text-[12.5px] font-medium leading-tight" style={{ fontFamily: FONT }}>{label}</span>
+        <span
+          className="grid place-items-center rounded-lg shrink-0 text-white/45"
+          style={{ width: 30, height: 30, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}
+        >
+          {ICONS[icon]}
+        </span>
+      </div>
+      <span
+        className={`text-white font-bold leading-tight mt-auto ${small ? 'text-[17px]' : 'text-[27px]'}`}
+        style={{ fontFamily: FONT }}
+      >
+        {value}
+      </span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px]" style={{ fontFamily: MONO, ...LABEL_GRADIENT }}>{sub}</span>
+        {onToggle && (
+          <MiniToggle on={on} onChange={onToggle} title={on ? 'Showing on Influence Card — tap to hide' : 'Hidden from Influence Card — tap to show'} />
+        )}
+      </div>
     </div>
   )
 }
@@ -295,20 +340,40 @@ function SHead({ title, subtitle }) {
 }
 
 function AccountPanel({ creator }) {
-  const [remember, setRemember] = useState(false)
+  const [email, setEmail] = useState(creator?.email || '')
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [deleting, setDeleting] = useState(false)
+  useEffect(() => { setEmail(creator?.email || '') }, [creator])
+
+  const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 2400) }
+  const save = async () => {
+    if (saving) return
+    setSaving(true)
+    try { await updateProfile({ email: email.trim() }); flash('Saved ✓') }
+    catch (e) { flash(e.message || 'Save failed') }
+    finally { setSaving(false) }
+  }
+  const del = async () => {
+    if (deleting) return
+    if (!window.confirm('Delete your account permanently? Your card, packages, collaborations and inquiries will be removed. This cannot be undone.')) return
+    setDeleting(true)
+    try { await deleteAccount(); clearAuth(); goToPath('/') }
+    catch (e) { flash(e.message || 'Delete failed'); setDeleting(false) }
+  }
+
   return (
     <div>
       <SHead title="Account Details" />
       <div className="max-w-md flex flex-col gap-5">
-        <SField label="Email Address" type="email" placeholder="Enter your email" defaultValue={creator?.email || ''} />
-        <SField label="Password" type="password" placeholder="••••••••" defaultValue="" />
-        <div className="flex items-center justify-between pt-1">
-          <label className="flex cursor-pointer items-center gap-2 text-[13px] text-white/55" style={{ fontFamily: FONT }}>
-            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="h-4 w-4 accent-violet-500" />
-            Remember for 30 days
-          </label>
-          <button type="button" className="text-[13px] font-medium" style={{ fontFamily: FONT, color: '#9C7CF0' }}>Forgot Password</button>
+        <SField label="Email Address" type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={save} disabled={saving} className="rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60" style={{ fontFamily: FONT, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}>
+            {saving ? 'Saving…' : 'Save Email'}
+          </button>
+          {msg && <span className="text-[13px] font-semibold" style={{ fontFamily: FONT, color: msg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{msg}</span>}
         </div>
+        <p className="text-[12px] text-white/40" style={{ fontFamily: FONT }}>You sign in with Instagram, so there's no password to manage here.</p>
       </div>
       <div className="mt-10 max-w-md rounded-2xl p-5" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.28)' }}>
         <div className="flex items-center gap-2 text-[15px] font-semibold" style={{ fontFamily: FONT, color: '#FB7185' }}>
@@ -317,8 +382,8 @@ function AccountPanel({ creator }) {
         <p className="mt-2 text-[13px] leading-relaxed text-white/55" style={{ fontFamily: FONT }}>
           Once you delete your account, there is no going back. Please be certain.
         </p>
-        <button type="button" className="mt-4 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-red-500/15" style={{ fontFamily: FONT, color: '#FB7185', border: '1px solid rgba(239,68,68,0.45)' }}>
-          Delete Account
+        <button type="button" onClick={del} disabled={deleting} className="mt-4 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-red-500/15 disabled:opacity-60" style={{ fontFamily: FONT, color: '#FB7185', border: '1px solid rgba(239,68,68,0.45)' }}>
+          {deleting ? 'Deleting…' : 'Delete Account'}
         </button>
       </div>
     </div>
@@ -386,8 +451,21 @@ function BillingPanel() {
   )
 }
 
-function NotificationsPanel() {
+function NotificationsPanel({ creator }) {
   const [prefs, setPrefs] = useState({ inquiries: true, weekly: true, product: false })
+  const [msg, setMsg] = useState('')
+  useEffect(() => {
+    const n = creator?.notifications
+    if (n) setPrefs({ inquiries: n.inquiries !== false, weekly: n.weekly !== false, product: !!n.product })
+  }, [creator])
+  // Persist on every toggle (optimistic — the switch flips instantly).
+  const update = async (key, v) => {
+    const next = { ...prefs, [key]: v }
+    setPrefs(next)
+    try { await updateProfile({ notifications: next }); setMsg('Saved ✓') }
+    catch { setMsg('Save failed') }
+    setTimeout(() => setMsg(''), 1800)
+  }
   const rows = [
     { key: 'inquiries', title: 'Brand Inquiries', desc: 'Get notified when a brand sends a message through your form.' },
     { key: 'weekly', title: 'Weekly Analytics Report', desc: 'A summary of your profile views and audience growth.' },
@@ -395,7 +473,10 @@ function NotificationsPanel() {
   ]
   return (
     <div>
-      <SHead title="Email Notification" />
+      <div className="flex items-center gap-3 mb-1">
+        <SHead title="Email Notification" />
+        {msg && <span className="text-[13px] font-semibold -mt-5" style={{ fontFamily: FONT, color: msg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{msg}</span>}
+      </div>
       <div className="flex flex-col divide-y" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
         {rows.map((r) => (
           <div key={r.key} className="flex items-center justify-between gap-6 py-4" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
@@ -403,7 +484,7 @@ function NotificationsPanel() {
               <div className="text-white text-[15px] font-semibold" style={{ fontFamily: FONT }}>{r.title}</div>
               <div className="mt-1 text-white/50 text-[12px] leading-relaxed" style={{ fontFamily: FONT }}>{r.desc}</div>
             </div>
-            <Toggle on={prefs[r.key]} onChange={(v) => setPrefs((s) => ({ ...s, [r.key]: v }))} />
+            <Toggle on={prefs[r.key]} onChange={(v) => update(r.key, v)} />
           </div>
         ))}
       </div>
@@ -446,32 +527,10 @@ function SettingsView({ creator }) {
           {tab === 'account' && <AccountPanel creator={creator} />}
           {tab === 'platforms' && <PlatformsPanel creator={creator} />}
           {tab === 'billing' && <BillingPanel />}
-          {tab === 'notifications' && <NotificationsPanel />}
+          {tab === 'notifications' && <NotificationsPanel creator={creator} />}
         </section>
       </div>
     </>
-  )
-}
-
-// ---- "Creator not found" state (no live card and you're not the owner) ----
-function NotFound({ username }) {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center text-center px-6 gap-6" style={{ background: '#05060f' }}>
-      <img src="/creasumelogo.png" alt="Creasume" className="h-10 w-auto" style={{ objectFit: 'contain' }} />
-      <div>
-        <h1 className="text-white font-bold text-2xl mb-2" style={{ fontFamily: FONT }}>Dashboard unavailable</h1>
-        <p className="text-white/55 text-[15px] max-w-sm" style={{ fontFamily: FONT }}>
-          We couldn't find a live Influence Card for <span className="text-white font-semibold">@{username}</span>. If this is you, sign in to set it up.
-        </p>
-      </div>
-      <a
-        href={loginUrl()}
-        className="inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-[15px] font-semibold text-white transition-opacity hover:opacity-95 no-underline"
-        style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#8B5CF6 0%, #EC4899 100%)' }}
-      >
-        {ICONS.igMark} Sign in
-      </a>
-    </div>
   )
 }
 
@@ -479,48 +538,55 @@ export default function InfluenceDashboard({ username }) {
   const [view, setView] = useState('dashboard')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [me, setMe] = useState(null)        // GET /creator/me → the VIEWER's account
+  const [me, setMe] = useState(null)        // GET /creator/me → the signed-in account
   const [pub, setPub] = useState(null)      // GET /public/:username → the URL creator
-  const [stats, setStats] = useState(null)  // GET /creator/dashboard-stats (owner only)
+  const [stats, setStats] = useState(null)  // GET /creator/dashboard-stats (signed in)
   const [inquiries, setInquiries] = useState([])
-  const [notFound, setNotFound] = useState(false)
+  const [showTour, setShowTour] = useState(false)
+  // Per-metric "show on Influence Card" toggles. key → boolean (default on).
+  const [visibility, setVisibility] = useState({})
+
+  // Targets the first-login tour spotlights.
+  const editNavRef = useRef(null)
+  const refreshRef = useRef(null)
+  const viewProfileRef = useRef(null)
+  const cardLinkRef = useRef(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
-    setNotFound(false)
     try {
+      // Local dev: auto-acquire a token for this creator if none exists, so
+      // Save / Fetch work without the manual sign-in step. No-op in production.
+      if (!isLoggedIn()) await ensureDevToken(username)
+
       // Display data is keyed by the username IN THE URL — visiting
       // /<username>/dashboard always shows that creator's dashboard.
       const pubRes = await fetchPublic(username).catch(() => null)
       setPub(pubRes)
+      // Seed the metric toggles from the saved visibility map.
+      setVisibility(pubRes?.creator?.metricVisibility || {})
 
-      // If a token is present, load the viewer's account so we can tell whether
-      // they OWN this dashboard (URL username === their username). Only the owner
-      // sees private data (inquiries) and the Edit / Settings tabs.
-      let viewer = null
+      // When signed in, also pull the creator's own account + private data
+      // (score breakdown, brand inquiries). The FULL dashboard always renders —
+      // Edit Profile and Settings are always available.
       if (isLoggedIn()) {
-        const meRes = await fetchMe().catch(() => null)
-        viewer = meRes?.creator || null
-      }
-      setMe(viewer)
-      const owner = Boolean(viewer && viewer.username === username)
-
-      if (owner) {
-        if (viewer.username) setStoredUsername(viewer.username)
-        const [statsRes, inqRes] = await Promise.all([
+        const [meRes, statsRes, inqRes] = await Promise.all([
+          fetchMe().catch(() => null),
           fetchDashboardStats().catch(() => null),
           fetchMyInquiries().catch(() => ({ inquiries: [] })),
         ])
+        const viewer = meRes?.creator || null
+        setMe(viewer)
+        if (viewer?.metricVisibility) setVisibility(viewer.metricVisibility)
+        if (viewer?.username) setStoredUsername(viewer.username)
         setStats(statsRes?.stats || null)
         setInquiries((inqRes?.inquiries || []).map(mapInquiry))
       } else {
+        setMe(null)
         setStats(null)
         setInquiries([])
       }
-
-      // Nothing to render: no public card for this username AND not the owner.
-      if (!pubRes && !owner) setNotFound(true)
     } catch (e) {
       if (e.status === 401) clearAuth()
       setError(e.message || 'Failed to load dashboard')
@@ -531,6 +597,31 @@ export default function InfluenceDashboard({ username }) {
 
   useEffect(() => { load() }, [load])
 
+  // Guided tour — currently shown on EVERY dashboard load (for testing),
+  // regardless of login. Mount-only so Refresh Stats doesn't re-trigger it.
+  // To revert to first-login-only, gate on isLoggedIn() + me?.username and the
+  // localStorage `creasume_tour_done:<username>` flag (see finishTour).
+  useEffect(() => {
+    setShowTour(true)
+  }, [])
+
+  const finishTour = () => {
+    setShowTour(false)
+    try {
+      if (me?.username) localStorage.setItem(`creasume_tour_done:${me.username}`, '1')
+    } catch { /* storage unavailable */ }
+  }
+
+  // Toggle a metric's visibility on the public card and persist it. Optimistic:
+  // flips locally, then saves the whole map via /creator/update.
+  const toggleMetric = (key, nextOn) => {
+    setVisibility((prev) => {
+      const next = { ...prev, [key]: nextOn }
+      if (isLoggedIn()) updateProfile({ metricVisibility: next }).catch(() => {})
+      return next
+    })
+  }
+
   if (loading && !pub && !me) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: '#05060f' }}>
@@ -540,33 +631,48 @@ export default function InfluenceDashboard({ username }) {
     )
   }
 
-  if (notFound) return <NotFound username={username} />
-
   // ---- Derive the view models from the live payloads ----
-  const isOwner = Boolean(me && me.username === username)
-  // Owner edits → use their authed record; otherwise the public creator doc.
-  const creator = isOwner ? me : (pub?.creator || {})
+  const loggedIn = isLoggedIn()
+  // Prefer the signed-in creator's own record; else the public creator doc.
+  const creator = me || pub?.creator || {}
   const handle = username || creator.username || ''
   const s = pub?.stats || {}
-  // Score breakdown comes from the public payload (any username) or the owner's
-  // authed dashboard-stats — same shape either way.
+  // Score breakdown from the public payload (any username) or the signed-in
+  // creator's authed dashboard-stats — same shape either way.
   const score = pub?.score || stats?.score || null
   const firstName = (creator.name || handle || 'Creator').split(' ')[0]
+  // Admin-managed badges, same rule as the public card: a Founding Creator is
+  // always verified.
+  const isFounding = !!creator.isFoundingCreator
+  const isVerified = !!(creator.isVerified || creator.isFoundingCreator)
   const cardUrl = `creasume.com/${handle}`
   const fc0 = (v) => formatCount(v) ?? '0'
 
   const inquiryCount =
     stats?.totalInquiries ??
     score?.components?.brandInquiries?.count ??
-    (isOwner ? inquiries.length : 0)
+    inquiries.length
   const profileViews = stats?.profileViews ?? pub?.creator?.profileViews ?? score?.components?.cardViews?.count
 
+  // Extra metrics that the public Influence Card shows, surfaced here too.
+  const topCity = pub?.demographics?.city?.[0]?.key || null
+  const brandDeals = Array.isArray(pub?.collaborations) ? pub.collaborations.length : 0
+  const creasumeScore = score?.score != null ? score.score : (s.creasumeScore != null ? s.creasumeScore : 0)
+
+  // All the cards shown on the Influence Card (hero pills + metric grid), plus
+  // the dashboard-only Profile Views / Brand Inquiries.
   const STATS = [
-    { label: 'Followers', value: fc0(s.followersCount), sub: 'Total Audience', icon: 'followers' },
-    { label: 'Profile Views', value: fc0(profileViews), sub: 'Total Views', icon: 'eye' },
-    { label: 'Media Count', value: fc0(s.mediaCount), sub: 'Total Posts', icon: 'camera' },
-    { label: 'Avg. Engagement', value: s.engagementRate != null ? `${s.engagementRate}%` : '0%', sub: 'Engagement Rate', icon: 'chart' },
-    { label: 'Brand Inquiries', value: String(inquiryCount), sub: 'Total Received', icon: 'inbox' },
+    { metricKey: 'followers', label: 'Followers', value: fc0(s.followersCount), sub: 'Total Audience', icon: 'followers' },
+    { metricKey: 'engagement', label: 'Engagement Rate', value: s.engagementRate != null ? `${s.engagementRate}%` : '0%', sub: 'Avg. Engagement', icon: 'chart' },
+    { metricKey: 'views', label: 'Total Views', value: fc0(s.views), sub: 'Last 30 Days', icon: 'eye' },
+    { metricKey: 'reach', label: 'Reach', value: fc0(s.reach), sub: 'Last 30 Days', icon: 'trendUp' },
+    { metricKey: 'posts', label: 'Total Posts', value: fc0(s.mediaCount), sub: 'Media Count', icon: 'camera' },
+    { metricKey: 'impressions', label: 'Impressions', value: fc0(s.impressions), sub: 'Total Impressions', icon: 'share' },
+    { metricKey: 'creasumeScore', label: 'Creasume Score', value: String(creasumeScore), sub: 'Credibility / 100', icon: 'sparkle' },
+    { metricKey: 'brandDeals', label: 'Brand Deals', value: String(brandDeals), sub: 'Collaborations', icon: 'handshake' },
+    { metricKey: 'topCity', label: 'Top City', value: topCity ? shortenLocation(topCity) : '—', sub: 'Top Audience', icon: 'pin', small: true },
+    { metricKey: 'profileViews', label: 'Profile Views', value: fc0(profileViews), sub: 'Card Views', icon: 'eye' },
+    { metricKey: 'brandInquiries', label: 'Brand Inquiries', value: String(inquiryCount), sub: 'Total Received', icon: 'inbox' },
   ]
 
   const creasume = buildCreasume(score)
@@ -580,11 +686,19 @@ export default function InfluenceDashboard({ username }) {
   const otherLinks = (Array.isArray(creator.socialLinks) ? creator.socialLinks : [])
     .filter((l) => l && l.platform && l.url && l.platform.toLowerCase() !== 'instagram')
 
-  const recentInquiries = isOwner ? inquiries.slice(0, 4) : []
-  const navItems = isOwner ? NAV : NAV.filter((n) => n.key === 'dashboard')
+  const recentInquiries = inquiries.slice(0, 4)
+  const navItems = NAV
+
+  const tourSteps = [
+    { ref: editNavRef, title: 'Customize Your Profile', desc: 'Add your custom packages, previous collaborations, and personal branding.' },
+    { ref: refreshRef, title: 'Real-time Analytics', desc: 'Sync your latest Instagram metrics with one click to keep your card up-to-date.' },
+    { ref: viewProfileRef, title: 'Preview Your Card', desc: 'See exactly what brands will see when they visit your public link.' },
+    { ref: cardLinkRef, title: 'Share With Brands', desc: 'Copy your unique link and use it in your bio or brand outreach emails.' },
+  ]
 
   return (
     <div className="relative min-h-screen text-white" style={{ background: '#05060f' }}>
+      {showTour && view === 'dashboard' && <DashboardTour steps={tourSteps} onDone={finishTour} />}
       <div className="flex min-h-screen">
         {/* ===== Sidebar ===== */}
         <aside
@@ -600,6 +714,7 @@ export default function InfluenceDashboard({ username }) {
               return (
                 <button
                   key={n.key}
+                  ref={n.key === 'edit' ? editNavRef : undefined}
                   type="button"
                   onClick={() => setView(n.key)}
                   className="flex items-center gap-3 rounded-xl px-4 py-3 text-left text-[15px] font-medium transition-colors"
@@ -616,16 +731,19 @@ export default function InfluenceDashboard({ username }) {
             })}
           </nav>
 
-          {/* Log out (owner) / Sign in (viewer) — pinned to the bottom */}
+          {/* Log out (signed in) / Sign in — pinned to the bottom */}
           <div className="mt-auto p-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-            {isOwner ? (
+            {loggedIn ? (
               <button
                 type="button"
-                onClick={() => { clearAuth(); goToPath('/') }}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 w-full text-left text-[15px] font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+                // Clear the stored token/username, then do a FULL reload to the
+                // home page so all in-memory creator state is wiped and the local
+                // dev auto-token can't silently sign the user back in.
+                onClick={() => { clearAuth(); window.location.href = '/' }}
+                className="flex items-center gap-3 rounded-xl px-4 py-3 w-full text-left text-[15px] font-medium text-white/70 hover:text-white hover:bg-red-500/10 transition-colors"
                 style={{ fontFamily: FONT }}
               >
-                <span className="text-white/55">{ICONS.logout}</span>
+                <span className="text-white/60">{ICONS.logout}</span>
                 Log out
               </button>
             ) : (
@@ -651,17 +769,43 @@ export default function InfluenceDashboard({ username }) {
             style={{ background: 'transparent', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
           >
             <div>
-              <h1 className="font-bold leading-none mb-2" style={{ fontFamily: FONT, fontSize: 'clamp(20px, 2.4vw, 28px)' }}>
-                {isOwner ? `Welcome back, ${firstName}!` : `${creator.name || `@${handle}`}`}
-              </h1>
+              <div className="flex items-center gap-2.5 mb-2 flex-wrap">
+                <h1 className="font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(20px, 2.4vw, 28px)' }}>
+                  Welcome back, {firstName}!
+                </h1>
+                {/* Verified tick — blue seal with a white check (admin-managed). */}
+                {isVerified && (
+                  <span title="Verified" className="inline-flex shrink-0 items-center justify-center" style={{ width: 22, height: 22 }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))' }}>
+                      <circle cx="12" cy="12" r="10" fill="#3B82F6" />
+                      <path d="M7.8 12.4l2.6 2.6 5.4-5.8" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                )}
+                {/* Founding Creator — gold pill (admin-managed). */}
+                {isFounding && (
+                  <span
+                    title="Founding Creator"
+                    className="inline-flex shrink-0 items-center rounded-full text-xs font-bold whitespace-nowrap px-3 py-1"
+                    style={{
+                      fontFamily: FONT,
+                      color: '#F5D98B',
+                      background: 'rgba(0,0,0,0.35)',
+                      border: '1px solid rgba(212,175,55,0.6)',
+                      boxShadow: '0 0 12px rgba(212,175,55,0.25)',
+                    }}
+                  >
+                    ★ Founding Creator
+                  </span>
+                )}
+              </div>
               <p className="text-white/65 text-base" style={{ fontFamily: FONT }}>
-                {isOwner
-                  ? "Here's what's happening with your creator business today."
-                  : `Viewing @${handle}'s public dashboard.`}
+                Here's what's happening with your creator business today.
               </p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
               <button
+                ref={refreshRef}
                 type="button"
                 onClick={load}
                 className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium hover:bg-white/5 transition-colors disabled:opacity-50"
@@ -671,6 +815,7 @@ export default function InfluenceDashboard({ username }) {
                 {ICONS.refresh} {loading ? 'Refreshing…' : 'Refresh Stats'}
               </button>
               <a
+                ref={viewProfileRef}
                 href={`/${handle}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -695,13 +840,21 @@ export default function InfluenceDashboard({ username }) {
                 <div className="text-white font-semibold text-xl mb-1.5" style={{ fontFamily: FONT }}>Your Influence Card Link</div>
                 <div className="text-white/55 text-base" style={{ fontFamily: FONT }}>Share this with brands instead of a PDF media kit.</div>
               </div>
-              <CardLinkPill url={cardUrl} />
+              <CardLinkPill ref={cardLinkRef} url={cardUrl} />
             </div>
 
-            {/* Stat row */}
-            <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {/* Stat row — flex-wrap + justify-center so the leftover last row
+                is centered instead of jammed to the left. Widths match a
+                2 / 3 / 4-per-row grid at each breakpoint. */}
+            <section className="flex flex-wrap justify-center gap-3.5">
               {STATS.map((st) => (
-                <StatCard key={st.label} {...st} />
+                <div key={st.label} className="w-[calc(50%-7px)] sm:w-[calc(33.333%-10px)] lg:w-[calc(25%-11px)]">
+                  <StatCard
+                    {...st}
+                    on={visibility[st.metricKey] !== false}
+                    onToggle={loggedIn ? (nextOn) => toggleMetric(st.metricKey, nextOn) : undefined}
+                  />
+                </div>
               ))}
             </section>
 
@@ -782,8 +935,7 @@ export default function InfluenceDashboard({ username }) {
               </div>
             </section>
 
-            {/* Recent brand inquiries — private, owner only */}
-            {isOwner && (
+            {/* Recent brand inquiries */}
             <div className="rounded-2xl p-6" style={PANEL}>
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-white font-semibold text-lg" style={{ fontFamily: FONT }}>Recent Brand Inquiries</h3>
@@ -821,7 +973,6 @@ export default function InfluenceDashboard({ username }) {
                 </div>
               )}
             </div>
-            )}
           </div>
           </>
           )}

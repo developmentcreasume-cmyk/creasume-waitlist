@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components -- context module intentionally exports the provider component and its hook together */
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { CREATOR } from './influenceData.js'
 import { fetchInfluenceData, mapInfluenceData } from '../../services/influenceApi.js'
 
@@ -12,7 +12,7 @@ const DEFAULTS = {
   GROWTH: [], MONTHS: [], ENGAGEMENT_BARS: [], AGE_GROUPS: [], TOP_LOCATIONS: [],
   TOP_COUNTRIES: [], GENDER_SPLIT: null, SOCIALS: [], CAMPAIGNS: [],
   BRAND_SUMMARY: [], BRAND_DEALS: [], PACKAGES: [], PHOTOS: [], TOP_POSTS: [],
-  FEATURED: {},
+  FEATURED: {}, THEME: null,
 }
 
 const InfluenceContext = createContext({ ...DEFAULTS, ready: false })
@@ -28,6 +28,22 @@ export function InfluenceDataProvider({ children }) {
   // `ready` stays false until the FIRST fetch resolves, so the page can wait and
   // never flash the empty/placeholder hero before real data lands.
   const [ready, setReady] = useState(false)
+  // Live-preview overrides: when the card is loaded inside the dashboard's Edit
+  // Profile preview iframe (`?preview=…`), the editor postMessages the CURRENT
+  // (unsaved) edits and we apply them on top of the fetched data so the card
+  // updates as the creator types / picks a colour, with no save needed.
+  const [preview, setPreview] = useState(null)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (!new URLSearchParams(window.location.search).has('preview')) return
+    const onMsg = (e) => {
+      if (e.data && e.data.source === 'creasume-edit') setPreview(e.data.payload)
+    }
+    window.addEventListener('message', onMsg)
+    // Tell the editor we're mounted so it sends the current edit state now.
+    try { window.parent?.postMessage({ source: 'creasume-preview-ready' }, '*') } catch { /* cross-origin */ }
+    return () => window.removeEventListener('message', onMsg)
+  }, [])
 
   useEffect(() => {
     let alive = true
@@ -53,5 +69,32 @@ export function InfluenceDataProvider({ children }) {
     }
   }, [])
 
-  return <InfluenceContext.Provider value={{ ...value, ready }}>{children}</InfluenceContext.Provider>
+  // Merge the live-preview overrides (theme colour + profile text) onto the data.
+  const merged = useMemo(() => {
+    if (!preview) return value
+    const next = { ...value }
+    const t = preview.theme
+    if (t && t.primary) {
+      const secondary = t.secondary || t.primary
+      next.THEME = {
+        primary: t.primary,
+        secondary,
+        grad: `linear-gradient(90deg, ${t.primary} 0%, ${secondary} 100%)`,
+        bg: t.bg || null,
+        font: t.font || null,
+      }
+    }
+    const p = preview.profile
+    if (p) {
+      next.CREATOR = {
+        ...value.CREATOR,
+        name: p.name || value.CREATOR.name,
+        bio: p.bio || value.CREATOR.bio,
+        niche: p.niche || value.CREATOR.niche,
+      }
+    }
+    return next
+  }, [value, preview])
+
+  return <InfluenceContext.Provider value={{ ...merged, ready }}>{children}</InfluenceContext.Provider>
 }

@@ -466,7 +466,7 @@ export default function ProfileHero() {
           >
             <div
               className="rounded-full relative"
-              style={{ width: 140, height: 140, padding: 3, background: 'linear-gradient(135deg, #8B5CF6 0%, #C04DCC 50%, #EC4899 100%)' }}
+              style={{ width: 140, height: 140, padding: 3, background: 'var(--theme-grad, linear-gradient(135deg, #8B5CF6 0%, #C04DCC 50%, #EC4899 100%))' }}
             >
               <div
                 className="w-full h-full rounded-full flex items-center justify-center overflow-hidden"
@@ -523,7 +523,7 @@ export default function ProfileHero() {
                   around a dark interior, with a warm gold glow. */}
               {CREATOR.isFoundingCreator && (
                 <span
-                  className="inline-flex items-center justify-center rounded-full text-xs md:text-sm font-bold whitespace-nowrap order-first self-center lg:order-none lg:self-auto"
+                  className="founding-badge inline-flex items-center justify-center rounded-full text-xs md:text-sm font-bold whitespace-nowrap order-first self-center lg:order-none lg:self-auto"
                   style={{
                     fontFamily: FONT,
                     color: '#F6E3A8',
