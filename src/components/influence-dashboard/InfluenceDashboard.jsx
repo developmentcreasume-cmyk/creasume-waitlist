@@ -588,8 +588,14 @@ export default function InfluenceDashboard({ username }) {
         setInquiries([])
       }
     } catch (e) {
-      if (e.status === 401) clearAuth()
-      setError(e.message || 'Failed to load dashboard')
+      // A 401 just means we're signed out (token cleared / expired). That's an
+      // expected state — the sidebar shows "Sign in to manage", so don't surface
+      // a scary raw "No token" / "Not authorized" banner. Only show real errors.
+      if (e.status === 401) {
+        clearAuth()
+      } else {
+        setError(e.message || 'Failed to load dashboard')
+      }
     } finally {
       setLoading(false)
     }
