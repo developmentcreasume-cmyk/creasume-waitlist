@@ -21,6 +21,7 @@ import {
   createCollaboration,
   deleteCollaboration,
   fetchCollabMetrics,
+  facebookLoginUrl,
 } from '../../services/dashboardApi.js'
 
 const TABS = ['Profile', 'Portfolio', 'Packages', 'Design']
@@ -68,6 +69,8 @@ const I = {
   swap: (<svg {...ic} width="13" height="13"><path d="M7 10l-3 3 3 3M4 13h11M17 14l3-3-3-3M20 11H9" /></svg>),
   image: (<svg {...ic} width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.8" /><path d="m21 15-5-5L5 21" /></svg>),
   fetch: (<svg {...ic} width="14" height="14"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 4v4h-4" /></svg>),
+  info: (<svg {...ic} width="15" height="15"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>),
+  fb: (<svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.25-1.5 1.55-1.5H17V3.6c-.3-.04-1.3-.13-2.46-.13-2.43 0-4.1 1.49-4.1 4.22v2.2H7.7V13h2.74v8h3.06z" /></svg>),
 }
 
 // ---- Reusable controls ----
@@ -234,10 +237,19 @@ function ProfilePanel({ profile, setProfile, socials, setSocials, username, avat
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <Field label="Display Name"><TextInput value={profile.name} onChange={(e) => set('name', e.target.value)} placeholder="Your name" /></Field>
           <Field label="Username">
-            <div className="flex items-stretch rounded-xl overflow-hidden" style={inputStyle}>
-              <span className="grid place-items-center px-3 text-white/45 text-[13px] border-r border-white/10" style={{ fontFamily: MONO }}>creasume.com/</span>
-              <input value={username} readOnly className="flex-1 min-w-0 bg-transparent px-3 text-white/70 text-[15px] outline-none" style={{ fontFamily: FONT }} />
+            <div className="flex items-stretch h-12 rounded-xl overflow-hidden" style={inputStyle}>
+              <span className="flex items-center px-3 text-white/45 text-[13px] border-r border-white/10 shrink-0 whitespace-nowrap" style={{ fontFamily: MONO }}>creasume.com/</span>
+              <input
+                value={username}
+                readOnly
+                title="Your username is synced from your connected Instagram account"
+                className="flex-1 min-w-0 bg-transparent px-3 text-white/70 text-[15px] outline-none cursor-not-allowed"
+                style={{ fontFamily: FONT }}
+              />
             </div>
+            <p className="mt-1.5 text-white/35 text-[12px]" style={{ fontFamily: FONT }}>
+              Synced from your connected Instagram account.
+            </p>
           </Field>
           <div className="md:col-span-2">
             <Field label="Bio">
@@ -284,7 +296,9 @@ const EMPTY_COLLAB = { link: '', brand: '', overview: '', category: '', url: '',
 function PortfolioPanel({ collabs, onAdd, onRemove }) {
   const [form, setForm] = useState(EMPTY_COLLAB)
   const [busy, setBusy] = useState(false)
-  const [fetched, setFetched] = useState(null)   // metrics from the Fetch button
+  const [fetched, setFetched] = useState(null)   // SAVED metrics used by Add entry
+  const [draft, setDraft] = useState(null)        // editable copy (inputs bind here)
+  const [metricsSaved, setMetricsSaved] = useState(false)
   const [fetching, setFetching] = useState(false)
   const [fetchErr, setFetchErr] = useState('')
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
@@ -329,6 +343,8 @@ function PortfolioPanel({ collabs, onAdd, onRemove }) {
       // Pull metrics + thumbnail only. Campaign overview is written manually,
       // so we never auto-fill it from the post caption.
       setFetched(post)
+      setDraft(post)            // editable copy
+      setMetricsSaved(true)     // freshly fetched values are already "saved"
       // Auto-fill the "Link" field with the resolved Instagram post URL.
       const postUrl = post?.instagramUrl || post?.permalink || url
       if (postUrl) set('url', postUrl)
@@ -346,19 +362,29 @@ function PortfolioPanel({ collabs, onAdd, onRemove }) {
       await onAdd(form, fetched)
       setForm(EMPTY_COLLAB)
       setFetched(null)
+      setDraft(null)
+      setMetricsSaved(false)
       setFetchErr('')
     } finally {
       setBusy(false)
     }
   }
 
-  const metrics = fetched && [
-    ['Reach', fetched.reach],
-    ['Views', fetched.views],
-    ['Likes', fetched.likes],
-    ['Comments', fetched.comments],
-    ['ER', `${fetched.engagementRate || 0}%`],
-  ]
+  // Metrics become editable after a fetch — so the creator can correct numbers
+  // the organic insights miss (e.g. promoted/boosted reach & impressions). Edits
+  // go to `draft`; they only apply to the entry after Save (commits draft →
+  // fetched).
+  const METRIC_FIELDS = [['reach', 'Reach'], ['views', 'Views'], ['likes', 'Likes'], ['comments', 'Comments'], ['engagementRate', 'ER %']]
+  const setMetric = (k, v) => {
+    setDraft((d) => ({ ...d, [k]: v === '' ? '' : Number(v) }))
+    setMetricsSaved(false)
+  }
+  const metricsDirty = !!draft && !!fetched &&
+    METRIC_FIELDS.some(([k]) => Number(draft[k] || 0) !== Number(fetched[k] || 0))
+  const saveMetrics = () => {
+    setFetched((f) => ({ ...f, ...draft }))
+    setMetricsSaved(true)
+  }
 
   return (
     <section>
@@ -378,20 +404,64 @@ function PortfolioPanel({ collabs, onAdd, onRemove }) {
             Must be one of your own posts — insights aren't available for other accounts.
           </p>
 
+          {/* Promoted-reel note + Meta (Facebook) connect. Shown only AFTER a
+              fetch — paid reach/impressions come through the Meta API (Facebook
+              login); before fetching there's nothing to act on. */}
+          {fetched && (
+          <div className="mb-4 rounded-xl p-3" style={{ background: 'rgba(24,119,242,0.07)', border: '1px solid rgba(24,119,242,0.32)' }}>
+            <div className="flex items-start gap-2.5">
+              <span className="shrink-0 mt-0.5 text-[#4D9BFF]">{I.info}</span>
+              <div className="min-w-0">
+                <p className="text-white/75 text-[12.5px] leading-relaxed" style={{ fontFamily: FONT }}>
+                  <span className="font-semibold text-white">Promoted or boosted reel?</span> Exact paid reach &amp; impressions only come from Meta. Connect Facebook (the same Meta login behind your Instagram) so we can pull the real promoted numbers — otherwise only organic insights show, which you can still edit by hand below.
+                </p>
+                <a href={facebookLoginUrl()} className="mt-2.5 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[12.5px] font-semibold text-white no-underline transition-opacity hover:opacity-90" style={{ fontFamily: FONT, background: '#1877F2' }}>
+                  {I.fb} Connect Facebook (Meta)
+                </a>
+              </div>
+            </div>
+          </div>
+          )}
+
           {fetchErr && (
             <p className="mb-4 text-[12px] leading-relaxed" style={{ fontFamily: FONT, color: '#FB7185' }}>{fetchErr}</p>
           )}
           {fetched && (
-            <div className="mb-5 rounded-xl p-3 flex items-center gap-3" style={{ background: 'rgba(77,224,176,0.06)', border: '1px solid rgba(77,224,176,0.3)' }}>
-              {fetched.postImage && <img src={fetched.postImage} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />}
-              <div className="min-w-0">
-                <div className="text-[#4DE0B0] text-[12px] font-semibold mb-1" style={{ fontFamily: MONO }}>Post metrics fetched ✓</div>
-                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-white/65 text-[12px]" style={{ fontFamily: MONO }}>
-                  {metrics.map(([k, v]) => (
-                    <span key={k}>{k}: <span className="text-white">{v}</span></span>
-                  ))}
+            <div className="mb-5 rounded-xl p-3.5" style={{ background: 'rgba(77,224,176,0.06)', border: '1px solid rgba(77,224,176,0.3)' }}>
+              <div className="flex items-center gap-3 mb-3">
+                {fetched.postImage && <img src={fetched.postImage} alt="" className="w-11 h-11 rounded-lg object-cover shrink-0" />}
+                <div className="min-w-0 flex-1">
+                  <div className="text-[#4DE0B0] text-[12px] font-semibold" style={{ fontFamily: MONO }}>Post metrics fetched ✓</div>
+                  <div className="text-white/45 text-[11px] leading-snug" style={{ fontFamily: FONT }}>Edit any value if it's off — e.g. promoted reach.</div>
                 </div>
+                {/* Save the edited metrics — only saved values are added to the card. */}
+                <button
+                  type="button"
+                  onClick={saveMetrics}
+                  disabled={!metricsDirty}
+                  title="Save edited metrics"
+                  className="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold transition-colors disabled:cursor-default"
+                  style={{
+                    fontFamily: FONT,
+                    color: metricsDirty ? '#fff' : '#4DE0B0',
+                    background: metricsDirty ? 'rgba(255,255,255,0.1)' : 'rgba(77,224,176,0.14)',
+                    border: `1px solid ${metricsDirty ? 'rgba(255,255,255,0.18)' : 'rgba(77,224,176,0.4)'}`,
+                  }}
+                >
+                  {I.save} {metricsDirty ? 'Save' : (metricsSaved ? 'Saved' : 'Save')}
+                </button>
               </div>
+              <div className="grid grid-cols-3 gap-2">
+                {METRIC_FIELDS.map(([k, label]) => (
+                  <label key={k} className="flex flex-col gap-1">
+                    <span className="text-white/45 text-[10px] tracking-wide uppercase" style={{ fontFamily: MONO }}>{label}</span>
+                    <input type="number" min="0" value={draft?.[k] ?? ''} onChange={(e) => setMetric(k, e.target.value)} className="rounded-lg px-2.5 h-9 text-white text-[13px] outline-none focus:border-white/30 transition-colors" style={inputStyle} />
+                  </label>
+                ))}
+              </div>
+              {metricsDirty && (
+                <p className="mt-2 text-[11px]" style={{ fontFamily: FONT, color: '#F4C13B' }}>Unsaved edits — click Save to apply them to the collab.</p>
+              )}
             </div>
           )}
 
@@ -687,9 +757,17 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
   const tabsRef = useRef(null)
   const deviceRef = useRef(null)
   const saveRef = useRef(null)
-  // Shown on every editor open (for testing). To show once, gate on a
-  // localStorage flag like `creasume_edit_tour_done`.
-  useEffect(() => { setShowTour(true) }, [])
+  // Shown ONCE ever (first time the editor is opened). The flag persists in
+  // localStorage across sessions on this browser.
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem('creasume_tour_edit')) setShowTour(true)
+    } catch { /* storage unavailable → just don't auto-show */ }
+  }, [])
+  const finishEditTour = () => {
+    setShowTour(false)
+    try { localStorage.setItem('creasume_tour_edit', '1') } catch { /* ignore */ }
+  }
   const tourSteps = [
     { ref: tabsRef, title: 'Navigate Sections', desc: 'Switch between profile details, your portfolio, and custom packages.' },
     { ref: deviceRef, title: 'Toggle Preview', desc: 'Check how your card looks on mobile and desktop instantly.' },
@@ -821,13 +899,14 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
         mediaType: fetched.mediaType,
         postImage: fetched.postImage,
         postCaption: fetched.postCaption,
-        reach: fetched.reach,
-        views: fetched.views,
-        likes: fetched.likes,
-        comments: fetched.comments,
-        saves: fetched.saves,
-        shares: fetched.shares,
-        engagementRate: fetched.engagementRate,
+        // Coerce — these may have been hand-edited (string inputs) before save.
+        reach: Number(fetched.reach) || 0,
+        views: Number(fetched.views) || 0,
+        likes: Number(fetched.likes) || 0,
+        comments: Number(fetched.comments) || 0,
+        saves: Number(fetched.saves) || 0,
+        shares: Number(fetched.shares) || 0,
+        engagementRate: Number(fetched.engagementRate) || 0,
         metricsFetchedAt: fetched.metricsFetchedAt,
       })
     }
@@ -850,7 +929,7 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
 
   return (
     <>
-      {showTour && <DashboardTour steps={tourSteps} onDone={() => setShowTour(false)} />}
+      {showTour && <DashboardTour steps={tourSteps} onDone={finishEditTour} />}
       {/* Header: title + tabs + actions */}
       <header className="px-6 md:px-10 py-4 flex flex-wrap items-center gap-4 justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-5">

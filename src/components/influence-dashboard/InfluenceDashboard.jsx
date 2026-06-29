@@ -22,6 +22,7 @@ import {
   ensureDevToken,
   isLoggedIn,
   loginUrl,
+  facebookLoginUrl,
   clearAuth,
   setStoredUsername,
   inquiriesPath,
@@ -67,6 +68,7 @@ const ICONS = {
   info: (<svg {...ic} width="15" height="15"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>),
   trendUp: (<svg {...ic} width="14" height="14"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" /></svg>),
   pin: (<svg {...ic}><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10Z" /><circle cx="12" cy="11" r="2.5" /></svg>),
+  fb: (<svg width="16" height="16" viewBox="0 0 24 24" fill="#1877F2"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.25-1.5 1.55-1.5H17V3.6c-.3-.04-1.3-.13-2.46-.13-2.43 0-4.1 1.49-4.1 4.22v2.2H7.7V13h2.74v8h3.06z" /></svg>),
 }
 
 // Dark URL pill with a copy button (shows a check on success).
@@ -216,6 +218,7 @@ function ScoreRing({ score, size = 168 }) {
 
 function CreasumeStats({ data }) {
   const c = data
+  const [showInfo, setShowInfo] = useState(false)
   const pct = c.benchmark ? Math.min(100, Math.round((c.totalPoints / c.benchmark) * 100)) : 0
   return (
     <div className="rounded-2xl p-6 md:p-8" style={PANEL}>
@@ -230,6 +233,7 @@ function CreasumeStats({ data }) {
         </div>
         <button
           type="button"
+          onClick={() => setShowInfo(true)}
           className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium text-white/80 transition-colors hover:bg-white/5 shrink-0"
           style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.14)' }}
         >
@@ -290,6 +294,68 @@ function CreasumeStats({ data }) {
           </div>
         </div>
       </div>
+
+      {/* "Learn more" — explains how the Creasume Score is built. */}
+      {showInfo && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.7)' }}
+          onClick={() => setShowInfo(false)}
+        >
+          <div
+            className="w-full max-w-[520px] rounded-2xl p-7 max-h-[85vh] overflow-y-auto"
+            style={{ background: '#15171f', border: '1px solid rgba(255,255,255,0.1)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white" style={{ fontFamily: FONT }}>How your Creasume Score works</h3>
+              <button
+                type="button"
+                onClick={() => setShowInfo(false)}
+                aria-label="Close"
+                className="text-white/55 hover:text-white text-2xl leading-none bg-transparent border-0 cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-white/70 text-[14px] leading-relaxed mb-5" style={{ fontFamily: FONT }}>
+              Your Creasume Score (0–100) is a credibility signal brands trust. It's earned from real
+              activity on Creasume — a complete profile, connected Instagram analytics, the brand
+              inquiries you receive, and how reliably you respond. Keep your card updated and engage
+              with brands to grow it.
+            </p>
+            {Array.isArray(c.metrics) && c.metrics.length > 0 && (
+              <div className="flex flex-col gap-2.5 mb-5">
+                {c.metrics.map((m) => (
+                  <div
+                    key={m.key}
+                    className="flex items-center justify-between rounded-xl px-4 py-3"
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  >
+                    <span className="text-white/80 text-[14px]" style={{ fontFamily: FONT }}>{m.label}</span>
+                    <span className="text-[13px] font-semibold" style={{ fontFamily: MONO, color: m.color }}>{m.pts}</span>
+                  </div>
+                ))}
+                <div
+                  className="flex items-center justify-between rounded-xl px-4 py-3"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  <span className="text-white/80 text-[14px] font-semibold" style={{ fontFamily: FONT }}>Total</span>
+                  <span className="text-[13px] font-bold text-white" style={{ fontFamily: MONO }}>{c.totalPoints} / {c.benchmark}</span>
+                </div>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowInfo(false)}
+              className="w-full rounded-xl py-3 text-white font-semibold"
+              style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#8B5CF6 0%, #EC4899 100%)' }}
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -395,7 +461,7 @@ function PlatformsPanel({ creator }) {
   const igConnected = Boolean(creator?.instagramId || username)
   const rows = [
     { key: 'instagram', name: 'Instagram', handle: igConnected && username ? `@${username}` : 'Not connected', icon: 'igMark', connected: igConnected },
-    { key: 'facebook', name: 'Facebook', handle: 'Not connected', icon: 'fbMark', connected: false },
+    { key: 'facebook', name: 'Facebook', handle: creator?.facebookConnected ? 'Connected for Meta insights' : 'Not connected', icon: 'fbMark', connected: Boolean(creator?.facebookConnected) },
     { key: 'youtube', name: 'YouTube', handle: creator?.socials?.youtube || 'Not connected', icon: 'ytMark', connected: Boolean(creator?.socials?.youtube) },
   ]
   return (
@@ -414,7 +480,7 @@ function PlatformsPanel({ creator }) {
             {p.connected ? (
               <span className="rounded-lg px-4 py-2 text-[12px] font-semibold" style={{ fontFamily: FONT, color: '#4DE0B0', background: 'rgba(77,224,176,0.12)' }}>Connected</span>
             ) : (
-              <a href={loginUrl()} className="rounded-lg px-4 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-white/15 no-underline" style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.1)' }}>Connect</a>
+              <a href={p.key === 'facebook' ? facebookLoginUrl() : loginUrl()} className="rounded-lg px-4 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-white/15 no-underline" style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.1)' }}>Connect</a>
             )}
           </div>
         ))}
@@ -604,18 +670,18 @@ export default function InfluenceDashboard({ username }) {
 
   useEffect(() => { load() }, [load])
 
-  // Guided tour — currently shown on EVERY dashboard load (for testing),
-  // regardless of login. Mount-only so Refresh Stats doesn't re-trigger it.
-  // To revert to first-login-only, gate on isLoggedIn() + me?.username and the
-  // localStorage `creasume_tour_done:<username>` flag (see finishTour).
+  // Guided tour — shown ONCE ever (first visit to the dashboard). The flag in
+  // localStorage persists across logins/sessions on this browser.
   useEffect(() => {
-    setShowTour(true)
+    try {
+      if (!localStorage.getItem('creasume_tour_dashboard')) setShowTour(true)
+    } catch { /* storage unavailable → just don't auto-show */ }
   }, [])
 
   const finishTour = () => {
     setShowTour(false)
     try {
-      if (me?.username) localStorage.setItem(`creasume_tour_done:${me.username}`, '1')
+      localStorage.setItem('creasume_tour_dashboard', '1')
     } catch { /* storage unavailable */ }
   }
 
@@ -852,7 +918,7 @@ export default function InfluenceDashboard({ username }) {
           <>
           {/* Header band */}
           <header
-            className="px-5 sm:px-8 md:px-24 py-5 md:py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-5"
+            className="px-5 sm:px-8 md:px-24 pt-8 md:pt-12 pb-6 md:pb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-5"
             style={{ background: 'transparent', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
           >
             <div>
@@ -902,6 +968,13 @@ export default function InfluenceDashboard({ username }) {
                 {ICONS.refresh} {loading ? 'Refreshing…' : 'Refresh Stats'}
               </button>
               <a
+                href={facebookLoginUrl()}
+                className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium transition-colors no-underline hover:opacity-90"
+                style={{ fontFamily: FONT, color: '#fff', background: 'rgba(24,119,242,0.16)', border: '1px solid rgba(24,119,242,0.55)' }}
+              >
+                {ICONS.fb} Connect Facebook
+              </a>
+              <a
                 ref={viewProfileRef}
                 href={`/${handle}`}
                 target="_blank"
@@ -914,7 +987,7 @@ export default function InfluenceDashboard({ username }) {
             </div>
           </header>
 
-          <div className="px-5 sm:px-8 md:px-24 py-6 md:py-10 flex flex-col gap-6">
+          <div className="px-5 sm:px-8 md:px-24 py-8 md:py-12 flex flex-col gap-7">
             {error && (
               <div className="rounded-xl px-5 py-4 text-[14px]" style={{ fontFamily: FONT, color: '#FB7185', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
                 {error}
@@ -930,18 +1003,17 @@ export default function InfluenceDashboard({ username }) {
               <CardLinkPill ref={cardLinkRef} url={cardUrl} />
             </div>
 
-            {/* Stat row — flex-wrap + justify-center so the leftover last row
-                is centered instead of jammed to the left. Widths match a
-                2 / 3 / 4-per-row grid at each breakpoint. */}
-            <section className="flex flex-wrap justify-center gap-3.5">
+            {/* Stat grid — a real 2 / 3 / 4-per-row CSS grid so every card lines
+                up in clean columns and the leftover last row stays left-aligned
+                under the columns above (not centered/offset). */}
+            <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3.5">
               {STATS.map((st) => (
-                <div key={st.label} className="w-[calc(50%-7px)] sm:w-[calc(33.333%-10px)] lg:w-[calc(25%-11px)]">
-                  <StatCard
-                    {...st}
-                    on={visibility[st.metricKey] !== false}
-                    onToggle={loggedIn ? (nextOn) => toggleMetric(st.metricKey, nextOn) : undefined}
-                  />
-                </div>
+                <StatCard
+                  key={st.label}
+                  {...st}
+                  on={visibility[st.metricKey] !== false}
+                  onToggle={loggedIn ? (nextOn) => toggleMetric(st.metricKey, nextOn) : undefined}
+                />
               ))}
             </section>
 
@@ -953,8 +1025,7 @@ export default function InfluenceDashboard({ username }) {
               {/* Recent Instagram posts */}
               <div className="rounded-2xl p-6" style={PANEL}>
                 <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-white font-semibold text-lg" style={{ fontFamily: FONT }}>Recent Instagram Posts</h3>
-                  <a href={`/${handle}`} target="_blank" rel="noopener noreferrer" className="text-sm font-medium no-underline" style={{ fontFamily: FONT, color: '#9C7CF0' }}>View All</a>
+                  <h3 className="text-white font-semibold text-lg" style={{ fontFamily: FONT }}>Top Posts</h3>
                 </div>
                 <div
                   className="grid gap-x-4 sm:gap-x-12 gap-y-4 sm:gap-y-6"
@@ -985,11 +1056,11 @@ export default function InfluenceDashboard({ username }) {
                 <div className="rounded-2xl p-6" style={PANEL}>
                   <div className="flex items-center justify-between mb-5">
                     <h3 className="text-white font-semibold text-lg" style={{ fontFamily: FONT }}>Platforms</h3>
-                    <button type="button" onClick={() => setView('settings')} className="text-sm font-medium" style={{ fontFamily: FONT, color: '#9C7CF0' }}>Manage</button>
+                    <button type="button" onClick={() => setView('edit')} className="text-sm font-medium" style={{ fontFamily: FONT, color: '#9C7CF0' }}>Manage</button>
                   </div>
                   <div
                     className="flex items-center gap-3.5 rounded-xl px-4 py-4"
-                    style={{ background: 'linear-gradient(90deg, rgba(139,92,246,0.25) 0%, rgba(236,72,153,0.25) 100%)', border: '1px solid rgba(255,255,255,0.12)' }}
+                    style={{ background: 'linear-gradient(90deg, rgba(93,101,220,0.16) 0%, rgba(139,92,246,0.16) 100%)', border: '1px solid rgba(139,92,246,0.3)' }}
                   >
                     <span className="shrink-0">{ICONS.igMark}</span>
                     <div className="min-w-0 flex-1">

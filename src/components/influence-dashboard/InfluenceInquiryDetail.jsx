@@ -9,6 +9,7 @@ import {
   fetchMyInquiries,
   fetchMe,
   setInquiryStatus,
+  updateProfile,
   mapInquiry,
   isLoggedIn,
   loginUrl,
@@ -65,7 +66,7 @@ function SectionHeader({ icon, label, color }) {
 }
 
 // ===== Accept Collaboration modal =====
-function AcceptModal({ onClose, onSend, contact, sending }) {
+function AcceptModal({ onClose, onSend, contact, setContact, sending }) {
   const [message, setMessage] = useState(
     "Hi, I'd love to collaborate. You can reach me on Instagram.\nLooking forward to discussing details.",
   )
@@ -107,9 +108,24 @@ function AcceptModal({ onClose, onSend, contact, sending }) {
           className="rounded-xl px-5 py-4 mt-5"
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
         >
-          <p className="text-white font-bold text-[15px] mb-2" style={{ fontFamily: FONT }}>Preferred Contact:</p>
-          <p className="text-white/90 text-[15px]" style={{ fontFamily: FONT }}>Instagram: {contact.instagram}</p>
-          <p className="text-white/90 text-[15px]" style={{ fontFamily: FONT }}>Email: {contact.email}</p>
+          <p className="text-white font-bold text-[15px] mb-3" style={{ fontFamily: FONT }}>Preferred Contact:</p>
+          <label className="block text-white/55 text-[13px] mb-1.5" style={{ fontFamily: FONT }}>Instagram</label>
+          <input
+            value={contact.instagram}
+            onChange={(e) => setContact((c) => ({ ...c, instagram: e.target.value }))}
+            placeholder="@yourhandle"
+            className="w-full rounded-lg px-3.5 h-11 text-[15px] text-white/90 outline-none focus:border-white/25 transition-colors mb-3"
+            style={{ fontFamily: FONT, background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)' }}
+          />
+          <label className="block text-white/55 text-[13px] mb-1.5" style={{ fontFamily: FONT }}>Email</label>
+          <input
+            type="email"
+            value={contact.email}
+            onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))}
+            placeholder="you@email.com"
+            className="w-full rounded-lg px-3.5 h-11 text-[15px] text-white/90 outline-none focus:border-white/25 transition-colors"
+            style={{ fontFamily: FONT, background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)' }}
+          />
           <p className="text-white/45 text-[13px] mt-3 leading-snug" style={{ fontFamily: FONT }}>
             This contact information will be shared with the brand so you can continue the conversation outside.
           </p>
@@ -165,6 +181,11 @@ export default function InfluenceInquiryDetail({ username, id }) {
   const accept = async (/* message */) => {
     setSaving(true)
     try {
+      // Persist the (possibly edited) email back to the profile so it's saved
+      // for next time and shows on the card. Non-fatal if it fails.
+      if (contact.email) {
+        try { await updateProfile({ email: contact.email }) } catch { /* ignore */ }
+      }
       await setInquiryStatus(id, 'actioned')
       setStatus('ACCEPTED')
       setShowAccept(false)
@@ -395,7 +416,7 @@ export default function InfluenceInquiryDetail({ username, id }) {
         </div>
       </main>
 
-      {showAccept && <AcceptModal onClose={() => setShowAccept(false)} onSend={accept} contact={contact} sending={saving} />}
+      {showAccept && <AcceptModal onClose={() => setShowAccept(false)} onSend={accept} contact={contact} setContact={setContact} sending={saving} />}
     </div>
   )
 }

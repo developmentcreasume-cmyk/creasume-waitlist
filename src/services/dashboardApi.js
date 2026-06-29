@@ -43,6 +43,12 @@ export function loginUrl() {
   return `${API_BASE}/auth/instagram`
 }
 
+// Begin the Facebook connect flow (Facebook Page → linked Instagram Business
+// account). Requires the backend's Facebook OAuth route to be enabled.
+export function facebookLoginUrl() {
+  return `${API_BASE}/auth/facebook`
+}
+
 // Which dashboard we're on: the FIRST path segment (e.g. `/hetvi/dashboard` →
 // "hetvi"). Falls back to the logged-in creator's stored username.
 export function dashboardUsername() {
