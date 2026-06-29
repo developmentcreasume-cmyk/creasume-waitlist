@@ -158,7 +158,7 @@ function StatsGrid({ includeScore = false, onLearnMore }) {
             // Sequential deal: each card flies 350ms and lands before the next
             // is thrown, with a 120ms gap between throws (spec §2).
             transition={{ duration: 0.25, ease: 'easeOut', delay: dealing ? dealPos * 0.05 : 0 }}
-            whileHover={dealing && !isFlipped ? { y: -4 } : undefined}
+            whileHover={isFlipped ? undefined : { y: -6, scale: 1.05, transition: { duration: 0.2, ease: 'easeOut', delay: 0 } }}
             onClick={() => { if (source && (dealing || reduce)) setFlippedIdx(isFlipped ? null : i) }}
             className={`relative rounded-2xl ${source ? 'cursor-pointer' : ''}`}
             // Tiles with a details row get extra height (and every tile matches it

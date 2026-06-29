@@ -69,6 +69,7 @@ const ICONS = {
   trendUp: (<svg {...ic} width="14" height="14"><path d="M3 17l6-6 4 4 8-8M15 7h6v6" /></svg>),
   pin: (<svg {...ic}><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10Z" /><circle cx="12" cy="11" r="2.5" /></svg>),
   fb: (<svg width="16" height="16" viewBox="0 0 24 24" fill="#1877F2"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.25-1.5 1.55-1.5H17V3.6c-.3-.04-1.3-.13-2.46-.13-2.43 0-4.1 1.49-4.1 4.22v2.2H7.7V13h2.74v8h3.06z" /></svg>),
+  save: (<svg {...ic} width="15" height="15"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" /><path d="M17 21v-8H7v8M7 3v5h8" /></svg>),
 }
 
 // Dark URL pill with a copy button (shows a check on success).
@@ -258,11 +259,11 @@ function CreasumeStats({ data }) {
 
         {/* Breakdown */}
         <div className="flex-1 min-w-0 flex flex-col gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {c.metrics.map((m) => (
               <div
                 key={m.key}
-                className="relative rounded-2xl p-5"
+                className="relative rounded-2xl p-4 sm:p-5"
                 style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}
               >
                 <span style={{ color: m.color, opacity: 0.9 }}>{ICONS[m.icon]}</span>
@@ -569,8 +570,8 @@ function SettingsView({ creator }) {
       </header>
 
       <div className="px-5 sm:px-8 md:px-24 py-6 md:py-10 flex flex-col md:flex-row gap-6">
-        {/* Sub-nav */}
-        <nav className="flex md:flex-col gap-2 shrink-0 md:w-56">
+        {/* Sub-nav — horizontal scroll on phones, vertical list on desktop. */}
+        <nav className="flex md:flex-col gap-2 shrink-0 md:w-56 overflow-x-auto md:overflow-visible [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {SUBNAV.map((s) => {
             const active = tab === s.key
             return (
@@ -578,7 +579,7 @@ function SettingsView({ creator }) {
                 key={s.key}
                 type="button"
                 onClick={() => setTab(s.key)}
-                className="flex items-center gap-3 rounded-xl px-4 py-3 text-left text-[15px] font-medium transition-colors"
+                className="flex items-center gap-3 rounded-xl px-4 py-3 text-left text-[15px] font-medium transition-colors whitespace-nowrap shrink-0 md:shrink"
                 style={{ fontFamily: FONT, color: active ? '#fff' : 'rgba(255,255,255,0.55)', background: active ? 'rgba(255,255,255,0.07)' : 'transparent' }}
               >
                 <span className={active ? 'text-white' : 'text-white/45'}>{ICONS[s.icon]}</span>
@@ -603,6 +604,9 @@ function SettingsView({ creator }) {
 export default function InfluenceDashboard({ username }) {
   const [view, setView] = useState('dashboard')
   const [mobileNav, setMobileNav] = useState(false) // mobile menu open/closed
+  // Bumped by the mobile top-bar "Save" button to trigger EditProfileView's save
+  // (the save logic lives in that child, so we signal it via a counter prop).
+  const [editSaveSignal, setEditSaveSignal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [me, setMe] = useState(null)        // GET /creator/me → the signed-in account
@@ -853,26 +857,72 @@ export default function InfluenceDashboard({ username }) {
             style={{ background: 'rgba(10,12,30,0.96)', borderColor: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)' }}
           >
             <img src="/creasumelogo.png" alt="Creasume" className="h-7 w-auto" style={{ objectFit: 'contain' }} />
-            <button
-              type="button"
-              onClick={() => setMobileNav((o) => !o)}
-              aria-label="Menu"
-              aria-expanded={mobileNav}
-              className="grid place-items-center rounded-lg w-10 h-10 text-white"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {mobileNav ? <><path d="M18 6 6 18" /><path d="M6 6l12 12" /></> : <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>}
-              </svg>
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Save Changes — only in Edit Profile; triggers the editor's save */}
+              {view === 'edit' && (
+                <button
+                  type="button"
+                  onClick={() => setEditSaveSignal((s) => s + 1)}
+                  aria-label="Save Changes"
+                  title="Save Changes"
+                  className="grid place-items-center rounded-lg w-10 h-10 text-white shrink-0 transition-opacity hover:opacity-90"
+                  style={{ fontFamily: FONT, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}
+                >
+                  {ICONS.save}
+                </button>
+              )}
+              {/* Connect Facebook — lives by the menu bar on mobile */}
+              <a
+                href={facebookLoginUrl()}
+                aria-label="Connect Facebook"
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 h-10 text-[13px] font-semibold text-white no-underline transition-opacity hover:opacity-90"
+                style={{ fontFamily: FONT, background: 'rgba(24,119,242,0.18)', border: '1px solid rgba(24,119,242,0.55)' }}
+              >
+                {ICONS.fb} Connect
+              </a>
+              <button
+                type="button"
+                onClick={() => setMobileNav((o) => !o)}
+                aria-label="Menu"
+                aria-expanded={mobileNav}
+                className="grid place-items-center rounded-lg w-10 h-10 text-white shrink-0"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {mobileNav ? <><path d="M18 6 6 18" /><path d="M6 6l12 12" /></> : <><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></>}
+                </svg>
+              </button>
+            </div>
           </div>
 
-          {/* Mobile menu — nav items + sign in/out. Closes on selection. */}
-          {mobileNav && (
-            <div
-              className="md:hidden sticky top-[57px] z-20 flex flex-col gap-1 px-4 py-3 border-b"
-              style={{ background: 'rgba(10,12,30,0.98)', borderColor: 'rgba(255,255,255,0.08)' }}
-            >
+          {/* Mobile menu — slides in from the RIGHT as a drawer over a backdrop
+              (instead of dropping down from the top). Always mounted so the
+              slide/fade transitions run on both open and close. */}
+          <div
+            className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${mobileNav ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            style={{ background: 'rgba(0,0,0,0.55)' }}
+            onClick={() => setMobileNav(false)}
+            aria-hidden="true"
+          />
+          <aside
+            className={`md:hidden fixed top-0 right-0 z-50 h-full w-[82%] max-w-[320px] flex flex-col px-4 pt-4 pb-6 transition-transform duration-300 ease-out ${mobileNav ? 'translate-x-0' : 'translate-x-full'}`}
+            style={{ background: 'rgba(10,12,30,0.99)', borderLeft: '1px solid rgba(255,255,255,0.08)', boxShadow: '-20px 0 50px rgba(0,0,0,0.5)' }}
+          >
+            {/* Drawer header: logo + close */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              <img src="/creasumelogo.svg" alt="Creasume" className="h-7 w-auto" style={{ objectFit: 'contain' }} />
+              <button
+                type="button"
+                onClick={() => setMobileNav(false)}
+                aria-label="Close menu"
+                className="grid place-items-center rounded-lg w-9 h-9 text-white shrink-0"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-1">
               {navItems.map((n) => (
                 <button
                   key={n.key}
@@ -889,41 +939,42 @@ export default function InfluenceDashboard({ username }) {
                   {n.label}
                 </button>
               ))}
-              <div className="mt-1 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-                {loggedIn ? (
-                  <button
-                    type="button"
-                    onClick={() => { clearAuth(); window.location.href = '/' }}
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 w-full text-left text-[15px] font-medium text-white/70 hover:bg-red-500/10 transition-colors"
-                    style={{ fontFamily: FONT }}
-                  >
-                    <span className="text-white/60">{ICONS.logout}</span>
-                    Log out
-                  </button>
-                ) : (
-                  <a
-                    href={loginUrl()}
-                    className="flex items-center gap-3 rounded-xl px-4 py-3 w-full text-left text-[15px] font-medium text-white/80 hover:bg-white/5 transition-colors no-underline"
-                    style={{ fontFamily: FONT }}
-                  >
-                    <span className="text-white/55">{ICONS.igMark}</span>
-                    Sign in to manage
-                  </a>
-                )}
-              </div>
             </div>
-          )}
 
-          {view === 'settings' ? <SettingsView creator={creator} /> : view === 'edit' ? <EditProfileView creator={creator} username={handle} onSaved={load} /> : (
+            <div className="mt-auto pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              {loggedIn ? (
+                <button
+                  type="button"
+                  onClick={() => { clearAuth(); window.location.href = '/' }}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 w-full text-left text-[15px] font-medium text-white/70 hover:bg-red-500/10 transition-colors"
+                  style={{ fontFamily: FONT }}
+                >
+                  <span className="text-white/60">{ICONS.logout}</span>
+                  Log out
+                </button>
+              ) : (
+                <a
+                  href={loginUrl()}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 w-full text-left text-[15px] font-medium text-white/80 hover:bg-white/5 transition-colors no-underline"
+                  style={{ fontFamily: FONT }}
+                >
+                  <span className="text-white/55">{ICONS.igMark}</span>
+                  Sign in to manage
+                </a>
+              )}
+            </div>
+          </aside>
+
+          {view === 'settings' ? <SettingsView creator={creator} /> : view === 'edit' ? <EditProfileView creator={creator} username={handle} onSaved={load} saveSignal={editSaveSignal} /> : (
           <>
           {/* Header band */}
           <header
-            className="px-5 sm:px-8 md:px-24 pt-8 md:pt-12 pb-6 md:pb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-5"
+            className="px-5 sm:px-8 md:px-24 pt-12 md:pt-12 pb-6 md:pb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-5"
             style={{ background: 'transparent', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
           >
             <div>
-              <div className="flex items-center gap-2.5 mb-2 flex-wrap">
-                <h1 className="font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(20px, 2.4vw, 28px)' }}>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <h1 className="font-bold leading-none" style={{ fontFamily: FONT, fontSize: 'clamp(18px, 2.4vw, 28px)' }}>
                   Welcome back, {firstName}!
                 </h1>
                 {/* Verified tick — blue seal with a white check (admin-managed). */}
@@ -939,13 +990,12 @@ export default function InfluenceDashboard({ username }) {
                 {isFounding && (
                   <span
                     title="Founding Creator"
-                    className="inline-flex shrink-0 items-center rounded-full text-xs font-bold whitespace-nowrap px-3 py-1"
+                    className="founding-badge inline-flex shrink-0 items-center rounded-full text-[10.5px] font-bold whitespace-nowrap px-2 py-0.5"
                     style={{
                       fontFamily: FONT,
                       color: '#F5D98B',
                       background: 'rgba(0,0,0,0.35)',
                       border: '1px solid rgba(212,175,55,0.6)',
-                      boxShadow: '0 0 12px rgba(212,175,55,0.25)',
                     }}
                   >
                     ★ Founding Creator
@@ -956,7 +1006,10 @@ export default function InfluenceDashboard({ username }) {
                 Here's what's happening with your creator business today.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div
+              className="flex flex-nowrap items-center gap-3 shrink-0 self-end md:self-auto ml-auto whitespace-nowrap"
+              style={{ marginRight: 'clamp(0px, 6vw, 110px)' }}
+            >
               <button
                 ref={refreshRef}
                 type="button"
@@ -969,7 +1022,7 @@ export default function InfluenceDashboard({ username }) {
               </button>
               <a
                 href={facebookLoginUrl()}
-                className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium transition-colors no-underline hover:opacity-90"
+                className="hidden md:inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium transition-colors no-underline hover:opacity-90"
                 style={{ fontFamily: FONT, color: '#fff', background: 'rgba(24,119,242,0.16)', border: '1px solid rgba(24,119,242,0.55)' }}
               >
                 {ICONS.fb} Connect Facebook

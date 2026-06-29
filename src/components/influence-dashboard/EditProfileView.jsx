@@ -194,11 +194,20 @@ function LaptopFrame({ src }) {
   )
 }
 
-function LivePreview({ device, src }) {
+function LivePreview({ device, setDevice, deviceRef, src }) {
   return (
-    <div className="relative flex justify-center pt-8 pb-4">
-      <span className="absolute left-2 top-4 z-10 rounded-md px-2.5 py-1 text-[11px] font-semibold" style={{ fontFamily: MONO, color: '#fff', background: '#5B62E0' }}>Live Preview</span>
-      {device === 'desktop' ? <LaptopFrame src={src} /> : <PhoneFrame src={src} />}
+    <div className="pt-6 pb-4">
+      {/* Header row above the frame — badge left, device toggle right (no overlap) */}
+      <div className="flex items-center justify-between gap-3 mb-4 px-1">
+        <span className="rounded-md px-2.5 py-1 text-[11px] font-semibold" style={{ fontFamily: MONO, color: '#fff', background: '#5B62E0' }}>Live Preview</span>
+        <div ref={deviceRef} className="flex items-center gap-1 rounded-xl p-1" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.15)' }}>
+          <button type="button" onClick={() => setDevice('phone')} className="grid place-items-center rounded-lg transition-colors" style={{ width: 32, height: 30, color: '#fff', background: device === 'phone' ? 'rgba(139,92,246,0.7)' : 'transparent' }}>{I.phone}</button>
+          <button type="button" onClick={() => setDevice('desktop')} className="grid place-items-center rounded-lg transition-colors" style={{ width: 32, height: 30, color: '#fff', background: device === 'desktop' ? 'rgba(139,92,246,0.7)' : 'transparent' }}>{I.monitor}</button>
+        </div>
+      </div>
+      <div className="flex justify-center">
+        {device === 'desktop' ? <LaptopFrame src={src} /> : <PhoneFrame src={src} />}
+      </div>
     </div>
   )
 }
@@ -267,13 +276,14 @@ function ProfilePanel({ profile, setProfile, socials, setSocials, username, avat
           {socials.map((s) => {
             const on = s.enabled !== false
             return (
-              <div key={s.key} className="flex items-center gap-3 rounded-xl p-2.5 transition-opacity" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', opacity: on ? 1 : 0.5 }}>
-                <span className="grid place-items-center rounded-lg shrink-0 text-white/60" style={{ width: 40, height: 40, background: 'rgba(255,255,255,0.06)' }}>{I.link}</span>
-                <input value={s.platform} onChange={(e) => updateSocial(s.key, 'platform', e.target.value)} placeholder="Platform" className="w-40 shrink-0 rounded-lg px-3 h-10 text-white text-[14px] outline-none" style={inputStyle} />
-                <input value={s.url} onChange={(e) => updateSocial(s.key, 'url', e.target.value)} placeholder="https://" className="flex-1 min-w-0 rounded-lg px-3 h-10 text-white/80 text-[14px] outline-none" style={inputStyle} />
+              <div key={s.key} className="flex flex-wrap items-center gap-2.5 sm:gap-3 rounded-xl p-2.5 transition-opacity" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)', opacity: on ? 1 : 0.5 }}>
+                <span className="order-1 grid place-items-center rounded-lg shrink-0 text-white/60" style={{ width: 40, height: 40, background: 'rgba(255,255,255,0.06)' }}>{I.link}</span>
+                <input value={s.platform} onChange={(e) => updateSocial(s.key, 'platform', e.target.value)} placeholder="Platform" className="order-2 flex-1 min-w-0 sm:flex-none sm:w-40 rounded-lg px-3 h-10 text-white text-[14px] outline-none" style={inputStyle} />
+                {/* URL: own full-width line on phones, inline on sm+ */}
+                <input value={s.url} onChange={(e) => updateSocial(s.key, 'url', e.target.value)} placeholder="https://" className="order-5 w-full sm:order-3 sm:w-auto sm:flex-1 min-w-0 rounded-lg px-3 h-10 text-white/80 text-[14px] outline-none" style={inputStyle} />
                 {/* Show / hide this link on the card */}
-                <MiniToggle on={on} onChange={(v) => updateSocial(s.key, 'enabled', v)} />
-                <button type="button" onClick={() => removeSocial(s.key)} className="grid place-items-center rounded-lg shrink-0 text-white/50 hover:text-[#FB7185] hover:bg-white/5 transition-colors" style={{ width: 40, height: 40 }}>{I.trash}</button>
+                <span className="order-3 sm:order-4 shrink-0"><MiniToggle on={on} onChange={(v) => updateSocial(s.key, 'enabled', v)} /></span>
+                <button type="button" onClick={() => removeSocial(s.key)} className="order-4 sm:order-5 grid place-items-center rounded-lg shrink-0 text-white/50 hover:text-[#FB7185] hover:bg-white/5 transition-colors" style={{ width: 40, height: 40 }}>{I.trash}</button>
               </div>
             )
           })}
@@ -572,9 +582,11 @@ function PackagesPanel({ pkgs, setPkgs, onRemove, onSave }) {
         <SectionHead title="Services & Packages" sub="Configure deliverables, pricing and revision rounds. Up to 3 tiers. Click Save Changes to publish." />
         <PurpleBtn onClick={addTier}>{I.plus} Add tier</PurpleBtn>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-6">
+      {/* Mobile: one horizontal scrolling line of tier cards (side by side).
+          md+: a 2 / 3-column grid. */}
+      <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mt-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory px-[10%] md:px-0 pb-2 md:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {pkgs.map((p) => (
-          <div key={p.id} className="rounded-2xl p-5 flex flex-col gap-4" style={{ background: 'rgba(10,12,30,0.55)', border: p.isPopular ? '1px solid rgba(139,92,246,0.6)' : '1px solid rgba(255,255,255,0.1)' }}>
+          <div key={p.id} className="rounded-2xl p-5 flex flex-col gap-4 shrink-0 w-[80%] sm:w-[330px] md:w-auto snap-center" style={{ background: 'rgba(10,12,30,0.55)', border: p.isPopular ? '1px solid rgba(139,92,246,0.6)' : '1px solid rgba(255,255,255,0.1)' }}>
             <div className="flex items-center justify-between gap-3">
               <select value={p.tier} onChange={(e) => update(p.id, 'tier', e.target.value)} className="rounded-xl px-3 h-11 text-white text-[15px] font-semibold outline-none cursor-pointer" style={{ ...inputStyle, fontFamily: FONT }}>
                 {TIER_OPTIONS.map((t) => <option key={t} value={t} style={{ color: '#000' }}>{t}</option>)}
@@ -595,7 +607,7 @@ function PackagesPanel({ pkgs, setPkgs, onRemove, onSave }) {
         ))}
       </div>
       {/* Save packages so they appear on the public card / preview */}
-      <div className="flex items-center gap-3 mt-6">
+      <div className="flex items-center justify-center gap-3 mt-6">
         <button type="button" onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-[14px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60" style={{ fontFamily: FONT, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}>
           {I.save} {saving ? 'Saving…' : 'Save Packages'}
         </button>
@@ -738,7 +750,7 @@ const mapCollab = (c) => c && {
   reach: c.reach || 0,
 }
 
-export default function EditProfileView({ creator = {}, username = '', onSaved }) {
+export default function EditProfileView({ creator = {}, username = '', onSaved, saveSignal = 0 }) {
   const [tab, setTab] = useState('Profile')
   const [device, setDevice] = useState('phone')
   const [saving, setSaving] = useState(false)
@@ -881,6 +893,13 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
     }
   }
 
+  // The mobile top-bar Save button lives in the parent dashboard; it bumps
+  // `saveSignal` to trigger a save here. Skip the initial 0.
+  useEffect(() => {
+    if (saveSignal > 0) onSave()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saveSignal])
+
   // ---- Portfolio actions (persist immediately) ----
   const addCollab = async (form, fetched) => {
     const body = {
@@ -930,38 +949,37 @@ export default function EditProfileView({ creator = {}, username = '', onSaved }
   return (
     <>
       {showTour && <DashboardTour steps={tourSteps} onDone={finishEditTour} />}
-      {/* Header: title + tabs + actions */}
-      <header className="px-6 md:px-10 py-4 flex flex-wrap items-center gap-4 justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        <div className="flex items-center gap-5">
-          <h1 className="font-bold text-lg whitespace-nowrap" style={{ fontFamily: FONT }}>Edit Influence Card</h1>
-          <div className="hidden sm:block h-6 w-px bg-white/15" />
-          <nav ref={tabsRef} className="flex items-center gap-1">
+      {/* Header: row 1 = title + Preview; row 2 = tabs (menu) + Save icon on the right */}
+      <header className="px-4 sm:px-6 md:px-10 py-4 flex flex-col gap-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        {/* Title + Preview together */}
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-wrap">
+          <h1 className="font-bold text-2xl sm:text-3xl whitespace-nowrap shrink-0" style={{ fontFamily: FONT }}>Edit Influence Card</h1>
+          <a href={handle ? `/${handle}` : '/'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 ml-12 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 no-underline shrink-0" style={{ fontFamily: FONT, background: '#fff' }}>{I.eye} Preview</a>
+        </div>
+        {/* Tabs (menu) row — Save icon pinned to the right end */}
+        <div className="flex items-center gap-3">
+          <nav ref={tabsRef} className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {TABS.map((t) => {
               const active = tab === t
               return (
-                <button key={t} type="button" onClick={() => setTab(t)} className="rounded-lg px-4 py-2 text-[14px] font-medium transition-colors" style={{ fontFamily: FONT, color: active ? '#fff' : 'rgba(255,255,255,0.6)', background: active ? 'rgba(255,255,255,0.1)' : 'transparent' }}>
+                <button key={t} type="button" onClick={() => setTab(t)} className="rounded-lg px-3 sm:px-4 py-2 text-[14px] font-medium transition-colors whitespace-nowrap shrink-0" style={{ fontFamily: FONT, color: active ? '#fff' : 'rgba(255,255,255,0.6)', background: active ? 'rgba(255,255,255,0.1)' : 'transparent' }}>
                   {t}
                 </button>
               )
             })}
           </nav>
-        </div>
-        <div className="flex items-center gap-3">
-          {savedMsg && <span className="text-[13px] font-semibold" style={{ fontFamily: FONT, color: savedMsg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{savedMsg}</span>}
-          {/* device toggle */}
-          <div ref={deviceRef} className="flex items-center gap-1 rounded-xl p-1" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>
-            <button type="button" onClick={() => setDevice('phone')} className="grid place-items-center rounded-lg transition-colors" style={{ width: 32, height: 30, color: '#fff', background: device === 'phone' ? 'rgba(139,92,246,0.6)' : 'transparent' }}>{I.phone}</button>
-            <button type="button" onClick={() => setDevice('desktop')} className="grid place-items-center rounded-lg transition-colors" style={{ width: 32, height: 30, color: '#fff', background: device === 'desktop' ? 'rgba(139,92,246,0.6)' : 'transparent' }}>{I.monitor}</button>
+          <div className="flex items-center gap-2 shrink-0">
+            {savedMsg && <span className="text-[13px] font-semibold whitespace-nowrap" style={{ fontFamily: FONT, color: savedMsg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{savedMsg}</span>}
+            {/* Hidden on mobile — the dashboard's top bar carries Save there. */}
+            <button ref={saveRef} type="button" onClick={onSave} disabled={saving} title="Save Changes" aria-label="Save Changes" className="hidden md:inline-flex items-center justify-center rounded-full text-white transition-opacity hover:opacity-90 disabled:opacity-60" style={{ width: 40, height: 40, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}>{I.save}</button>
           </div>
-          <a href={handle ? `/${handle}` : '/'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 no-underline" style={{ fontFamily: FONT, background: '#fff' }}>{I.eye} Preview</a>
-          <button ref={saveRef} type="button" onClick={onSave} disabled={saving} className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 disabled:opacity-60" style={{ fontFamily: FONT, background: '#fff' }}>{I.save} {saving ? 'Saving…' : 'Save Changes'}</button>
         </div>
       </header>
 
       {/* Content with the blue editor gradient backdrop */}
       <div style={{ background: 'radial-gradient(110% 80% at 50% 0%, #1c277a 0%, #121845 38%, #0a0c1f 80%)' }}>
-        <div className="px-6 md:px-16 lg:px-24 pb-16">
-          <LivePreview device={device} src={previewSrc} />
+        <div className="px-4 sm:px-6 md:px-16 lg:px-24 pb-16">
+          <LivePreview device={device} setDevice={setDevice} deviceRef={deviceRef} src={previewSrc} />
           <div className="pt-8">
             {tab === 'Profile' && <ProfilePanel profile={profile} setProfile={setProfile} socials={socials} setSocials={setSocials} username={handle} avatarSrc={avatarSrc} onSaveLinks={saveLinks} />}
             {tab === 'Portfolio' && <PortfolioPanel collabs={collabs} onAdd={addCollab} onRemove={removeCollab} />}
