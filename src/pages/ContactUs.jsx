@@ -97,19 +97,21 @@ export default function ContactUs() {
           { size: 185, top: '-50px', left: '300px' },
           { size: 307, bottom: '-35px', left: '165px' },
           { size: 128, bottom: '10px', right: '300px' },
-          { size: 128, top: '60%', left: '40%' },
+          { size: 128, top: '60%', left: '40%', hideMobile: true },
         ].map((c, i) => {
-          const { size, ...pos } = c
+          const { size, hideMobile, ...pos } = c
           return (
             <div
               key={i}
               aria-hidden="true"
-              className="pointer-events-none absolute rounded-full"
+              className={`pointer-events-none absolute rounded-full opacity-40 sm:opacity-100 ${hideMobile ? 'hidden sm:block' : ''}`}
               style={{
                 ...pos,
-                width: `${size}px`,
-                height: `${size}px`,
-                maxWidth: '80vw',
+                // Cap size to a share of the viewport on phones so the big orbs
+                // (330/307px) shrink to subtle corner glows; on wide screens the
+                // vw cap is larger than `size`, so desktop keeps its full size.
+                width: `min(${size}px, 42vw)`,
+                height: `min(${size}px, 42vw)`,
                 background: 'radial-gradient(circle, #3C48F7 0%, #212997 45%, #0a0f3a 72%, rgba(0,0,0,0) 100%)',
                 zIndex: 0,
               }}
@@ -130,10 +132,10 @@ export default function ContactUs() {
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.20), 0 24px 60px rgba(0,0,0,0.45)',
           }}
         >
-          <div className="relative grid grid-cols-1 lg:grid-cols-[0.85fr_1.15fr] gap-2.5">
+          <div className="relative grid grid-cols-1 min-[560px]:grid-cols-[0.85fr_1.15fr] gap-2.5">
             {/* Left — Contact Information panel (frosted glass) */}
             <div
-              className="relative overflow-hidden rounded-3xl p-7 md:p-8"
+              className="relative overflow-hidden rounded-3xl p-5 sm:p-7 md:p-8"
               style={{
                 background: 'linear-gradient(150deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 100%)',
                 border: '1px solid rgba(255,255,255,0.14)',
@@ -156,7 +158,7 @@ export default function ContactUs() {
             </div>
 
             {/* Right — form */}
-            <form onSubmit={handleSubmit} className="relative rounded-3xl p-7 md:p-9 pb-32 md:pb-36" noValidate>
+            <form onSubmit={handleSubmit} className="relative rounded-3xl p-5 sm:p-7 md:p-9 pb-28 sm:pb-32 md:pb-36" noValidate>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-white text-[13px] font-medium mb-2" style={{ fontFamily: FONT }}>First Name</label>
@@ -184,7 +186,7 @@ export default function ContactUs() {
                 src="/letter.png"
                 alt=""
                 aria-hidden="true"
-                className="pointer-events-none select-none absolute right-16 -bottom-12 z-0 w-[54%] max-w-[280px] h-auto"
+                className="pointer-events-none select-none absolute right-8 sm:right-16 -bottom-12 z-0 w-[78%] sm:w-[54%] max-w-[320px] sm:max-w-[280px] h-auto"
               />
 
               <div className="relative z-10 mt-16 md:mt-20 flex items-center justify-end gap-4 flex-wrap">

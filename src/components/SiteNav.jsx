@@ -5,9 +5,10 @@
 //   • `cta`         — { label, href } for the primary button.
 //   • `login`       — show a plain "Login" link before the CTA (default true).
 //   • `ctaVariant`  — 'white' (default) | 'gradient' pink→purple CTA.
-// Page links use hash routes (#/…) so they navigate via the SPA router; in-page
-// anchors (#home, #vision) glide to the matching section. Below `lg` the links
-// collapse into a hamburger dropdown so the nav stays usable on phones.
+// Page links navigate via the SPA router (see navClick); in-page anchors
+// (#home, #vision) glide to the matching section. On desktop everything sits in
+// one row; on phones the links wrap onto their own full-width row below the
+// logo/CTA so every link stays visible (no hamburger).
 
 import { useState } from 'react'
 import { goToPath } from '../router.js'
@@ -39,31 +40,23 @@ function navClick(href, after) {
   }
 }
 
-// Dark frosted-glass surface for the whole bar.
-const GLASS_BAR = {
-  background: 'linear-gradient(180deg, rgba(32,34,46,0.55) 0%, rgba(12,14,22,0.55) 100%)',
-  backdropFilter: 'blur(22px) saturate(150%)',
-  WebkitBackdropFilter: 'blur(22px) saturate(150%)',
-  border: '1px solid rgba(255,255,255,0.12)',
-  boxShadow:
-    'inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(255,255,255,0.03), 0 12px 40px rgba(0,0,0,0.5)',
-}
-
-// Solid dark panel for the mobile dropdown (no translucency so text stays crisp
-// over whatever scrolls behind it).
-const GLASS_MENU = {
-  background: 'rgba(12,14,22,0.96)',
-  backdropFilter: 'blur(22px) saturate(150%)',
-  WebkitBackdropFilter: 'blur(22px) saturate(150%)',
-  border: '1px solid rgba(255,255,255,0.12)',
-  boxShadow: '0 20px 50px rgba(0,0,0,0.55)',
-}
+// The whole-bar frosted-glass surface lives in the `.nav-glass` CSS class
+// (index.css) so it can be applied only at lg+ — on phones the bar is bare.
 
 // Dark inset pill for the logo and the active link.
 const DARK_CHIP = {
   background: 'rgba(0,0,0,0.85)',
   border: '1px solid rgba(255,255,255,0.10)',
   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+}
+
+// Solid dark panel for the mobile dropdown menu (crisp over scrolling content).
+const GLASS_MENU = {
+  background: 'rgba(12,14,22,0.96)',
+  backdropFilter: 'blur(22px) saturate(150%)',
+  WebkitBackdropFilter: 'blur(22px) saturate(150%)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  boxShadow: '0 20px 50px rgba(0,0,0,0.55)',
 }
 
 export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA, login = true, ctaVariant = 'white' }) {
@@ -78,14 +71,14 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
 
   return (
     <nav id="home" className="relative z-50 px-4 sm:px-8 md:px-12 lg:px-20 py-6">
-      <div className="relative w-fit max-w-full mx-auto">
-        <div className="flex items-center gap-3 sm:gap-6 px-3 sm:px-5 py-2 rounded-full" style={GLASS_BAR}>
-          {/* Logo in its own dark inset pill */}
-          <a href="/" onClick={navClick('/')} className="flex items-center rounded-full pl-3 pr-4 sm:pr-5 h-10 sm:h-11 shrink-0" style={DARK_CHIP}>
+      <div className="relative w-full lg:w-fit max-w-full mx-auto">
+        <div className="nav-glass flex items-center justify-between lg:justify-center gap-3 sm:gap-6 px-0 sm:px-0 lg:px-5 py-0 lg:py-2 rounded-full">
+          {/* Logo in its own dark inset pill → back to the landing home. */}
+          <a href="/landing" onClick={navClick('/landing')} className="flex items-center rounded-full pl-3 pr-4 sm:pr-5 h-10 sm:h-11 shrink-0" style={DARK_CHIP}>
             <img src="/creasumelogo.svg" alt="Creasume" className="h-6 sm:h-8 w-auto" />
           </a>
 
-          {/* Desktop links */}
+          {/* Desktop links (inline) */}
           <div className="hidden lg:flex items-center gap-1">
             {links.map((tab) => {
               const isActive = active === tab.id
@@ -130,7 +123,7 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
             </a>
           </div>
 
-          {/* Mobile hamburger */}
+          {/* Mobile hamburger — collapses the whole nav into a dropdown menu */}
           <button
             type="button"
             aria-label="Toggle menu"
@@ -149,7 +142,7 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
           </button>
         </div>
 
-        {/* Mobile dropdown menu */}
+        {/* Mobile dropdown menu — all links + login + CTA */}
         {open && (
           <div className="lg:hidden absolute right-0 top-full mt-2 w-[min(260px,80vw)] rounded-2xl p-2 flex flex-col z-50" style={GLASS_MENU}>
             {links.map((tab) => (

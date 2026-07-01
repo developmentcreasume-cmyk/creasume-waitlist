@@ -102,7 +102,11 @@ export default function PricingPage() {
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
   // Shared grid template: feature label column + three plan columns.
-  const gridCols = 'grid-cols-[1.2fr_1fr_1fr_1fr] sm:grid-cols-[1.35fr_1fr_1fr_1fr]'
+  // minmax(0,…) lets each column size purely by its fr ratio instead of its
+  // content's min-width — so every row (short label or long) shares the SAME
+  // column widths and the vertical dividers line up across the whole table.
+  const gridCols =
+    'grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]'
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-clip text-white">
@@ -152,40 +156,40 @@ export default function PricingPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.15 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
-          className="min-w-140 rounded-2xl overflow-hidden"
+          className="w-full min-w-0 sm:min-w-125 rounded-2xl overflow-hidden"
           style={{ border: '1px solid rgba(255,255,255,0.50)', background: 'rgba(10,10,16,0.6)' }}
         >
           {/* Header row */}
           <div className={`grid ${gridCols}`}>
-            <div className="p-4 sm:p-6 border-b border-r border-white/50">
-              <div className="flex items-center gap-2">
-                <span className="text-white font-semibold text-2xl sm:text-3xl whitespace-nowrap" style={{ fontFamily: FONT }}>
+            <div className="p-3 sm:p-6 border-b border-r border-white/50">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <span className="text-white font-semibold text-base sm:text-3xl" style={{ fontFamily: FONT }}>
                   Compare plans
                 </span>
-                <span className="shrink-0 whitespace-nowrap px-3.5 py-1 rounded-full text-[13px] font-semibold text-white" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.22)' }}>
+                <span className="shrink-0 whitespace-nowrap px-2 sm:px-3.5 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-[13px] font-semibold text-white" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.22)' }}>
                   40% Off
                 </span>
               </div>
-              <p className="mt-3 text-white text-[15px] leading-snug hidden sm:block" style={{ fontFamily: FONT }}>
-                Choose your workspace plan according<br />to your organisational plan
+              <p className="mt-2 sm:mt-3 text-white text-[11px] sm:text-[15px] leading-snug hidden sm:block" style={{ fontFamily: FONT }}>
+                Choose your workspace plan according to your organisational plan
               </p>
             </div>
 
             {PLANS.map((plan) => (
               <div
                 key={plan.key}
-                className="p-4 sm:p-6 border-b border-r last:border-r-0 border-white/50 text-center"
+                className="p-2.5 sm:p-6 border-b border-r last:border-r-0 border-white/50 text-center"
                 style={{ background: plan.highlight ? 'rgba(34,39,114,0.18)' : 'transparent' }}
               >
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-white font-bold" style={{ fontFamily: FONT, fontSize: 'clamp(22px, 3vw, 34px)' }}>
+                <div className="flex items-baseline justify-center gap-0.5 sm:gap-1 flex-wrap">
+                  <span className="text-white font-bold" style={{ fontFamily: FONT, fontSize: 'clamp(15px, 4vw, 34px)' }}>
                     {plan.name}
                   </span>
-                  <span className="text-white/55 text-[11px] sm:text-[13px]">{plan.unit}</span>
+                  <span className="text-white/55 text-[9px] sm:text-[13px]">{plan.unit}</span>
                 </div>
                 <button
                   type="button"
-                  className="mt-3 sm:mt-4 w-full rounded-lg py-2 sm:py-2.5 text-[11px] sm:text-[13px] font-semibold bg-white text-black hover:bg-white/90 transition-colors"
+                  className="mt-2 sm:mt-4 w-full rounded-lg py-1.5 sm:py-2.5 px-1 text-[9px] leading-tight sm:text-[13px] font-semibold bg-white text-black hover:bg-white/90 transition-colors"
                   style={{ fontFamily: FONT }}
                 >
                   Choose This Plan
@@ -198,15 +202,15 @@ export default function PricingPage() {
           {SECTIONS.map((section, si) => (
             <div key={si}>
               {section.title && (
-                <div className={`grid ${gridCols} border-t border-t-white/50 border-b-2 border-b-white`}>
-                  <div className="px-4 sm:px-6 py-2.5 border-r border-white/50">
+                <div className={`grid ${gridCols}`}>
+                  <div className="px-4 sm:px-6 py-2.5 border-t border-b-2 border-r border-white/50 border-b-white flex items-center">
                     <span className="text-white text-[12px] font-semibold tracking-wide" style={{ fontFamily: FONT }}>
                       {section.title}
                     </span>
                   </div>
-                  <div className="border-r border-white/50" />
-                  <div className="border-r border-white/50" />
-                  <div />
+                  <div className="border-t border-b-2 border-r border-white/50 border-b-white" />
+                  <div className="border-t border-b-2 border-r border-white/50 border-b-white" />
+                  <div className="border-t border-b-2 border-white/50 border-b-white" />
                 </div>
               )}
               {section.rows.map((row, ri) => {

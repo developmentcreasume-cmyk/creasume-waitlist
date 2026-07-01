@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { popIn, popInParent } from '../motion-variants.js'
+import { useIsMobile } from '../shared/useIsMobile.js'
 
 // Three tiers from the landing design. `monthly` is the headline price; `annual`
 // is the effective per-month price when billed yearly (a light discount). The
@@ -49,6 +50,49 @@ function Check() {
 
 export default function Pricing({ onGetStarted }) {
   const [annual, setAnnual] = useState(false)
+  // Active card index for the mobile carousel dots. Updated as the row scrolls.
+  const [activeCard, setActiveCard] = useState(0)
+  const scrollRef = useRef(null)
+  const isMobile = useIsMobile()
+
+  // On mobile the carousel loops infinitely: render three copies of the tiers
+  // and keep the viewport parked on the middle copy, silently jumping by one
+  // set whenever a swipe drifts into an outer copy — so swiping never dead-ends.
+  const loop = isMobile
+  const N = PLANS.length
+  const cards = loop ? [...PLANS, ...PLANS, ...PLANS] : PLANS
+
+  // Park on the middle set once the looping row is laid out.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || !loop) return
+    const pitch = el.scrollWidth / cards.length
+    el.scrollLeft = pitch * N
+  }, [loop, cards.length, N])
+
+  const onCarouselScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    const pitch = el.scrollWidth / cards.length // one card pitch (width + gap)
+    const idx = Math.round(el.scrollLeft / pitch)
+    if (loop) {
+      const setW = pitch * N
+      // Re-center on the middle set when the swipe drifts into an outer copy.
+      if (el.scrollLeft < setW * 0.5) el.scrollLeft += setW
+      else if (el.scrollLeft > setW * 2.5) el.scrollLeft -= setW
+      setActiveCard(((idx % N) + N) % N)
+    } else {
+      setActiveCard(Math.max(0, Math.min(N - 1, idx)))
+    }
+  }
+
+  const scrollToCard = (i) => {
+    const el = scrollRef.current
+    if (!el) return
+    const pitch = el.scrollWidth / cards.length
+    const base = loop ? pitch * N : 0
+    el.scrollTo({ left: base + pitch * i, behavior: 'smooth' })
+  }
 
   return (
     <section id="pricing" className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-16 md:py-28 overflow-hidden">
@@ -97,21 +141,23 @@ export default function Pricing({ onGetStarted }) {
       </div>
 
       <motion.div
+        ref={scrollRef}
+        onScroll={onCarouselScroll}
         variants={popInParent}
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: '-80px' }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto relative z-10"
+        className="no-scrollbar flex md:grid md:grid-cols-3 gap-6 max-w-5xl relative z-10 overflow-x-auto md:overflow-visible snap-x snap-mandatory py-4 md:py-0 px-4 -mx-8 sm:mx-auto md:px-0"
       >
-        {PLANS.map((plan) => {
+        {cards.map((plan, ci) => {
           const price = annual ? plan.annual : plan.monthly
           return (
             <motion.div
-              key={plan.name}
+              key={`${plan.name}-${ci}`}
               variants={popIn}
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="relative rounded-2xl p-7 flex flex-col cursor-pointer"
+              className="relative rounded-2xl p-7 flex flex-col cursor-pointer shrink-0 w-[78%] max-w-[320px] snap-center md:w-auto md:max-w-none md:shrink"
               style={{ background: 'transparent', transformOrigin: 'bottom center' }}
             >
               {/* Gradient border ring only — inside stays transparent (no fill).
@@ -171,6 +217,23 @@ export default function Pricing({ onGetStarted }) {
           )
         })}
       </motion.div>
+
+      {/* Carousel dots — mobile only. Reflect and control the active card. */}
+      <div className="flex md:hidden justify-center gap-2 mt-5 relative z-10">
+        {PLANS.map((plan, i) => (
+          <button
+            key={plan.name}
+            type="button"
+            aria-label={`Go to ${plan.name}`}
+            onClick={() => scrollToCard(i)}
+            className="h-2 rounded-full transition-all duration-300"
+            style={{
+              width: activeCard === i ? '22px' : '8px',
+              background: activeCard === i ? '#9CA2E1' : 'rgba(255,255,255,0.25)',
+            }}
+          />
+        ))}
+      </div>
     </section>
   )
 }

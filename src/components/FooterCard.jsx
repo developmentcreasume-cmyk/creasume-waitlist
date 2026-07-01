@@ -45,7 +45,7 @@ export default function FooterCard() {
           border: '1px solid transparent',
         }}
       >
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-6 pl-16 md:pl-24">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-6 md:pl-24">
           <Column title="Creasume" links={CREASUME} />
           <Column title="Company" links={COMPANY} />
           <Column title="Follow us" links={SOCIAL} />
