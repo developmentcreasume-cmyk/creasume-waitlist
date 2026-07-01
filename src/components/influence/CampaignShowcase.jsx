@@ -19,6 +19,29 @@ const GLASS_PANEL = {
   WebkitBackdropFilter: 'blur(16px) saturate(140%)',
 }
 
+// Brand logo with a graceful fallback: when `logo` is missing OR the image fails
+// to load (404, blocked, expired URL), show the brand's initial instead of the
+// browser's broken-image icon. Used by both the outer card and the detail modal.
+function BrandLogo({ logo, brand, fontSize }) {
+  const [failed, setFailed] = useState(false)
+  if (logo && !failed) {
+    return (
+      <img
+        src={logo}
+        alt={brand}
+        referrerPolicy="no-referrer"
+        className="w-full h-full object-cover"
+        onError={() => setFailed(true)}
+      />
+    )
+  }
+  return (
+    <span className="text-white font-bold" style={{ fontFamily: FONT, fontSize, lineHeight: 1 }}>
+      {brand.charAt(0)}
+    </span>
+  )
+}
+
 // One campaign-highlight glass card — now shows the full campaign layout
 // (overview, stats, audience, deliverables, CTA), the same content as the modal.
 // The cards live inside a CSS-transform marquee, where the browser's native
@@ -57,11 +80,7 @@ function CampaignCard({ data, onClick, sizeW = CARD_W }) {
             className="shrink-0 rounded-lg flex items-center justify-center overflow-hidden"
             style={{ width: 52, height: 52, background: 'linear-gradient(135deg,#2a2f6b 0%,#16183c 100%)', border: '1px solid rgba(255,255,255,0.1)' }}
           >
-            {data.logo ? (
-              <img src={data.logo} alt={data.brand} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-white font-bold" style={{ fontFamily: FONT, fontSize: 24, lineHeight: 1 }}>{data.brand.charAt(0)}</span>
-            )}
+            <BrandLogo logo={data.logo} brand={data.brand} fontSize={24} />
           </div>
           <div className="min-w-0">
             <div className="text-white leading-none truncate" style={{ fontFamily: FONT, fontSize: 29, fontWeight: 700 }}>{data.brand}</div>
@@ -232,11 +251,7 @@ function CampaignDetail({ data, onClose }) {
           className="shrink-0 rounded-lg flex items-center justify-center overflow-hidden"
           style={{ width: 48, height: 48, background: 'linear-gradient(135deg,#2a2f6b 0%,#16183c 100%)', border: '1px solid rgba(255,255,255,0.1)' }}
         >
-          {data.logo ? (
-            <img src={data.logo} alt={data.brand} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-white font-bold" style={{ fontFamily: FONT, fontSize: 22, lineHeight: 1 }}>{data.brand.charAt(0)}</span>
-          )}
+          <BrandLogo logo={data.logo} brand={data.brand} fontSize={22} />
         </div>
         <div className="min-w-0">
           <div className="text-white font-bold leading-tight" style={{ fontFamily: FONT, fontSize: 22 }}>{data.brand}</div>

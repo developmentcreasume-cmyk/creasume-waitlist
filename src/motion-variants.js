@@ -22,6 +22,19 @@ export const popUp = {
   show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.35, ease: 'easeOut' } },
 }
 
+// Bouncy pop-in — pricing cards (spec §9). Starts small + invisible, overshoots
+// past full size before settling (450ms, cubic-bezier(0.34,1.56,0.64,1)).
+export const popIn = {
+  hidden: { opacity: 0, scale: 0.85 },
+  show: { opacity: 1, scale: 1, transition: { duration: 0.45, ease: [0.34, 1.56, 0.64, 1] } },
+}
+
+// Parent for the pricing grid — 120ms stagger, left→right (spec §9).
+export const popInParent = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
+}
+
 // Outline / glow draw-in (600ms, ease-out) — hero pill + Creasume × Instagram badge.
 export const outlineDraw = {
   hidden: { opacity: 0, clipPath: 'inset(0 100% 0 0)' },

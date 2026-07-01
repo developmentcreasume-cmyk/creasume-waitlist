@@ -1,408 +1,21 @@
-import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence, MotionConfig, useReducedMotion, useScroll, useTransform } from 'framer-motion'
+import { useState, useRef } from 'react'
+import { motion, MotionConfig, useScroll } from 'framer-motion'
 import { fadeUp, outlineDraw, staggerParent } from './motion-variants.js'
 import { CountUp, Typewriter } from './anim.jsx'
 import SensesSection from './SensesSection.jsx'
 import LiveDemoCard from './LiveDemoCard.jsx'
 import Footer from './components/Footer.jsx'
-import { goToPath } from './router.js'
+import SiteNav from './components/SiteNav.jsx'
+import { useIsMobile } from './shared/useIsMobile.js'
+import { ScrubCard } from './shared/ScrubCard.jsx'
+import { PERKS } from './shared/perks.jsx'
+import { FeatureCards } from './shared/FeatureCards.jsx'
+import { JoinedProof } from './shared/JoinedProof.jsx'
 import './App.css'
-
-// Founding Creator perk cards (order = reveal order in the coverflow).
-const PERKS = [
-  { icon: <img src="/image/Vector.png" alt="" aria-hidden="true" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />, title: 'Early Access to Creasume' },
-  { icon: <img src="/image/Vector%20(1).png" alt="" aria-hidden="true" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />, title: 'Exclusive Founding Creator Badge' },
-  { icon: <img src="/image/Vector%20(3).png" alt="" aria-hidden="true" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />, title: 'Lifetime Access to Premium Version' },
-  { icon: <img src="/image/Vector%20(4).png" alt="" aria-hidden="true" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />, title: 'Priority listing to brands' },
-  { icon: <img src="/image/Vector%20(2).png" alt="" aria-hidden="true" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />, title: 'Chance to work with us as a partner and get paid' },
-]
-
-// Tracks whether the viewport is below the `md` breakpoint, so the perk cards
-// can swap their scroll-scrubbed desktop unstack for a simpler mobile reveal.
-function useIsMobile(query = '(max-width: 767px)') {
-  // Read the match synchronously on first render. If we started `false` and
-  // flipped in an effect, the cards would already be mounted at rest and
-  // framer-motion's `initial` (the off-screen start) would never apply.
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia(query).matches
-  )
-  useEffect(() => {
-    const mq = window.matchMedia(query)
-    const update = () => setIsMobile(mq.matches)
-    update()
-    mq.addEventListener('change', update)
-    return () => mq.removeEventListener('change', update)
-  }, [query])
-  return isMobile
-}
-
-// One odometer-style digit: a vertical 0–9 strip that slides so the active digit
-// sits in the (overflow-clipped) window. Changing `digit` animates the roll up.
-function RollingDigit({ digit }) {
-  return (
-    <span className="relative inline-block overflow-hidden h-[1em] leading-none align-top">
-      {/* keep the column width correct without showing a static glyph */}
-      <span className="invisible">0</span>
-      <motion.span
-        className="absolute left-0 top-0 flex flex-col"
-        animate={{ y: `-${digit}em` }}
-        transition={{ type: 'spring', stiffness: 260, damping: 26 }}
-      >
-        {Array.from({ length: 10 }).map((_, i) => (
-          <span key={i} className="h-[1em] leading-none flex items-center justify-center">
-            {i}
-          </span>
-        ))}
-      </motion.span>
-    </span>
-  )
-}
-
-// A number whose digits each roll up independently when the value changes.
-function RollingNumber({ value }) {
-  return (
-    <span className="inline-flex tabular-nums leading-none">
-      {String(value).split('').map((ch, i) =>
-        /\d/.test(ch) ? (
-          <RollingDigit key={i} digit={Number(ch)} />
-        ) : (
-          <span key={i}>{ch}</span>
-        ),
-      )}
-    </span>
-  )
-}
-
-// A perk card that scrubs from its stacked position (stackedX/Y, in % of its own
-// size) to its grid position (0,0) based on the section's scroll progress, over
-// the window [start, start+0.16]. Because it's tied to scroll, it moves forward
-// as you scroll down and reverses as you scroll up.
-//
-// On mobile the grid collapses to a single column, so the stacked unstack reads
-// oddly. There each card instead slides in from alternating sides (left, right,
-// left, …) as it scrolls into view, driven by its `index`.
-function ScrubCard({ progress, start, length = 0.30, stackedX, stackedY, zIndex, perk, titleClass, index = 0, isMobile = false }) {
-  // Window width = how much scroll the unstack takes. start → end is when it
-  // animates; it's fully placed by `end` (tuned to finish as the heading exits).
-  const end = start + length
-  const x = useTransform(progress, [start, end], [`${stackedX}%`, '0%'])
-  const y = useTransform(progress, [start, end], [`${stackedY}%`, '0%'])
-  const scale = useTransform(progress, [start, end], [0.92, 1])
-
-  // Mobile: scrub each card in from an alternating side (even = left, odd =
-  // right) as it travels through the lower half of the viewport. Because it's
-  // tied to the card's own scroll progress it tracks the scroll position and
-  // reverses smoothly on scroll up — it's not a one-shot trigger.
-  const cardRef = useRef(null)
-  const { scrollYProgress: cardProgress } = useScroll({
-    target: cardRef,
-    offset: ['start end', 'center center'],
-  })
-  const mobileX = useTransform(cardProgress, [0, 1], [index % 2 === 0 ? -90 : 90, 0])
-  const mobileOpacity = useTransform(cardProgress, [0, 0.6], [0, 1])
-
-  return (
-    // Outer element carries the scroll-scrubbed transform (x/y/scale on desktop,
-    // x/opacity on mobile) and drives the rest/hover variant state. The hover
-    // "zoom" lives on the inner card so it composes on top of the scroll scale
-    // instead of overwriting it.
-    <motion.div
-      ref={cardRef}
-      initial="rest"
-      animate="rest"
-      whileHover={isMobile ? undefined : 'hover'}
-      variants={{ rest: {}, hover: {} }}
-      style={{
-        // Mobile uses the per-card scrub (mobileX/opacity); desktop uses the
-        // shared stacked unstack (x/y/scale).
-        ...(isMobile ? { x: mobileX, opacity: mobileOpacity } : { x, y, scale }),
-        zIndex,
-      }}
-    >
-      <motion.div
-        className="rounded-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
-        variants={{
-          rest: { scale: 1, boxShadow: '0 0 0 0 rgba(93,101,220,0), 0 0 0 0 rgba(93,101,220,0)' },
-          hover: {
-            scale: 1.05,
-            // Bright edge ring + soft outer bloom = a glowing border on hover.
-            boxShadow:
-              '0 0 0 1px rgba(156,162,225,0.9), 0 0 18px 1px rgba(93,101,220,0.6), 0 0 44px 6px rgba(93,101,220,0.35)',
-          },
-        }}
-        transition={{ duration: 0.35, ease: 'easeOut' }}
-        style={{
-          height: '260px',
-          background:
-            'linear-gradient(#000000, #000000) padding-box, linear-gradient(0deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%) border-box',
-          border: '1px solid transparent',
-        }}
-      >
-        <img
-          src="/image/shape.png"
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
-          style={{ opacity: 0.5 }}
-        />
-
-        <div className="mb-6 relative z-10">{perk.icon}</div>
-        <h3
-          className={titleClass}
-          style={{ fontFamily: "'Gelion', 'Outfit', sans-serif", fontWeight: 500, fontSize: '20px' }}
-        >
-          {perk.title}
-        </h3>
-      </motion.div>
-    </motion.div>
-  )
-}
-
-// "Built for Emerging Creators" feature cards. Data lives at module scope so the
-// icon/title/desc JSX isn't re-created on every render.
-const FEATURE_CARDS = [
-  {
-    icon: <img src="/Icon%20MK%201.png" alt="Smart Media Kits" style={{ width: '40.95px', height: '37.51px', objectFit: 'contain' }} />,
-    title: (<>Smart Media<br />Kits</>),
-    desc: 'Auto-generated, brand-ready kits that showcase your reach exactly the way brands want to see it.',
-  },
-  {
-    icon: <img src="/Icon%20ID%201.png" alt="Creator Profiles" style={{ width: '52px', height: '47.63px', objectFit: 'contain' }} />,
-    title: (<>Creator<br />Profiles</>),
-    desc: 'One verified identity page that replaces scattered links with a single credible presence.',
-  },
-  {
-    icon: <img src="/Vector%20(2).png" alt="Brand Inquiries" style={{ width: '40.95px', height: '37.51px', objectFit: 'contain' }} />,
-    title: (<>Brand<br />Inquiries</>),
-    desc: 'Structured collaboration requests no DM chaos, no back and forth with brands.',
-  },
-  {
-    icon: <img src="/Vector%20(3).png" alt="Stronger Positioning" style={{ width: '40.95px', height: '37.51px', objectFit: 'contain' }} />,
-    title: (<>Stronger<br />Positioning</>),
-    desc: 'Get discovered. Stand out in front of brands actively looking for creators like you.',
-  },
-]
-
-// Self-contained so tapping a card only re-renders this grid — keeping the
-// open/close state out of the 1,200-line App component (whose full re-render on
-// every tap was what made the mobile expand feel laggy).
-function FeatureCards({ isMobile }) {
-  const [openCard, setOpenCard] = useState(null)
-  // Desktop reveals the description on hover; mobile still taps to open.
-  const [hoverCard, setHoverCard] = useState(null)
-  return (
-    <div
-      className="rounded-2xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 lg:h-[428px]"
-      style={{
-        width: '858.21px',
-        maxWidth: '100%',
-        background:
-          'linear-gradient(180deg, rgba(16, 31, 70, 0.5) 0%, rgba(0, 9, 32, 0.72) 100%)',
-        border: '1px solid rgba(54, 55, 122, 0.4)',
-      }}
-    >
-      {FEATURE_CARDS.map((card, idx) => {
-        // Open on hover (desktop) or on tap (mobile, where hover never fires).
-        const isOpen = openCard === idx || (!isMobile && hoverCard === idx)
-        return (
-        <motion.div
-          key={idx}
-          className="relative px-8 pt-6 lg:pt-14 pb-8 flex flex-col rounded-2xl overflow-hidden cursor-pointer"
-          style={{ transformOrigin: 'center' }}
-          initial="rest"
-          whileHover={isMobile ? undefined : 'hover'}
-          animate="rest"
-          variants={{ rest: {}, hover: {} }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
-          onHoverStart={() => setHoverCard(idx)}
-          onHoverEnd={() => setHoverCard((c) => (c === idx ? null : c))}
-          onClick={() => setOpenCard(openCard === idx ? null : idx)}
-        >
-          {/* Straight white divider between cards */}
-          {idx !== 0 && (
-            <span className="hidden lg:block absolute left-0 top-0 bottom-0 w-px bg-white/40 pointer-events-none" />
-          )}
-
-          {/* Brighten overlay that fills in on hover (card opening out) */}
-          <motion.div
-            aria-hidden="true"
-            className="absolute inset-0 rounded-2xl pointer-events-none"
-            style={{ background: 'linear-gradient(180deg, rgba(33,22,185,0.22) 0%, rgba(13,8,115,0.10) 100%)' }}
-            variants={{ rest: { opacity: 0 }, hover: { opacity: 1 } }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-          />
-          <motion.div
-            className="relative z-10 flex flex-col h-full"
-            variants={{ rest: { scale: 1, y: 0 }, hover: { scale: 1.04, y: -6 } }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-          >
-            {/* Large faded index number at the top */}
-            <span
-              className="font-bold leading-none select-none pointer-events-none"
-              style={{
-                fontSize: '64px',
-                color: 'rgba(255,255,255,0.06)',
-                fontFamily: "'Outfit', sans-serif",
-              }}
-            >
-              {String(idx + 1).padStart(2, '0')}
-            </span>
-
-            {/* Accent line + icon + title anchored to the bottom */}
-            <div className="mt-auto">
-              <div
-                className="mb-6 rounded-full"
-                style={{
-                  width: '40px',
-                  height: '3px',
-                  background: '#E432A5',
-                }}
-              />
-              {/* Mobile-only expand arrow on the left; icon + title on the
-                  right (right-aligned), vertically centered against it.
-                  On lg+ the arrow is gone and the content goes back to left. */}
-              <div className="flex items-center justify-between gap-3">
-                {/* Mobile-only expand arrow — taps open the description text.
-                    Hidden on lg+ where the layout has room to show on hover/click. */}
-                <button
-                  type="button"
-                  aria-label={isOpen ? 'Hide details' : 'Show details'}
-                  aria-expanded={isOpen}
-                  className="lg:hidden shrink-0 -translate-y-8.5 flex items-center justify-center w-9 h-9 rounded-full border border-white/25 text-white/80"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="transition-transform duration-300"
-                    style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                  >
-                    <path
-                      d="M6 9l6 6 6-6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-
-                <div className="lg:w-full -translate-y-20.5 lg:translate-y-0">
-                  <div className="mb-6 flex justify-end lg:justify-start">{card.icon}</div>
-                  <h3
-                    className="text-white leading-tight text-right lg:text-left ml-auto lg:ml-0"
-                    style={{
-                      width: '165.46px',
-                      fontWeight: 500,
-                      fontSize: '24.27px',
-                    }}
-                  >
-                    {card.title}
-                  </h3>
-                </div>
-              </div>
-
-              {/* Description reveal — framer-motion animates height + opacity so
-                  the panel slides open and closed smoothly instead of snapping. */}
-              <motion.div
-                className="overflow-hidden -translate-y-12 lg:translate-y-0"
-                initial={false}
-                animate={{ height: isOpen ? 'auto' : 0 }}
-                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <motion.p
-                  className="text-white/75 pt-4 text-lg md:text-base"
-                  style={{
-                    lineHeight: '140%',
-                    fontFamily: "'Gelion', 'Outfit', sans-serif",
-                  }}
-                  initial={false}
-                  animate={{
-                    opacity: isOpen ? 1 : 0,
-                    y: isOpen ? 0 : 12,
-                  }}
-                  transition={{
-                    duration: 0.45,
-                    ease: 'easeOut',
-                    delay: isOpen ? 0.1 : 0,
-                  }}
-                >
-                  {card.desc}
-                </motion.p>
-              </motion.div>
-            </div>
-          </motion.div>
-        </motion.div>
-        )
-      })}
-    </div>
-  )
-}
-
-// Social-proof widget: a "joined already" counter that ticks up every 2.5s with
-// an avatar stack that slides a fresh face in on each tick. Kept as its own
-// component so its interval re-renders ONLY this small subtree — when this state
-// lived in App, every tick re-rendered the entire 1,300-line page, which showed
-// up as a periodic hitch while scrolling on mobile.
-const AVATAR_POOL = ['1 (2).jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg'].map(
-  (f) => `/${encodeURIComponent(f)}`,
-)
-function JoinedProof() {
-  const [joinedCount, setJoinedCount] = useState(140)
-  // The avatar stack shows the 4 most-recent "joiners". Each tick pushes a fresh
-  // face onto the right (cycling the image pool) and drops the leftmost, so a new
-  // photo slides in for every +1. `key` is unique & monotonic so AnimatePresence
-  // treats every push as a genuinely new element to animate in.
-  const [avatars, setAvatars] = useState(() =>
-    AVATAR_POOL.slice(0, 4).map((src, key) => ({ key, src })),
-  )
-  useEffect(() => {
-    const id = setInterval(() => {
-      setJoinedCount((n) => n + 1)
-      setAvatars((prev) => {
-        const nextKey = prev[prev.length - 1].key + 1
-        const src = AVATAR_POOL[nextKey % AVATAR_POOL.length]
-        return [...prev.slice(1), { key: nextKey, src }]
-      })
-    }, 2500) // one new join every 2.5s
-    return () => clearInterval(id)
-  }, [])
-
-  return (
-    <div className="flex items-center justify-center gap-3 mt-6 relative z-10">
-      <div className="flex -space-x-3">
-        <AnimatePresence initial={false} mode="popLayout">
-          {avatars.map((a) => (
-            <motion.img
-              key={a.key}
-              layout
-              src={a.src}
-              alt=""
-              aria-hidden="true"
-              initial={{ opacity: 0, scale: 0.4, x: 24 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.4, x: -24 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              className="w-12 h-12 rounded-full border-2 border-[#15151a] object-cover"
-            />
-          ))}
-        </AnimatePresence>
-      </div>
-      <div className="inline-flex items-center gap-2 rounded-full bg-white pl-1 pr-4 py-1">
-        <span className="flex items-center justify-center rounded-full bg-black text-white font-bold text-sm h-9 px-3 tabular-nums">
-          <RollingNumber value={joinedCount} />
-        </span>
-        <span className="text-black text-sm font-medium">Joined already</span>
-      </div>
-    </div>
-  )
-}
 
 function App() {
   const [activeTab, setActiveTab] = useState('home')
   const [menuOpen, setMenuOpen] = useState(false)
-  const reduceMotion = useReducedMotion()
   const isMobile = useIsMobile()
 
   // Founding Creator perks: cards start stacked and unstack to their grid spots,
@@ -456,6 +69,26 @@ function App() {
     }
 
     setStatus('sending')
+
+    // Best-effort enrichment: look up the handle's public follower + post count
+    // so the sheet row carries those too. Never blocks the signup — if the
+    // account isn't a discoverable Business/Creator account (or the lookup
+    // fails), we just submit with blank values.
+    let followers = ''
+    let posts = ''
+    const apiBase = import.meta.env.VITE_API_URL
+    if (apiBase) {
+      try {
+        const igHandle = handle.replace(/^@/, '')
+        const r = await fetch(`${apiBase}/public/ig-lookup/${encodeURIComponent(igHandle)}`)
+        const d = await r.json().catch(() => null)
+        if (d?.success && d.profile) {
+          followers = d.profile.followers ?? ''
+          posts = d.profile.posts ?? ''
+        }
+      } catch { /* enrichment is optional */ }
+    }
+
     try {
       await fetch(endpoint, {
         method: 'POST',
@@ -464,7 +97,7 @@ function App() {
         // go through (text/plain keeps it a simple request, no preflight).
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ name, email, handle, followers, posts }),
       })
       setStatus('success')
       setFormData({ name: '', email: '', handle: '' })
@@ -500,95 +133,7 @@ function App() {
 
 
       {/* ============ NAVIGATION ============ */}
-      <nav id="home" className="relative z-50 flex items-center justify-between px-8 sm:px-12 md:px-20 lg:px-28 pt-6 pb-4 md:pb-8 border-b-2 border-white/40">
-        <div className="flex items-center gap-2">
-          <img src="/creasumelogo.svg" alt="Creasume" className="h-12 md:h-14 w-auto" />
-        </div>
-        <div
-          className="hidden md:flex items-center justify-between gap-1 px-2 rounded-full bg-[#020423] backdrop-blur-sm ml-auto"
-          style={{ height: '52px' }}
-        >
-          {[
-            { id: 'home', label: 'Home', href: '#home' },
-            { id: 'vision', label: 'Vision', href: '#vision' },
-            { id: 'how-it-works', label: 'How it Works', href: '#how-it-works' },
-            { id: 'waitlist', label: 'Join the Waitlist', href: '#waitlist' },
-          ].map((tab) => {
-            const isActive = activeTab === tab.id
-            return (
-              <a
-                key={tab.id}
-                href={tab.href}
-                onClick={(e) => {
-                  setActiveTab(tab.id)
-                  if (tab.id === 'home') {
-                    e.preventDefault()
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }
-                }}
-                className={`flex items-center justify-center h-[42px] rounded-full font-medium transition-colors duration-150 ease-in-out ${
-                  isActive ? 'text-white px-6' : 'text-[#9EA5E2] hover:text-white px-3'
-                }`}
-                style={{
-                  fontSize: '20px',
-                  fontWeight: 500,
-                  backgroundColor: isActive ? 'rgba(34, 39, 114, 0.53)' : 'transparent',
-                }}
-              >
-                {tab.label}
-              </a>
-            )
-          })}
-        </div>
-
-        {/* Mobile hamburger button */}
-        <button
-          type="button"
-          aria-label="Toggle menu"
-          aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((o) => !o)}
-          className="md:hidden flex items-center justify-center w-11 h-11 rounded-full bg-[#020423] text-white"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            {menuOpen ? (
-              <path d="M6 6L18 18M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            ) : (
-              <path d="M4 7H20M4 12H20M4 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            )}
-          </svg>
-        </button>
-
-        {/* Mobile dropdown menu */}
-        {menuOpen && (
-          <div className="md:hidden absolute left-6 right-6 top-full mt-2 rounded-2xl bg-[#020423] border border-[#36377A]/50 p-2 z-50 flex flex-col">
-            {[
-              { id: 'home', label: 'Home', href: '#home' },
-              { id: 'vision', label: 'Vision', href: '#vision' },
-              { id: 'how-it-works', label: 'How it Works', href: '#how-it-works' },
-              { id: 'waitlist', label: 'Join the Waitlist', href: '#waitlist' },
-            ].map((tab) => (
-              <a
-                key={tab.id}
-                href={tab.href}
-                onClick={(e) => {
-                  setActiveTab(tab.id)
-                  setMenuOpen(false)
-                  if (tab.id === 'home') {
-                    e.preventDefault()
-                    window.scrollTo({ top: 0, behavior: 'smooth' })
-                  }
-                }}
-                className={`px-4 py-3 rounded-xl font-medium transition-colors duration-150 ${
-                  activeTab === tab.id ? 'text-white bg-[rgba(34,39,114,0.53)]' : 'text-[#9EA5E2] hover:text-white'
-                }`}
-                style={{ fontSize: '18px', fontWeight: 500 }}
-              >
-                {tab.label}
-              </a>
-            ))}
-          </div>
-        )}
-      </nav>
+      <SiteNav />
 
       {/* ============ HERO SECTION ============ */}
       <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-6 pb-12 md:pt-20 md:pb-20">
@@ -811,23 +356,23 @@ function App() {
             Security of your data is our utmost priority
           </p>
           <div
-            className="inline-flex items-center justify-center gap-4 rounded-full bg-white mb-10"
-            style={{ width: '340px', maxWidth: '100%', height: '50px' }}
+            className="inline-flex items-center justify-center gap-3 rounded-full bg-white mb-10"
+            style={{ width: '188px', maxWidth: '100%', height: '38px' }}
           >
             <img
               src="/Group%201707480613.png"
               alt="Creasume"
-              width="96"
-              height="26"
-              style={{ display: 'block', width: '96px', height: '26px', objectFit: 'contain', imageRendering: 'auto' }}
+              width="74"
+              height="20"
+              style={{ display: 'block', width: '74px', height: '20px', objectFit: 'contain', imageRendering: 'auto' }}
             />
-            <span className="text-[#9EA5E2] text-base">×</span>
+            <span className="text-[#9EA5E2] text-sm">×</span>
             <img
               src="/image%202%20(1).png"
               alt="Meta"
-              width="75"
-              height="21"
-              style={{ display: 'block', width: '75px', height: '21px', objectFit: 'contain', imageRendering: 'auto' }}
+              width="58"
+              height="16"
+              style={{ display: 'block', width: '58px', height: '16px', objectFit: 'contain', imageRendering: 'auto' }}
             />
           </div>
           <p
@@ -1118,18 +663,18 @@ function App() {
               Your consent matters to us
             </p>
             <motion.div
-              className="shine-border shine-border--instagram inline-flex items-center gap-4 px-7 py-3 rounded-full bg-white mb-7"
+              className="shine-border shine-border--instagram inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-white mb-7"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
               viewport={{ once: true, margin: '-60px' }}
             >
               {/* Hi-res wordmark darkened → crisp on scaled/retina displays. */}
-              <img src="/creasumelogo.png" alt="Creasume" style={{ height: '24px', width: 'auto', objectFit: 'contain', filter: 'brightness(0)' }} />
-              <span className="text-[#9EA5E2] text-lg">×</span>
+              <img src="/creasumelogo.png" alt="Creasume" style={{ height: '20px', width: 'auto', objectFit: 'contain', filter: 'brightness(0)' }} />
+              <span className="text-[#9EA5E2] text-sm">×</span>
               {/* Instagram glyph as inline SVG (vector → no blur) + wordmark. */}
-              <span className="inline-flex items-center gap-2">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <span className="inline-flex items-center gap-1.5">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <defs>
                     <linearGradient id="igGrad" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
                       <stop offset="0" stopColor="#FEDA75" />
@@ -1143,7 +688,7 @@ function App() {
                   <circle cx="12" cy="12" r="5" stroke="url(#igGrad)" strokeWidth="2" />
                   <circle cx="17.4" cy="6.6" r="1.4" fill="url(#igGrad)" />
                 </svg>
-                <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: '20px', color: '#262626', letterSpacing: '-0.01em' }}>Instagram</span>
+                <span style={{ fontFamily: "'Outfit', sans-serif", fontWeight: 600, fontSize: '15px', color: '#262626', letterSpacing: '-0.01em' }}>Instagram</span>
               </span>
             </motion.div>
             <p className="text-xl md:text-2xl text-white font-normal mx-auto whitespace-normal md:whitespace-nowrap">

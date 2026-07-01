@@ -1,8 +1,12 @@
 import { useEffect } from 'react'
 import Lenis from 'lenis'
 import App from './App.jsx'
+import LandingPage from './landing/LandingPage.jsx'
 import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
 import TermsConditions from './pages/TermsConditions.jsx'
+import ContactUs from './pages/ContactUs.jsx'
+import PricingPage from './pages/PricingPage.jsx'
+import HowItWorks from './pages/HowItWorks.jsx'
 import InfluenceCard from './pages/InfluenceCard.jsx'
 import InfluenceDashboard from './components/influence-dashboard/InfluenceDashboard.jsx'
 import InfluenceInquiries from './components/influence-dashboard/InfluenceInquiries.jsx'
@@ -102,6 +106,9 @@ function Root() {
 
   if (route === '/privacy-policy') return <PrivacyPolicy />
   if (route === '/terms') return <TermsConditions />
+  if (route === '/contact') return <ContactUs />
+  if (route === '/pricing') return <PricingPage />
+  if (route === '/how-it-works') return <HowItWorks />
 
   // Instagram login redirect target — stores the token, then forwards to the
   // creator's dashboard. Query string lives in window.location.search.
@@ -128,6 +135,10 @@ function Root() {
     if (sub === 'inquiries') return <InfluenceInquiries username={username} />
     return <InfluenceDashboard username={username} />
   }
+  // `/landing` renders the new marketing landing page (distinct from the
+  // waitlist home). Matched before the `/<username>` catch-all below.
+  if (route === '/landing') return <LandingPage />
+
   // `/waitlist` is the home page anchored to the waitlist section (scroll
   // handled by the effect above) — kept clean so the URL has no `#`.
   if (route === '/waitlist') return <App />

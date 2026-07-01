@@ -36,7 +36,7 @@ function Footer() {
           <ul className="space-y-4 text-lg text-white font-normal">
             <li><a href="#home" className="hover:text-white transition">Home</a></li>
             <li><a href="#vision" className="hover:text-white transition">Vision</a></li>
-            <li><a href="#how-it-works" className="hover:text-white transition">How it Works</a></li>
+            <li><a href="#/how-it-works" className="hover:text-white transition">How it Works</a></li>
             <li><a href="#waitlist" className="hover:text-white transition">Join the Waitlist</a></li>
           </ul>
         </div>
@@ -55,6 +55,7 @@ function Footer() {
           </ul>
           <h4 className="font-semibold text-2xl mt-8 mb-6">Contact Us</h4>
           <ul className="space-y-4 text-sm md:text-lg text-white">
+            <li><a href="#/contact" className="hover:text-white transition">Send us a message</a></li>
             <li><a href="mailto:support@creasume.com" className="hover:text-white transition break-words">support@creasume.com</a></li>
           </ul>
         </div>
@@ -77,8 +78,7 @@ function Footer() {
 
       {/* Giant CREASUME text — hollow outline of the real font. The footer
           itself has overflow-hidden (to contain its glows) and clips the word's
-          intentional horizontal bleed. No negative bottom margin here, or the
-          footer cuts the lower half of the letters off. */}
+          intentional horizontal bleed. */}
       <div className="relative z-10 -mx-7.5 md:-mx-16 lg:-mx-24 pt-2 md:pt-16 md:-mb-8">
         <h1 className="giant-text text-center select-none whitespace-nowrap">
           CREASUME

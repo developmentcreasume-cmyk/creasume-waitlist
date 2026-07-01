@@ -7,7 +7,7 @@ import Footer from '../components/Footer.jsx'
 const NAV = [
   { id: 'home', label: 'Home', href: '#home' },
   { id: 'vision', label: 'Vision', href: '#vision' },
-  { id: 'how-it-works', label: 'How it Works', href: '#how-it-works' },
+  { id: 'how-it-works', label: 'How it Works', href: '#/how-it-works' },
   { id: 'waitlist', label: 'Join the Waitlist', href: '#waitlist' },
 ]
 

@@ -12,7 +12,7 @@ export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 // page (`/`), the legal pages, and the app routes are reserved and return no
 // creator. The SPA rewrite in vercel.json makes these deep links / refreshes
 // serve index.html.
-const RESERVED_PATHS = ['privacy-policy', 'terms', 'influence', 'dashboard', 'waitlist', 'auth-success', 'dev-login']
+const RESERVED_PATHS = ['privacy-policy', 'terms', 'contact', 'pricing', 'how-it-works', 'influence', 'dashboard', 'waitlist', 'auth-success', 'dev-login']
 export function resolveUsername() {
   if (typeof window === 'undefined') return ''
   const path = window.location.pathname.replace(/\/+$/, '')

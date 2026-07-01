@@ -364,16 +364,31 @@ export default function SensesSection() {
             </div>
           </div>
 
+          {/* Legibility scrim — a soft dark vignette weighted to the left so the
+              heading/copy read cleanly over the marquee without hiding it. Sits
+              between the marquee (z-0) and the foreground content (z-10). */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 z-5"
+            style={{
+              background:
+                'radial-gradient(75% 95% at 26% 50%, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.72) 38%, rgba(0,0,0,0.32) 60%, rgba(0,0,0,0) 78%)',
+            }}
+          />
+
           {/* ===== Foreground content ===== */}
           <div className="relative z-10 w-full px-8 sm:px-12 md:px-20 lg:px-28 grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-16 items-center">
             <h2
               className="lg:col-start-1 lg:row-start-1 font-bold leading-[1.05] text-center lg:text-left"
-              style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(34px, 7vw, 72px)' }}
+              style={{ fontFamily: "'Outfit', sans-serif", fontSize: 'clamp(34px, 7vw, 72px)', textShadow: '0 2px 24px rgba(0,0,0,0.6)' }}
             >
               {headingText}
             </h2>
 
-            <p className="lg:col-start-1 lg:row-start-2 text-white/75 max-w-xl mx-auto lg:mx-0 text-center lg:text-left text-lg md:text-2xl leading-relaxed lg:-mt-10">
+            <p
+              className="lg:col-start-1 lg:row-start-2 text-white/80 max-w-xl mx-auto lg:mx-0 text-center lg:text-left text-lg md:text-2xl leading-relaxed lg:-mt-10"
+              style={{ textShadow: '0 2px 18px rgba(0,0,0,0.85)' }}
+            >
               {copyText}
             </p>
 

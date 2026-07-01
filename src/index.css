@@ -259,17 +259,17 @@ html.lenis body {
   font-size: clamp(64px, 13vw, 190px);
   line-height: 1;
   letter-spacing: 0.01em;
-  color: rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.2);
   text-transform: uppercase;
 }
 
 /* COLLABORATE / ENGAGEMENT — large, brighter "dark white". */
 .marquee-row--bright {
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.42);
+  color: rgba(255, 255, 255, 0.6);
 }
 .marquee-row--bright .marquee-dot {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 /* INFLUENCE — smaller, and hollow (clean merged outline via text-shadow so
@@ -279,28 +279,28 @@ html.lenis body {
   color: #000000;
   -webkit-text-fill-color: #000000;
   text-shadow:
-    1px 0 0 rgba(255, 255, 255, 0.1),
-    -1px 0 0 rgba(255, 255, 255, 0.1),
-    0 1px 0 rgba(255, 255, 255, 0.1),
-    0 -1px 0 rgba(255, 255, 255, 0.1),
-    1px 1px 0 rgba(255, 255, 255, 0.1),
-    -1px -1px 0 rgba(255, 255, 255, 0.1),
-    1px -1px 0 rgba(255, 255, 255, 0.1),
-    -1px 1px 0 rgba(255, 255, 255, 0.1);
+    1px 0 0 rgba(255, 255, 255, 0.55),
+    -1px 0 0 rgba(255, 255, 255, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.55),
+    0 -1px 0 rgba(255, 255, 255, 0.55),
+    1px 1px 0 rgba(255, 255, 255, 0.55),
+    -1px -1px 0 rgba(255, 255, 255, 0.55),
+    1px -1px 0 rgba(255, 255, 255, 0.55),
+    -1px 1px 0 rgba(255, 255, 255, 0.55);
 }
 /* Match the dot to the INFLUENCE text itself: hollow outline, not a solid dot. */
 .marquee-row--sm .marquee-dot {
   -webkit-text-fill-color: #000000;
   color: #000000;
   text-shadow:
-    1px 0 0 rgba(255, 255, 255, 0.1),
-    -1px 0 0 rgba(255, 255, 255, 0.1),
-    0 1px 0 rgba(255, 255, 255, 0.1),
-    0 -1px 0 rgba(255, 255, 255, 0.1),
-    1px 1px 0 rgba(255, 255, 255, 0.1),
-    -1px -1px 0 rgba(255, 255, 255, 0.1),
-    1px -1px 0 rgba(255, 255, 255, 0.1),
-    -1px 1px 0 rgba(255, 255, 255, 0.1);
+    1px 0 0 rgba(255, 255, 255, 0.55),
+    -1px 0 0 rgba(255, 255, 255, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.55),
+    0 -1px 0 rgba(255, 255, 255, 0.55),
+    1px 1px 0 rgba(255, 255, 255, 0.55),
+    -1px -1px 0 rgba(255, 255, 255, 0.55),
+    1px -1px 0 rgba(255, 255, 255, 0.55),
+    -1px 1px 0 rgba(255, 255, 255, 0.55);
 }
 
 /* On phones the marquee lines are part of the vertical stack (heading → card →
@@ -321,7 +321,7 @@ html.lenis body {
 
 .marquee-dot {
   padding: 0 0.18em;
-  color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.22);
 }
 
 
@@ -534,6 +534,52 @@ body::-webkit-scrollbar {
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.97); }
   to   { opacity: 1; transform: scale(1); }
+}
+
+/* ===== Landing page continuous marquees (feature bar + brand logos) =====
+   Two identical halves sit side by side; the track slides one half-width and
+   loops, so the row scrolls seamlessly. Duration is set inline per row. */
+@keyframes lp-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.lp-marquee {
+  display: flex;
+  width: max-content;
+  animation: lp-scroll linear infinite;
+}
+.lp-marquee-group:hover .lp-marquee {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-marquee { animation: none; }
+}
+
+/* Contact form underline inputs: strip the browser autofill box (the blue/dark
+   filled rectangle Chrome paints on email fields) so every field stays a clean
+   transparent line like the others. */
+/* The email field is a type="search" input (search fields never get Chrome's
+   autofill box). Strip the native search UI so it reads as a plain line. */
+.contact-field::-webkit-search-cancel-button,
+.contact-field::-webkit-search-decoration,
+.contact-field::-webkit-search-results-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.contact-field:-webkit-autofill,
+.contact-field:-webkit-autofill:hover,
+.contact-field:-webkit-autofill:focus,
+.contact-field:-webkit-autofill:active,
+.contact-field:autofill {
+  /* Clip the autofill fill to the text glyphs so NO box is painted; keep the
+     text white and the caret visible. */
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  transition: background-color 9999s ease-in-out 0s !important;
 }
 
 /* Founding Creator badge — a bright highlight sweeps around the gold border.
