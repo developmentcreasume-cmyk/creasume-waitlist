@@ -205,16 +205,25 @@ function LaptopFrame({ src }) {
   )
 }
 
-function LivePreview({ device, setDevice, deviceRef, src }) {
+// Phone / desktop switch. Rendered in the preview strip on mobile and in the
+// top toolbar on desktop (see the header), so it's a shared component.
+function DeviceToggle({ device, setDevice, refCb, className = '' }) {
+  return (
+    <div ref={refCb} className={`flex items-center gap-1 rounded-xl p-1 ${className}`} style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.15)' }}>
+      <button type="button" onClick={() => setDevice('phone')} className="grid place-items-center rounded-lg transition-colors" style={{ width: 32, height: 30, color: '#fff', background: device === 'phone' ? 'rgba(139,92,246,0.7)' : 'transparent' }}>{I.phone}</button>
+      <button type="button" onClick={() => setDevice('desktop')} className="grid place-items-center rounded-lg transition-colors" style={{ width: 32, height: 30, color: '#fff', background: device === 'desktop' ? 'rgba(139,92,246,0.7)' : 'transparent' }}>{I.monitor}</button>
+    </div>
+  )
+}
+
+function LivePreview({ device, setDevice, deviceRefCb, src }) {
   return (
     <div className="pt-6 pb-4">
       {/* Header row above the frame — badge left, device toggle right (no overlap) */}
       <div className="flex items-center justify-between gap-3 mb-4 px-1">
         <span className="rounded-md px-2.5 py-1 text-[11px] font-semibold" style={{ fontFamily: MONO, color: '#fff', background: '#5B62E0' }}>Live Preview</span>
-        <div ref={deviceRef} className="flex items-center gap-1 rounded-xl p-1" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.15)' }}>
-          <button type="button" onClick={() => setDevice('phone')} className="grid place-items-center rounded-lg transition-colors" style={{ width: 32, height: 30, color: '#fff', background: device === 'phone' ? 'rgba(139,92,246,0.7)' : 'transparent' }}>{I.phone}</button>
-          <button type="button" onClick={() => setDevice('desktop')} className="grid place-items-center rounded-lg transition-colors" style={{ width: 32, height: 30, color: '#fff', background: device === 'desktop' ? 'rgba(139,92,246,0.7)' : 'transparent' }}>{I.monitor}</button>
-        </div>
+        {/* On desktop the toggle moves up into the toolbar, so hide it here. */}
+        <DeviceToggle device={device} setDevice={setDevice} refCb={deviceRefCb} className="md:hidden" />
       </div>
       <div className="flex justify-center">
         {device === 'desktop' ? <LaptopFrame src={src} /> : <PhoneFrame src={src} />}
@@ -849,6 +858,11 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
   const tabsRef = useRef(null)
   const deviceRef = useRef(null)
   const saveRef = useRef(null)
+  // The toolbar renders twice (a mobile two-row layout and a desktop single-row
+  // layout), only one of which is visible at a time. This callback-ref helper
+  // assigns a tour target only from the currently-visible copy (a hidden element
+  // has no offsetParent), so the tour spotlights the right node on each viewport.
+  const visRef = (r) => (node) => { if (node && node.offsetParent !== null) r.current = node }
   // Shown ONCE ever (first time the editor is opened). The flag persists in
   // localStorage across sessions on this browser.
   useEffect(() => {
@@ -1029,29 +1043,46 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
   return (
     <>
       {showTour && <DashboardTour steps={tourSteps} onDone={finishEditTour} />}
-      {/* Header: row 1 = title + Preview; row 2 = tabs (menu) + Save icon on the right */}
-      <header className="px-4 sm:px-6 md:px-10 py-4 flex flex-col gap-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-        {/* Title + Preview together */}
-        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-wrap">
-          <h1 className="font-bold text-2xl sm:text-3xl whitespace-nowrap shrink-0" style={{ fontFamily: FONT }}>Edit Influence Card</h1>
-          <a href={handle ? `/${handle}` : '/'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 ml-12 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 no-underline shrink-0" style={{ fontFamily: FONT, background: '#fff' }}>{I.eye} Preview</a>
+      <header className="px-4 sm:px-6 md:px-10 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        {/* ===== MOBILE (unchanged): row 1 = title + Preview; row 2 = tabs ===== */}
+        <div className="md:hidden flex flex-col gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-wrap">
+            <h1 className="font-bold text-2xl sm:text-3xl whitespace-nowrap shrink-0" style={{ fontFamily: FONT }}>Edit Influence Card</h1>
+            <a href={handle ? `/${handle}` : '/'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 ml-12 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 no-underline shrink-0" style={{ fontFamily: FONT, background: '#fff' }}>{I.eye} Preview</a>
+          </div>
+          <div className="flex items-center gap-3">
+            <nav ref={visRef(tabsRef)} className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {TABS.map((t) => {
+                const active = tab === t
+                return (
+                  <button key={t} type="button" onClick={() => setTab(t)} className="rounded-lg px-3 sm:px-4 py-2 text-[14px] font-medium transition-colors whitespace-nowrap shrink-0" style={{ fontFamily: FONT, color: active ? '#fff' : 'rgba(255,255,255,0.6)', background: active ? 'rgba(255,255,255,0.1)' : 'transparent' }}>
+                    {t}
+                  </button>
+                )
+              })}
+            </nav>
+            {savedMsg && <span className="text-[13px] font-semibold whitespace-nowrap shrink-0" style={{ fontFamily: FONT, color: savedMsg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{savedMsg}</span>}
+          </div>
         </div>
-        {/* Tabs (menu) row — Save icon pinned to the right end */}
-        <div className="flex items-center gap-3">
-          <nav ref={tabsRef} className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+
+        {/* ===== DESKTOP (website): single row — title · tabs · toggle · Preview · Save ===== */}
+        <div className="hidden md:flex items-center gap-4">
+          <h1 className="font-bold text-3xl whitespace-nowrap shrink-0" style={{ fontFamily: FONT }}>Edit Influence Card</h1>
+          <nav ref={visRef(tabsRef)} className="flex items-center gap-1 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {TABS.map((t) => {
               const active = tab === t
               return (
-                <button key={t} type="button" onClick={() => setTab(t)} className="rounded-lg px-3 sm:px-4 py-2 text-[14px] font-medium transition-colors whitespace-nowrap shrink-0" style={{ fontFamily: FONT, color: active ? '#fff' : 'rgba(255,255,255,0.6)', background: active ? 'rgba(255,255,255,0.1)' : 'transparent' }}>
+                <button key={t} type="button" onClick={() => setTab(t)} className="rounded-lg px-4 py-2 text-[14px] font-medium transition-colors whitespace-nowrap shrink-0" style={{ fontFamily: FONT, color: active ? '#fff' : 'rgba(255,255,255,0.6)', background: active ? 'rgba(255,255,255,0.1)' : 'transparent' }}>
                   {t}
                 </button>
               )
             })}
           </nav>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="ml-auto flex items-center gap-3 shrink-0">
             {savedMsg && <span className="text-[13px] font-semibold whitespace-nowrap" style={{ fontFamily: FONT, color: savedMsg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{savedMsg}</span>}
-            {/* Hidden on mobile — the dashboard's top bar carries Save there. */}
-            <button ref={saveRef} type="button" onClick={onSave} disabled={saving} title="Save Changes" aria-label="Save Changes" className="hidden md:inline-flex items-center justify-center rounded-full text-white transition-opacity hover:opacity-90 disabled:opacity-60" style={{ width: 40, height: 40, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}>{I.save}</button>
+            <DeviceToggle device={device} setDevice={setDevice} refCb={visRef(deviceRef)} />
+            <a href={handle ? `/${handle}` : '/'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 no-underline shrink-0" style={{ fontFamily: FONT, background: '#fff' }}>{I.eye} Preview</a>
+            <button ref={visRef(saveRef)} type="button" onClick={onSave} disabled={saving} title="Save Changes" aria-label="Save Changes" className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60" style={{ fontFamily: FONT, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}>{I.save} Save Changes</button>
           </div>
         </div>
       </header>
@@ -1059,7 +1090,7 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
       {/* Content with the blue editor gradient backdrop */}
       <div style={{ background: 'radial-gradient(110% 80% at 50% 0%, #1c277a 0%, #121845 38%, #0a0c1f 80%)' }}>
         <div className="px-4 sm:px-6 md:px-16 lg:px-24 pb-16">
-          <LivePreview device={device} setDevice={setDevice} deviceRef={deviceRef} src={previewSrc} />
+          <LivePreview device={device} setDevice={setDevice} deviceRefCb={visRef(deviceRef)} src={previewSrc} />
           <div className="pt-8">
             {tab === 'Profile' && <ProfilePanel profile={profile} setProfile={setProfile} socials={socials} setSocials={setSocials} username={handle} avatarSrc={avatarSrc} onSaveLinks={saveLinks} />}
             {tab === 'Portfolio' && <PortfolioPanel collabs={collabs} onAdd={addCollab} onRemove={removeCollab} />}
