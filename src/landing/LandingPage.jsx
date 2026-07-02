@@ -32,16 +32,27 @@ function MetaBadge() {
   )
 }
 
-// One seamless horizontal marquee (two identical halves + CSS slide loop).
-function Marquee({ children, duration = 22, className = '', reverse = false }) {
+// One seamless horizontal marquee. The CSS loop translates the track -50%, so it
+// only reads as gapless if EACH half is at least as wide as the viewport. For
+// short content (a few words) one copy is narrower than a wide screen, which
+// leaves a blank gap in the loop — so `repeat` tiles the children per half until
+// the half overflows. Leave it low for already-wide content (rows of cards).
+function Marquee({ children, duration = 22, className = '', reverse = false, repeat = 2 }) {
+  const half = (aria) => (
+    <div className="flex shrink-0" aria-hidden={aria}>
+      {Array.from({ length: repeat }).map((_, r) => (
+        <div key={r} className="flex shrink-0">{children}</div>
+      ))}
+    </div>
+  )
   return (
     <div className={`lp-marquee-group flex w-full overflow-hidden ${className}`}>
       <div
         className="lp-marquee"
         style={{ animationDuration: `${duration}s`, animationDirection: reverse ? 'reverse' : 'normal' }}
       >
-        <div className="flex shrink-0">{children}</div>
-        <div className="flex shrink-0" aria-hidden="true">{children}</div>
+        {half(undefined)}
+        {half(true)}
       </div>
     </div>
   )
@@ -105,7 +116,7 @@ export default function LandingPage() {
           { id: 'pricing', label: 'Pricing', href: '#/pricing' },
           { id: 'dashboard', label: 'Dashboard', href: '#apply' },
           { id: 'how-it-works', label: 'How it Works', href: '#/how-it-works' },
-          { id: 'signout', label: 'Sign Out', href: '#home' },
+          { id: 'signin', label: 'Sign In', href: '/login' },
         ]}
         cta={{ label: 'Get Your Free Resume', href: '#apply' }}
         ctaVariant="gradient"
@@ -204,6 +215,26 @@ export default function LandingPage() {
               className="w-full"
               style={{ maxWidth: '480px' }}
             >
+             {/* "Check out a live demo here ↓" — same as the waitlist page. */}
+             <p
+               className="text-center mb-4 text-sm md:text-base font-medium tracking-wide"
+               style={{ fontFamily: "'Outfit', sans-serif", color: 'rgba(255,255,255,0.72)' }}
+             >
+               Check out a live demo{' '}
+               <span
+                 style={{
+                   fontWeight: 700,
+                   background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)',
+                   WebkitBackgroundClip: 'text',
+                   backgroundClip: 'text',
+                   WebkitTextFillColor: 'transparent',
+                   color: 'transparent',
+                 }}
+               >
+                 here
+               </span>
+               <span style={{ color: '#E731A2' }}> ↓</span>
+             </p>
              <div className="shine-border rounded-xl overflow-hidden">
               <div className="flex items-center gap-3 px-4 rounded-t-xl" style={{ height: '40px', backgroundColor: '#181B4A', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                 <span className="flex items-center gap-2 shrink-0">
@@ -237,7 +268,7 @@ export default function LandingPage() {
             WebkitMaskImage: 'linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%)',
           }}
         >
-          <Marquee duration={26}>
+          <Marquee duration={26} repeat={4}>
             {['Real Metrics', 'One Link', 'Professional Identity', 'Verified Accounts'].map((w, i) => (
               <span key={i} className="inline-flex items-center text-white/85 text-xl md:text-2xl font-medium whitespace-nowrap" style={{ fontFamily: "'Outfit', sans-serif" }}>
                 <span className="mx-6 md:mx-9 w-2 h-2 rounded-full bg-[#5D65DC]" />

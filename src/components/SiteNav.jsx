@@ -20,8 +20,8 @@ const DEFAULT_NAV = [
   { id: 'pricing', label: 'Pricing', href: '/pricing' },
   { id: 'contact', label: 'Contact', href: '/contact' },
 ]
-const DEFAULT_CTA = { label: 'Sign Up', href: '/waitlist' }
-const LOGIN_HREF = '/'
+const DEFAULT_CTA = { label: 'Sign Up', href: '/signup' }
+const LOGIN_HREF = '/login'
 
 // Intercept a click on an internal clean-path link and navigate through the SPA
 // router (History API) instead of a hash. This works from ANY page — including
@@ -71,11 +71,11 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
 
   return (
     <nav id="home" className="relative z-50 px-4 sm:px-8 md:px-12 lg:px-20 py-6">
-      <div className="relative w-full lg:w-fit max-w-full mx-auto">
-        <div className="nav-glass flex items-center justify-between lg:justify-center gap-3 sm:gap-6 px-0 sm:px-0 lg:px-5 py-0 lg:py-2 rounded-full">
+      <div className="relative w-full max-w-full lg:max-w-6xl mx-auto">
+        <div className="nav-glass flex items-center justify-between lg:justify-between gap-3 sm:gap-6 lg:gap-8 px-0 sm:px-0 lg:px-8 py-0 lg:py-3 rounded-full">
           {/* Logo in its own dark inset pill → back to the landing home. */}
-          <a href="/landing" onClick={navClick('/landing')} className="flex items-center rounded-full pl-3 pr-4 sm:pr-5 h-10 sm:h-11 shrink-0" style={DARK_CHIP}>
-            <img src="/creasumelogo.svg" alt="Creasume" className="h-6 sm:h-8 w-auto" />
+          <a href="/landing" onClick={navClick('/landing')} className="flex items-center rounded-full pl-3 pr-4 sm:pr-5 lg:pr-6 h-10 sm:h-11 lg:h-13 shrink-0" style={DARK_CHIP}>
+            <img src="/creasumelogo.svg" alt="Creasume" className="h-6 sm:h-8 lg:h-9 w-auto" />
           </a>
 
           {/* Desktop links (inline) */}
@@ -87,10 +87,10 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
                   key={tab.id}
                   href={tab.href}
                   onClick={navClick(tab.href)}
-                  className="px-4 h-11 flex items-center rounded-full font-medium transition-colors hover:text-white"
+                  className="px-5 h-13 flex items-center rounded-full font-medium whitespace-nowrap transition-colors hover:text-white"
                   style={{
                     fontFamily: FONT,
-                    fontSize: '16px',
+                    fontSize: '18px',
                     color: isActive ? '#fff' : 'rgba(255,255,255,0.85)',
                     ...(isActive ? DARK_CHIP : {}),
                   }}
@@ -107,8 +107,8 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
               <a
                 href={LOGIN_HREF}
                 onClick={navClick(LOGIN_HREF)}
-                className="px-5 h-11 flex items-center rounded-full font-medium text-white hover:brightness-125 transition"
-                style={{ fontFamily: FONT, fontSize: '16px', ...DARK_CHIP }}
+                className="px-6 h-13 flex items-center rounded-full font-medium text-white hover:brightness-125 transition"
+                style={{ fontFamily: FONT, fontSize: '18px', ...DARK_CHIP }}
               >
                 Login
               </a>
@@ -116,8 +116,8 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
             <a
               href={cta.href}
               onClick={navClick(cta.href)}
-              className="px-5 h-11 flex items-center rounded-full font-semibold whitespace-nowrap transition-transform hover:scale-[1.03]"
-              style={{ fontFamily: FONT, fontSize: '15px', ...ctaStyle }}
+              className="px-6 h-13 flex items-center rounded-full font-semibold whitespace-nowrap transition-transform hover:scale-[1.03]"
+              style={{ fontFamily: FONT, fontSize: '17px', ...ctaStyle }}
             >
               {cta.label}
             </a>
@@ -144,13 +144,13 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
 
         {/* Mobile dropdown menu — all links + login + CTA */}
         {open && (
-          <div className="lg:hidden absolute right-0 top-full mt-2 w-[min(260px,80vw)] rounded-2xl p-2 flex flex-col z-50" style={GLASS_MENU}>
+          <div className="lg:hidden absolute right-0 top-full mt-2 w-64 max-w-[86vw] rounded-2xl p-2 flex flex-col z-50" style={GLASS_MENU}>
             {links.map((tab) => (
               <a
                 key={tab.id}
                 href={tab.href}
                 onClick={navClick(tab.href, () => setOpen(false))}
-                className="px-4 py-3 rounded-xl font-medium transition-colors"
+                className="px-4 py-3 rounded-xl font-medium whitespace-nowrap transition-colors"
                 style={{
                   fontFamily: FONT,
                   fontSize: '16px',
@@ -165,7 +165,7 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
               <a
                 href={LOGIN_HREF}
                 onClick={navClick(LOGIN_HREF, () => setOpen(false))}
-                className="px-4 py-3 rounded-xl font-medium text-white/90"
+                className="px-4 py-3 rounded-xl font-medium whitespace-nowrap text-white/90"
                 style={{ fontFamily: FONT, fontSize: '16px' }}
               >
                 Login

@@ -40,9 +40,12 @@ export default function WorkWithMe() {
       return
     }
     setError('')
+    // Blank the form after a successful send so the confirmed state starts clean.
+    const clearForm = () => setData({ brand: '', agency: '', email: '', campaignType: '', brief: '' })
     // No live creator (no URL username and no env default) → demo confirmation.
     if (!resolveUsername()) {
       setSent(true)
+      clearForm()
       return
     }
     setSending(true)
@@ -50,6 +53,7 @@ export default function WorkWithMe() {
     try {
       await sendInquiry(data)
       setSent(true)
+      clearForm()
     } catch (err) {
       setError(err.message || 'Could not send. Please try again.')
     } finally {

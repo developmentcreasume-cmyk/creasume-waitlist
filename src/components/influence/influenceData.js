@@ -237,11 +237,13 @@ export function summariseCampaigns(campaigns) {
 export const BRAND_SUMMARY = summariseCampaigns(CAMPAIGNS)
 
 // Brand collaborations timeline (BrandReach section).
+// `verified: true` → reach was pulled from the creator's own Instagram post.
+// `verified: false` → figures are self-reported (manually entered).
 export const BRAND_DEALS = [
-  { brand: 'Nike', campaign: 'Running shoe launch campaign', reach: '2.4M', tag: 'FITNESS' },
-  { brand: 'Adidas', campaign: 'Trail collection lookbook', reach: '2.1M', tag: 'FASHION' },
-  { brand: 'Sephora', campaign: 'Holiday makeup tutorial', reach: '1.8M', tag: 'BEAUTY' },
-  { brand: 'Airbnb', campaign: 'Hidden gems travel guide', reach: '1.4M', tag: 'TRAVEL' },
+  { brand: 'Nike', campaign: 'Running shoe launch campaign', reach: '2.4M', tag: 'FITNESS', verified: true },
+  { brand: 'Adidas', campaign: 'Trail collection lookbook', reach: '2.1M', tag: 'FASHION', verified: true },
+  { brand: 'Sephora', campaign: 'Holiday makeup tutorial', reach: '1.8M', tag: 'BEAUTY', verified: false },
+  { brand: 'Airbnb', campaign: 'Hidden gems travel guide', reach: '1.4M', tag: 'TRAVEL', verified: false },
 ]
 
 export const PACKAGES = [

@@ -41,10 +41,25 @@ export default function BrandReach() {
                   <div className="min-w-0">
                     <h3 className="text-white font-bold text-2xl md:text-3xl leading-none mb-2" style={{ fontFamily: FONT }}>{deal.brand}</h3>
                     <p className="text-white/55 text-sm mb-3">{deal.campaign}</p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {['REEL', 'POST'].map((t) => (
                         <span key={t} className="text-[9px] tracking-widest px-2 py-1 rounded" style={{ fontFamily: MONO, color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.18)' }}>{t}</span>
                       ))}
+                      {/* Provenance: verified = pulled from the creator's own Instagram
+                          post; otherwise the reach figure is self-reported. */}
+                      <span
+                        className="text-[9px] tracking-widest px-2 py-1 rounded inline-flex items-center gap-1"
+                        style={{
+                          fontFamily: MONO,
+                          color: deal.verified ? '#4DE0B0' : '#F6C560',
+                          border: `1px solid ${deal.verified ? 'rgba(77,224,176,0.4)' : 'rgba(246,197,96,0.4)'}`,
+                        }}
+                        title={deal.verified
+                          ? 'Reach verified from Instagram'
+                          : 'Self-reported — entered manually, not verified from Instagram'}
+                      >
+                        {deal.verified ? '✓ VERIFIED' : 'ⓘ SELF-REPORTED'}
+                      </span>
                     </div>
                   </div>
                   <div className="shrink-0 text-right">

@@ -44,20 +44,22 @@ export async function fetchInfluenceData() {
 }
 
 // POST /inquiry/send/:username — used by the "Work With Me" form. The backend
-// stores { brandName, email, brief }; we fold the optional agency/campaign-type
-// fields into the brief so nothing the brand typed is lost.
+// stores { brandName, email, campaignType, brief }; campaignType is sent as its
+// own field, and the optional agency is folded into the brief so nothing the
+// brand typed is lost. Creating the inquiry both drops it into the creator's
+// dashboard AND raises their Creasume Score (brand inquiries are a scored
+// funnel action on the backend).
 export async function sendInquiry({ brand, agency, email, campaignType, brief }) {
   const username = resolveUsername()
   if (!username) throw new Error('No creator configured')
   const briefParts = [
-    campaignType && `Campaign type: ${campaignType}`,
     agency && `Agency: ${agency}`,
     brief,
   ].filter(Boolean)
   const res = await fetch(`${API_BASE}/inquiry/send/${encodeURIComponent(username)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ brandName: brand, email, brief: briefParts.join('\n') }),
+    body: JSON.stringify({ brandName: brand, email, campaignType, brief: briefParts.join('\n') }),
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok || data.success === false) throw new Error(data.error || 'Failed to send inquiry')

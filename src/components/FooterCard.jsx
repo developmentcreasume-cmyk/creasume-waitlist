@@ -35,7 +35,7 @@ export default function FooterCard() {
   return (
     <footer className="relative z-10 mt-auto px-6 sm:px-10 md:px-20 lg:px-28 pt-28 md:pt-40 pb-12">
       <div
-        className="mx-auto w-full max-w-[860px] min-h-[200px] flex flex-col justify-between rounded-3xl px-7 sm:px-10 md:px-12 py-5 md:py-6"
+        className="mx-auto w-full max-w-[1040px] min-h-[320px] flex flex-col justify-between rounded-3xl px-7 sm:px-10 md:px-14 py-10 md:py-14"
         style={{
           // Solid dark-navy fill (padding-box) + #2E267E→#EC3434 gradient border.
           // The fill is a flat gradient so it's valid as a non-final bg layer.

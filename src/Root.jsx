@@ -1,19 +1,31 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import Lenis from 'lenis'
-import App from './App.jsx'
-import LandingPage from './landing/LandingPage.jsx'
-import PrivacyPolicy from './pages/PrivacyPolicy.jsx'
-import TermsConditions from './pages/TermsConditions.jsx'
-import ContactUs from './pages/ContactUs.jsx'
-import PricingPage from './pages/PricingPage.jsx'
-import HowItWorks from './pages/HowItWorks.jsx'
-import InfluenceCard from './pages/InfluenceCard.jsx'
-import InfluenceDashboard from './components/influence-dashboard/InfluenceDashboard.jsx'
-import InfluenceInquiries from './components/influence-dashboard/InfluenceInquiries.jsx'
-import InfluenceInquiryDetail from './components/influence-dashboard/InfluenceInquiryDetail.jsx'
-import AuthSuccess from './components/influence-dashboard/AuthSuccess.jsx'
-import DevLogin from './components/influence-dashboard/DevLogin.jsx'
 import { useRoute } from './router.js'
+
+// Every route is a lazy chunk so a visitor only downloads the page they open —
+// the heavy creator card / dashboard code (charts, many components) no longer
+// ships in the initial bundle for the marketing pages, cutting load time.
+const App = lazy(() => import('./App.jsx'))
+const LandingPage = lazy(() => import('./landing/LandingPage.jsx'))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy.jsx'))
+const TermsConditions = lazy(() => import('./pages/TermsConditions.jsx'))
+const ContactUs = lazy(() => import('./pages/ContactUs.jsx'))
+const PricingPage = lazy(() => import('./pages/PricingPage.jsx'))
+const HowItWorks = lazy(() => import('./pages/HowItWorks.jsx'))
+const Login = lazy(() => import('./pages/Login.jsx'))
+const ConnectInstagram = lazy(() => import('./pages/ConnectInstagram.jsx'))
+const InfluenceCard = lazy(() => import('./pages/InfluenceCard.jsx'))
+const InfluenceDashboard = lazy(() => import('./components/influence-dashboard/InfluenceDashboard.jsx'))
+const InfluenceInquiries = lazy(() => import('./components/influence-dashboard/InfluenceInquiries.jsx'))
+const InfluenceInquiryDetail = lazy(() => import('./components/influence-dashboard/InfluenceInquiryDetail.jsx'))
+const AuthSuccess = lazy(() => import('./components/influence-dashboard/AuthSuccess.jsx'))
+const DevLogin = lazy(() => import('./components/influence-dashboard/DevLogin.jsx'))
+
+// Full-viewport black placeholder shown while a route chunk loads — matches the
+// app background so there's no white flash.
+function RouteFallback() {
+  return <div className="min-h-screen bg-black" />
+}
 
 // Site-wide Lenis smooth scrolling. Lenis scrolls the real document, so
 // framer-motion's useScroll (the perk-card scrubs, etc.) keeps tracking
@@ -104,11 +116,20 @@ function Root() {
   // `/influence/...` card never flashes.
   if (legacyInfluence) return <div className="min-h-screen bg-black" />
 
+  return <Suspense fallback={<RouteFallback />}>{pickRoute(route)}</Suspense>
+}
+
+// Resolve a route string to its (lazy) page element. Kept out of the component
+// so the effects/guards above stay simple; the result is rendered inside the
+// Suspense boundary in Root.
+function pickRoute(route) {
   if (route === '/privacy-policy') return <PrivacyPolicy />
   if (route === '/terms') return <TermsConditions />
   if (route === '/contact') return <ContactUs />
   if (route === '/pricing') return <PricingPage />
   if (route === '/how-it-works') return <HowItWorks />
+  if (route === '/login' || route === '/signup') return <Login />
+  if (route === '/connect') return <ConnectInstagram />
 
   // Instagram login redirect target — stores the token, then forwards to the
   // creator's dashboard. Query string lives in window.location.search.

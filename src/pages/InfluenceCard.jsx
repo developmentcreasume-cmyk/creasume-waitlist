@@ -14,9 +14,11 @@ import { InfluenceDataProvider, useInfluence } from '../components/influence/Inf
 function Loader() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-black">
-      <div
-        className="rounded-full animate-spin"
-        style={{ width: 40, height: 40, border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#8B5CF6' }}
+      <img
+        src="/loading.png"
+        alt="Loading…"
+        className="w-24 h-24 animate-pulse select-none"
+        style={{ objectFit: 'contain' }}
       />
     </div>
   )
