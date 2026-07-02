@@ -32,7 +32,19 @@ function InfluenceCardInner() {
   // inline styles on the root. Every themed element (LABEL_GRADIENT, accent
   // buttons, the avatar ring, fonts, …) reads these, so changing the theme
   // re-skins the whole card. No theme → fall back to the default palette/font/bg.
-  const FONT_MAP = { outfit: "'Outfit', sans-serif", inter: "'Inter', sans-serif" }
+  // Keys must match FONTS in EditProfileView.jsx and families loaded in index.html.
+  const FONT_MAP = {
+    outfit: "'Outfit', sans-serif",
+    inter: "'Inter', sans-serif",
+    poppins: "'Poppins', sans-serif",
+    montserrat: "'Montserrat', sans-serif",
+    sora: "'Sora', sans-serif",
+    spaceGrotesk: "'Space Grotesk', sans-serif",
+    dmSans: "'DM Sans', sans-serif",
+    bricolage: "'Bricolage Grotesque', sans-serif",
+    playfair: "'Playfair Display', serif",
+    lora: "'Lora', serif",
+  }
   const BG_MAP = {
     mesh: 'radial-gradient(120% 120% at 30% 10%, #2b3aa0 0%, #141a4d 45%, #0a0c1f 100%)',
     solid: 'linear-gradient(160deg,#0b0d18 0%,#05060f 100%)',

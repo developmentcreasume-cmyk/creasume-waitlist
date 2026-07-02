@@ -284,10 +284,10 @@ export function mapInfluenceData(api, d) {
     verified: !!(c.isVerified || c.isFoundingCreator),
     // Load the avatar through our backend proxy (the raw Instagram CDN URL is
     // hotlink-blocked and expires); ProfileHero falls back to the initial if
-    // even the proxy can't serve it. Keyed by the creator's own username so it's
-    // correct no matter how the page resolved which creator to show.
-    avatar: c.profilePicture && c.username
-      ? `${API_BASE}/public/avatar/${encodeURIComponent(c.username)}`
+    // even the proxy can't serve it. Keyed by the opaque publicId (falling back
+    // to username) so the request doesn't leak the @handle and still resolves.
+    avatar: c.profilePicture && (c.publicId || c.username)
+      ? `${API_BASE}/public/avatar/${encodeURIComponent(c.publicId || c.username)}`
       : '',
     // Raw Instagram CDN URL — used as a fallback if the proxy isn't deployed yet
     // (ProfileHero tries it with referrerPolicy=no-referrer before the initial).

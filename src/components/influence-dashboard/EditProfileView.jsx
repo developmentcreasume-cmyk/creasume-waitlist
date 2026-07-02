@@ -36,9 +36,20 @@ const BG_STYLES = [
   { key: 'mesh', label: 'Mesh Gradient', bg: 'radial-gradient(120% 120% at 30% 10%, #2b3aa0 0%, #141a4d 45%, #0a0c1f 100%)' },
   { key: 'solid', label: 'Solid Dark', bg: 'linear-gradient(160deg,#0b0d18 0%,#05060f 100%)' },
 ]
+// Font choices. `family` must match FONT_MAP in InfluenceCard.jsx and the
+// families loaded in index.html, so each button previews in its real typeface
+// and the card actually renders it.
 const FONTS = [
-  { key: 'outfit', name: 'Outfit & DM Mono', desc: 'Modern, bold, Gen Z aesthetic (Default)' },
-  { key: 'inter', name: 'Inter & DM Mono', desc: 'Clean, technical, professional' },
+  { key: 'outfit', name: 'Outfit', desc: 'Modern, bold, Gen Z aesthetic (Default)', family: "'Outfit', sans-serif" },
+  { key: 'inter', name: 'Inter', desc: 'Clean, technical, professional', family: "'Inter', sans-serif" },
+  { key: 'poppins', name: 'Poppins', desc: 'Friendly, rounded, geometric', family: "'Poppins', sans-serif" },
+  { key: 'montserrat', name: 'Montserrat', desc: 'Elegant, versatile, timeless', family: "'Montserrat', sans-serif" },
+  { key: 'sora', name: 'Sora', desc: 'Techy, futuristic, precise', family: "'Sora', sans-serif" },
+  { key: 'spaceGrotesk', name: 'Space Grotesk', desc: 'Quirky, contemporary, distinctive', family: "'Space Grotesk', sans-serif" },
+  { key: 'dmSans', name: 'DM Sans', desc: 'Minimal, low-contrast, clean', family: "'DM Sans', sans-serif" },
+  { key: 'bricolage', name: 'Bricolage Grotesque', desc: 'Trendy, editorial, expressive', family: "'Bricolage Grotesque', sans-serif" },
+  { key: 'playfair', name: 'Playfair Display', desc: 'Luxe editorial serif', family: "'Playfair Display', serif" },
+  { key: 'lora', name: 'Lora', desc: 'Warm, literary serif', family: "'Lora', serif" },
 ]
 // Premium niche themes (locked behind ₹50/mo each).
 const NICHE_THEMES = [
@@ -618,16 +629,84 @@ function PackagesPanel({ pkgs, setPkgs, onRemove, onSave }) {
 }
 
 // ===== Design tab (controlled) =====
+// A broad swatch grid shown inside the HexField popover so users can pick a
+// colour visually. The native wheel (below) still covers anything not here.
+const SWATCH_PALETTE = [
+  '#000000', '#1F2937', '#475569', '#94A3B8', '#E2E8F0', '#FFFFFF',
+  '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16', '#22C55E',
+  '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
+  '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E', '#FB7185',
+]
+
 function HexField({ label, value, onPick }) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef(null)
+
+  // Close the popover on an outside click / Escape.
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey) }
+  }, [open])
+
+  // Pick ANY colour: the swatch grid, a typed hex, or the native colour wheel.
+  const handleText = (raw) => {
+    const hex = raw.replace(/[^0-9a-fA-F]/g, '').slice(0, 6)
+    onPick('#' + hex)
+  }
+  // The native <input type="color"> needs a full 6-digit hex; fall back while
+  // the user is mid-typing an incomplete value.
+  const safeColour = /^#[0-9a-fA-F]{6}$/.test(value) ? value : '#000000'
+  const isSelected = (c) => c.toLowerCase() === (value || '').toLowerCase()
+
   return (
-    <div>
+    <div className="relative" ref={wrapRef}>
       <Label>{label}</Label>
-      <label className="flex items-center gap-3 rounded-xl px-3 h-14 cursor-pointer" style={inputStyle}>
-        <span className="rounded-lg shrink-0" style={{ width: 36, height: 36, background: value }} />
+      <div className="flex items-center gap-3 rounded-xl px-3 h-14" style={inputStyle}>
+        {/* Swatch opens the palette popover. */}
+        <button type="button" onClick={() => setOpen((o) => !o)} className="shrink-0 rounded-lg transition-transform hover:scale-105" title="Choose a colour" style={{ width: 36, height: 36, background: value, border: '1px solid rgba(255,255,255,0.15)' }} />
         <span className="text-white/45 text-[15px]" style={{ fontFamily: MONO }}>#</span>
-        <span className="text-white text-[15px] tracking-wide" style={{ fontFamily: MONO }}>{value.replace('#', '').toUpperCase()}</span>
-        <input type="color" value={value} onChange={(e) => onPick(e.target.value)} className="sr-only" />
-      </label>
+        <input
+          value={value.replace('#', '').toUpperCase()}
+          onChange={(e) => handleText(e.target.value)}
+          onFocus={() => setOpen(true)}
+          placeholder="8B5CF6"
+          spellCheck={false}
+          maxLength={6}
+          className="flex-1 min-w-0 bg-transparent text-white text-[15px] tracking-wide outline-none placeholder:text-white/25"
+          style={{ fontFamily: MONO }}
+        />
+        <button type="button" onClick={() => setOpen((o) => !o)} aria-label="Open colour picker" className="shrink-0 text-white/40 hover:text-white/80 transition-colors">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+        </button>
+      </div>
+
+      {open && (
+        <div className="absolute z-30 mt-2 left-0 right-0 rounded-xl p-3" style={{ background: '#111322', border: '1px solid rgba(255,255,255,0.14)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
+          <div className="grid grid-cols-6 gap-2">
+            {SWATCH_PALETTE.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => { onPick(c); setOpen(false) }}
+                aria-label={c}
+                title={c}
+                className="rounded-lg transition-transform hover:scale-110"
+                style={{ width: '100%', paddingTop: '100%', position: 'relative', background: c, border: c === '#FFFFFF' ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(255,255,255,0.08)', outline: isSelected(c) ? '2px solid #fff' : 'none', outlineOffset: 2 }}
+              />
+            ))}
+          </div>
+          {/* Fully custom colour via the OS colour wheel. */}
+          <label className="mt-3 flex items-center gap-2 rounded-lg px-3 py-2.5 cursor-pointer text-white/80 text-[13px] hover:bg-white/5 transition-colors" style={{ fontFamily: FONT, border: '1px solid rgba(255,255,255,0.12)' }}>
+            <span className="rounded-md shrink-0" style={{ width: 20, height: 20, background: value, border: '1px solid rgba(255,255,255,0.2)' }} />
+            Custom colour…
+            <input type="color" value={safeColour} onChange={(e) => onPick(e.target.value)} className="sr-only" />
+          </label>
+        </div>
+      )}
     </div>
   )
 }
@@ -677,12 +756,13 @@ function DesignPanel({ theme, setTheme }) {
         ))}
       </div>
 
-      <Label>Font Pairing</Label>
-      <div className="flex flex-col gap-3 mb-12">
+      <Label>Font</Label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
         {FONTS.map((f) => (
           <button key={f.key} type="button" onClick={() => set('font', f.key)} className="text-left rounded-xl px-5 py-4 transition-colors" style={{ background: theme.font === f.key ? 'rgba(139,92,246,0.12)' : 'rgba(0,0,0,0.3)', border: theme.font === f.key ? '2px solid #8B5CF6' : '1px solid rgba(255,255,255,0.12)' }}>
-            <div className="text-white font-semibold text-[15px]" style={{ fontFamily: FONT }}>{f.name}</div>
-            <div className="text-white/45 text-[12px] mt-0.5" style={{ fontFamily: FONT }}>{f.desc}</div>
+            {/* Preview the option in its own typeface. */}
+            <div className="text-white font-semibold text-[19px] leading-none" style={{ fontFamily: f.family }}>{f.name}</div>
+            <div className="text-white/45 text-[12px] mt-1.5" style={{ fontFamily: FONT }}>{f.desc}</div>
           </button>
         ))}
       </div>
