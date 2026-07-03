@@ -124,8 +124,6 @@ export default function Login() {
         {/* ===== Right — sign-in form ===== */}
         <div className="relative flex flex-col justify-center px-6 sm:px-10 xl:px-16 py-12 md:py-14">
           <div className="w-full max-w-sm mx-auto">
-            {/* Brand logo above the form */}
-            <img src="/creasumelogo.svg" alt="Creasume" className="h-8 w-auto mx-auto mb-6" style={{ objectFit: 'contain' }} />
             <h1 className="text-center font-semibold mb-2" style={{ fontFamily: FONT, fontSize: 'clamp(30px, 4vw, 40px)' }}>
               {isSignup ? 'Create Account' : 'Welcome'}
             </h1>

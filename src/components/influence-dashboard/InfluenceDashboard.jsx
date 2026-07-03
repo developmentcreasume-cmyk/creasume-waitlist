@@ -648,6 +648,25 @@ export default function InfluenceDashboard({ username }) {
           fetchMyInquiries().catch(() => ({ inquiries: [] })),
         ])
         const viewer = meRes?.creator || null
+
+        // The dashboard is the signed-in creator's OWN private control center —
+        // it always edits `me`, never the creator named in the URL. So if the URL
+        // handle belongs to a DIFFERENT creator (e.g. a stale link, or landing on
+        // someone else's /<handle>/dashboard), correct the address to this
+        // creator's own dashboard so the URL, header and editor all agree.
+        const myHandle = viewer?.publicId || viewer?.username || ''
+        const urlMatchesMe =
+          viewer &&
+          username &&
+          (username === viewer.publicId || username === viewer.username || username === viewer.slug)
+        if (myHandle && username && !urlMatchesMe) {
+          const parts = window.location.pathname.replace(/\/+$/, '').split('/').filter(Boolean)
+          parts[0] = encodeURIComponent(myHandle)
+          window.history.replaceState({}, '', '/' + parts.join('/'))
+          window.dispatchEvent(new PopStateEvent('popstate'))
+          return // load() re-runs for the corrected handle
+        }
+
         setMe(viewer)
         if (viewer?.metricVisibility) setVisibility(viewer.metricVisibility)
         if (viewer?.username) setStoredUsername(viewer.username)
@@ -711,7 +730,8 @@ export default function InfluenceDashboard({ username }) {
 
   if (loading && !pub && !me) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: '#05060f' }}>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5" style={{ background: '#05060f' }}>
+        <img src="/creasumelogo.svg" alt="Creasume" className="h-9 w-auto" style={{ objectFit: 'contain' }} />
         <div className="h-10 w-10 rounded-full animate-spin" style={{ border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#8B5CF6' }} />
         <p className="text-white/70 text-[15px]" style={{ fontFamily: FONT }}>Loading dashboard…</p>
       </div>
