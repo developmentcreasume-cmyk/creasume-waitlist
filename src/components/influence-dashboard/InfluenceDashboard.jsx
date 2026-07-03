@@ -731,8 +731,8 @@ export default function InfluenceDashboard({ username }) {
   if (loading && !pub && !me) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#05060f' }}>
-        {/* Vector C mark (cropped from the wordmark) — crisp at any size, white already. */}
-        <img src="/creasume-c-mark.svg" alt="Creasume" className="h-20 w-auto" style={{ animation: 'creasumeFade 1.5s ease-in-out infinite' }} />
+        {/* Same loader mark as the public Influence Card (/loading.png). */}
+        <img src="/loading.png" alt="Loading…" className="w-24 h-24 animate-pulse select-none" style={{ objectFit: 'contain' }} />
       </div>
     )
   }
@@ -890,15 +890,25 @@ export default function InfluenceDashboard({ username }) {
                   {ICONS.save}
                 </button>
               )}
-              {/* Connect Facebook — lives by the menu bar on mobile */}
-              <a
-                href={facebookLoginUrl()}
-                aria-label="Connect Facebook"
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 h-10 text-[13px] font-semibold text-white no-underline transition-opacity hover:opacity-90"
-                style={{ fontFamily: FONT, background: 'rgba(24,119,242,0.18)', border: '1px solid rgba(24,119,242,0.55)' }}
-              >
-                {ICONS.fb} Connect
-              </a>
+              {/* Connect / Connected Facebook — lives by the menu bar on mobile */}
+              {creator?.facebookConnected ? (
+                <span
+                  aria-label="Facebook connected"
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 h-10 text-[13px] font-semibold"
+                  style={{ fontFamily: FONT, color: '#4DE0B0', background: 'rgba(77,224,176,0.12)', border: '1px solid rgba(77,224,176,0.45)' }}
+                >
+                  {ICONS.fb} Connected
+                </span>
+              ) : (
+                <a
+                  href={facebookLoginUrl()}
+                  aria-label="Connect Facebook"
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 h-10 text-[13px] font-semibold text-white no-underline transition-opacity hover:opacity-90"
+                  style={{ fontFamily: FONT, background: 'rgba(24,119,242,0.18)', border: '1px solid rgba(24,119,242,0.55)' }}
+                >
+                  {ICONS.fb} Connect
+                </a>
+              )}
               <button
                 type="button"
                 onClick={() => setMobileNav((o) => !o)}
@@ -1039,13 +1049,22 @@ export default function InfluenceDashboard({ username }) {
               >
                 {ICONS.refresh} {loading ? 'Refreshing…' : 'Refresh Stats'}
               </button>
-              <a
-                href={facebookLoginUrl()}
-                className="hidden md:inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium transition-colors no-underline hover:opacity-90"
-                style={{ fontFamily: FONT, color: '#fff', background: 'rgba(24,119,242,0.16)', border: '1px solid rgba(24,119,242,0.55)' }}
-              >
-                {ICONS.fb} Connect Facebook
-              </a>
+              {creator?.facebookConnected ? (
+                <span
+                  className="hidden md:inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium"
+                  style={{ fontFamily: FONT, color: '#4DE0B0', background: 'rgba(77,224,176,0.12)', border: '1px solid rgba(77,224,176,0.45)' }}
+                >
+                  {ICONS.fb} Facebook Connected
+                </span>
+              ) : (
+                <a
+                  href={facebookLoginUrl()}
+                  className="hidden md:inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium transition-colors no-underline hover:opacity-90"
+                  style={{ fontFamily: FONT, color: '#fff', background: 'rgba(24,119,242,0.16)', border: '1px solid rgba(24,119,242,0.55)' }}
+                >
+                  {ICONS.fb} Connect Facebook
+                </a>
+              )}
               <a
                 ref={viewProfileRef}
                 href={`/${handle}`}
