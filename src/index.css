@@ -569,6 +569,12 @@ body::-webkit-scrollbar {
   to   { opacity: 1; transform: scale(1); }
 }
 
+/* Loading-screen logo: gentle fade in / out pulse. */
+@keyframes creasumeFade {
+  0%, 100% { opacity: 0.12; }
+  50%      { opacity: 1; }
+}
+
 /* ===== Landing page continuous marquees (feature bar + brand logos) =====
    Two identical halves sit side by side; the track slides one half-width and
    loops, so the row scrolls seamlessly. Duration is set inline per row. */

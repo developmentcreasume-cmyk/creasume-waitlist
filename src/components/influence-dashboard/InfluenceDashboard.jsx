@@ -730,10 +730,8 @@ export default function InfluenceDashboard({ username }) {
 
   if (loading && !pub && !me) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-5" style={{ background: '#05060f' }}>
-        <img src="/creasumelogo.svg" alt="Creasume" className="h-9 w-auto" style={{ objectFit: 'contain' }} />
-        <div className="h-10 w-10 rounded-full animate-spin" style={{ border: '3px solid rgba(255,255,255,0.15)', borderTopColor: '#8B5CF6' }} />
-        <p className="text-white/70 text-[15px]" style={{ fontFamily: FONT }}>Loading dashboard…</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#05060f' }}>
+        <img src="/creasume-c.png" alt="Creasume" className="h-16 w-auto" style={{ objectFit: 'contain', animation: 'creasumeFade 1.5s ease-in-out infinite' }} />
       </div>
     )
   }
