@@ -44,9 +44,16 @@ export function loginUrl() {
 }
 
 // Begin the Facebook connect flow (Facebook Page → linked Instagram Business
-// account). Requires the backend's Facebook OAuth route to be enabled.
+// account). When a creator is signed in (the dashboard "Connect Facebook"
+// button), use the SELF-CONNECT route and pass their token so the Meta data
+// attaches to THEIR account — otherwise the callback would re-identify them by
+// whichever Instagram account sits behind the connected Page and switch them
+// into a different creator. Falls back to the plain flow when not logged in.
 export function facebookLoginUrl() {
-  return `${API_BASE}/auth/facebook`
+  const token = getToken()
+  return token
+    ? `${API_BASE}/auth/facebook/connect?token=${encodeURIComponent(token)}`
+    : `${API_BASE}/auth/facebook`
 }
 
 // Which dashboard we're on: the FIRST path segment (e.g. `/hetvi/dashboard` →

@@ -731,7 +731,9 @@ export default function InfluenceDashboard({ username }) {
   if (loading && !pub && !me) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: '#05060f' }}>
-        <img src="/creasume-c.png" alt="Creasume" className="h-16 w-auto" style={{ objectFit: 'contain', animation: 'creasumeFade 1.5s ease-in-out infinite' }} />
+        {/* Vector C mark (favicon.svg) stays crisp at any size; the tiny PNG blurred.
+            The filter renders it white to match the dark loading screen. */}
+        <img src="/favicon.svg" alt="Creasume" className="h-16 w-auto" style={{ filter: 'brightness(0) invert(1)', animation: 'creasumeFade 1.5s ease-in-out infinite' }} />
       </div>
     )
   }
