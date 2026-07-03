@@ -19,7 +19,6 @@ import {
   fetchMyInquiries,
   updateProfile,
   deleteAccount,
-  ensureDevToken,
   isLoggedIn,
   loginUrl,
   facebookLoginUrl,
@@ -627,9 +626,13 @@ export default function InfluenceDashboard({ username }) {
     setLoading(true)
     setError('')
     try {
-      // Local dev: auto-acquire a token for this creator if none exists, so
-      // Save / Fetch work without the manual sign-in step. No-op in production.
-      if (!isLoggedIn()) await ensureDevToken(username)
+      // NOTE: dev auto-login disabled. It used to mint a dev token for the URL's
+      // creator when none existed — but that made the FIRST dashboard you opened
+      // log you in, so every other dashboard then showed that same account. The
+      // dashboard now relies on real login only (Instagram/Meta OAuth), matching
+      // production. (Re-enable `ensureDevToken(username)` locally if you want the
+      // old no-sign-in convenience.)
+      // if (!isLoggedIn()) await ensureDevToken(username)
 
       // Display data is keyed by the username IN THE URL — visiting
       // /<username>/dashboard always shows that creator's dashboard.
