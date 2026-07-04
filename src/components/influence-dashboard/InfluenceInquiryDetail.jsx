@@ -70,6 +70,26 @@ function AcceptModal({ onClose, onSend, contact, setContact, sending }) {
   const [message, setMessage] = useState(
     "Hi, I'd love to collaborate. You can reach me on Instagram.\nLooking forward to discussing details.",
   )
+  // Optional banner image the creator can attach — read to a data: URL and sent
+  // with the accept call; the backend embeds it inline in the brand's email.
+  const [banner, setBanner] = useState(null) // data: URL or null
+  const [bannerName, setBannerName] = useState('')
+  const [bannerErr, setBannerErr] = useState('')
+
+  const onPickBanner = (e) => {
+    const file = e.target.files && e.target.files[0]
+    e.target.value = '' // allow re-selecting the same file
+    if (!file) return
+    setBannerErr('')
+    if (!/^image\//.test(file.type)) { setBannerErr('Please choose an image file.'); return }
+    if (file.size > 8 * 1024 * 1024) { setBannerErr('Image must be under 8 MB.'); return }
+    const reader = new FileReader()
+    reader.onload = () => { setBanner(reader.result); setBannerName(file.name) }
+    reader.onerror = () => setBannerErr('Could not read that file.')
+    reader.readAsDataURL(file)
+  }
+  const clearBanner = () => { setBanner(null); setBannerName(''); setBannerErr('') }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -104,6 +124,39 @@ function AcceptModal({ onClose, onSend, contact, setContact, sending }) {
           style={{ fontFamily: FONT, background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)' }}
         />
 
+        {/* Optional banner upload */}
+        <label className="block text-white/55 text-[15px] mt-5 mb-2" style={{ fontFamily: FONT }}>
+          Add a banner for the email (optional):
+        </label>
+        {banner ? (
+          <div
+            className="rounded-xl p-3 flex items-center gap-3"
+            style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)' }}
+          >
+            <img src={banner} alt="Banner preview" className="h-14 w-24 object-cover rounded-lg shrink-0" />
+            <span className="text-white/80 text-[13px] truncate flex-1" style={{ fontFamily: FONT }}>{bannerName}</span>
+            <button
+              type="button"
+              onClick={clearBanner}
+              className="text-white/55 hover:text-white text-[13px] font-medium bg-transparent border-0 cursor-pointer shrink-0"
+              style={{ fontFamily: FONT }}
+            >
+              Remove
+            </button>
+          </div>
+        ) : (
+          <label
+            className="flex items-center justify-center gap-2 rounded-xl h-14 cursor-pointer text-white/60 hover:text-white/90 hover:border-white/25 transition-colors"
+            style={{ fontFamily: FONT, background: 'rgba(0,0,0,0.45)', border: '1px dashed rgba(255,255,255,0.18)' }}
+          >
+            <span className="text-[14px]">＋ Upload a banner image</span>
+            <input type="file" accept="image/*" onChange={onPickBanner} className="hidden" />
+          </label>
+        )}
+        {bannerErr && (
+          <p className="text-[13px] mt-2" style={{ fontFamily: FONT, color: '#FB7185' }}>{bannerErr}</p>
+        )}
+
         <div
           className="rounded-xl px-5 py-4 mt-5"
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
@@ -133,7 +186,7 @@ function AcceptModal({ onClose, onSend, contact, setContact, sending }) {
 
         <button
           type="button"
-          onClick={() => onSend(message)}
+          onClick={() => onSend(message, banner)}
           disabled={sending}
           className="w-full rounded-xl py-4 mt-6 text-white font-bold text-lg transition-transform hover:scale-[1.01] disabled:opacity-60"
           style={{ fontFamily: FONT, background: '#1FBF57' }}
@@ -178,7 +231,7 @@ export default function InfluenceInquiryDetail({ username, id }) {
     return () => { alive = false }
   }, [id, handle])
 
-  const accept = async (message) => {
+  const accept = async (message, banner) => {
     setSaving(true)
     try {
       // Persist the (possibly edited) email back to the profile so it's saved
@@ -186,11 +239,12 @@ export default function InfluenceInquiryDetail({ username, id }) {
       if (contact.email) {
         try { await updateProfile({ email: contact.email }) } catch { /* ignore */ }
       }
-      // Share the creator's contact + message with the accept call — the backend
-      // emails these to the brand's submitted address.
+      // Share the creator's contact + message (+ optional banner) with the accept
+      // call — the backend emails these to the brand's submitted address.
       await setInquiryStatus(id, 'actioned', {
         contact: { instagram: contact.instagram, email: contact.email },
         message: message || '',
+        ...(banner ? { banner } : {}),
       })
       setStatus('ACCEPTED')
       setShowAccept(false)
