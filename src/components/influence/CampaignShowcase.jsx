@@ -42,6 +42,28 @@ function BrandLogo({ logo, brand, fontSize }) {
   )
 }
 
+// Linked post/reel thumbnail with a graceful fallback: renders nothing if the
+// campaign has no image OR the image fails to load (expired/blocked CDN URL),
+// instead of an empty black box. Used on BOTH the outer card and the detail modal.
+function CampaignThumb({ src, alt, maxHeight = 150, className = '' }) {
+  const [err, setErr] = useState(false)
+  useEffect(() => { setErr(false) }, [src])
+  if (!src || err) return null
+  return (
+    <div className={`rounded-xl overflow-hidden ${className}`} style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
+      <img
+        src={src}
+        alt={alt}
+        referrerPolicy="no-referrer"
+        loading="lazy"
+        onError={() => setErr(true)}
+        className="w-full object-cover"
+        style={{ maxHeight, display: 'block' }}
+      />
+    </div>
+  )
+}
+
 // One campaign-highlight glass card — now shows the full campaign layout
 // (overview, stats, audience, deliverables, CTA), the same content as the modal.
 // The cards live inside a CSS-transform marquee, where the browser's native
@@ -87,6 +109,9 @@ function CampaignCard({ data, onClick, sizeW = CARD_W }) {
             <div className="text-white/40 mt-2 uppercase tracking-[0.15em]" style={{ fontFamily: MONO, fontSize: 11, fontWeight: 400 }}>{data.date}</div>
           </div>
         </div>
+
+        {/* Post/reel thumbnail — same image the detail modal shows, on the card */}
+        <CampaignThumb src={data.thumbnail} alt={data.brand} maxHeight={140} className="mt-5" />
 
         {/* Stat boxes */}
         <div className="grid grid-cols-3 gap-2.5 mt-7">
