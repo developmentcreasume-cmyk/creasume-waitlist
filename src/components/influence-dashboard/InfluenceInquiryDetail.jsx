@@ -178,7 +178,7 @@ export default function InfluenceInquiryDetail({ username, id }) {
     return () => { alive = false }
   }, [id, handle])
 
-  const accept = async (/* message */) => {
+  const accept = async (message) => {
     setSaving(true)
     try {
       // Persist the (possibly edited) email back to the profile so it's saved
@@ -186,7 +186,12 @@ export default function InfluenceInquiryDetail({ username, id }) {
       if (contact.email) {
         try { await updateProfile({ email: contact.email }) } catch { /* ignore */ }
       }
-      await setInquiryStatus(id, 'actioned')
+      // Share the creator's contact + message with the accept call — the backend
+      // emails these to the brand's submitted address.
+      await setInquiryStatus(id, 'actioned', {
+        contact: { instagram: contact.instagram, email: contact.email },
+        message: message || '',
+      })
       setStatus('ACCEPTED')
       setShowAccept(false)
     } catch (e) {
