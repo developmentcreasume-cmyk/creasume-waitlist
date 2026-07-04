@@ -111,7 +111,7 @@ function CampaignCard({ data, onClick, sizeW = CARD_W }) {
         </div>
 
         {/* Post/reel thumbnail — same image the detail modal shows, on the card */}
-        <CampaignThumb src={data.thumbnail} alt={data.brand} maxHeight={140} className="mt-5" />
+        <CampaignThumb src={data.thumbnail} alt={data.brand} maxHeight={230} className="mt-5" />
 
         {/* Stat boxes */}
         <div className="grid grid-cols-3 gap-2.5 mt-7">
