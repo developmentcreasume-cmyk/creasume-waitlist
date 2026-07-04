@@ -56,6 +56,34 @@ export function facebookLoginUrl() {
     : `${API_BASE}/auth/facebook`
 }
 
+// ---- Email / password account auth (backend routes/authAccount.js) ----
+// Create/authenticate a creator account and store the JWT. The creator then
+// connects Instagram from the Connect page (see connectInstagramUrl).
+async function postAuth(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || !data.success) throw new Error(data.error || 'Something went wrong')
+  if (data.token) setToken(data.token)
+  if (data.creator?.username) setStoredUsername(data.creator.username)
+  return data
+}
+export const registerAccount = (body) => postAuth('/auth/register', body)
+export const loginAccount = (body) => postAuth('/auth/login', body)
+
+// Start Instagram OAuth to LINK it to the currently-signed-in account (instead
+// of creating a brand-new Instagram-only creator). Carries the JWT so the
+// backend's /auth/instagram/connect route knows which creator to attach it to.
+export function connectInstagramUrl() {
+  const t = getToken()
+  return t
+    ? `${API_BASE}/auth/instagram/connect?token=${encodeURIComponent(t)}`
+    : `${API_BASE}/auth/instagram`
+}
+
 // Which dashboard we're on: the FIRST path segment (e.g. `/hetvi/dashboard` →
 // "hetvi"). Falls back to the logged-in creator's stored username.
 export function dashboardUsername() {

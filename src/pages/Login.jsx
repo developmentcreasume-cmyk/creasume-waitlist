@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { loginUrl } from '../services/dashboardApi.js'
+import { loginUrl, registerAccount, loginAccount } from '../services/dashboardApi.js'
 import { goToPath } from '../router.js'
 
 // Standalone auth page (/login) — a centered two-panel card: a blue "Get Started"
@@ -28,6 +28,8 @@ function GoogleIcon() {
 export default function Login() {
   const [form, setForm] = useState({ name: '', email: '', password: '', remember: false })
   const [show, setShow] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
   // Same component serves /login and /signup; the route decides the copy, fields
@@ -37,18 +39,31 @@ export default function Login() {
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
-  // The backend authenticates creators through Instagram/Meta OAuth (there's no
-  // email/password or Google endpoint), so every sign-in action kicks off that
-  // real flow. It returns to /auth-success and on to the creator's dashboard.
+  // "Continue with Google" still uses the Instagram OAuth entry for now (Google
+  // sign-in isn't wired on the frontend yet).
   const startLogin = () => { window.location.href = loginUrl() }
 
-  // On the /signup route, submitting the form takes the new creator to the
-  // "Connect Instagram" step (where the actual OAuth happens) instead of logging
-  // in directly. On /login it authenticates straight away.
-  const handleSubmit = (e) => {
+  // Sign up / sign in with email + password against the account-auth endpoints.
+  // On success the JWT is stored; we then send the creator to the Connect
+  // Instagram step (NOT straight into Instagram's OAuth login) so they choose to
+  // link Instagram there.
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (isSignup) goToPath('/connect')
-    else startLogin()
+    if (busy) return
+    setErr('')
+    setBusy(true)
+    try {
+      if (isSignup) {
+        await registerAccount({ name: form.name, email: form.email, password: form.password })
+      } else {
+        await loginAccount({ email: form.email, password: form.password })
+      }
+      goToPath('/connect')
+    } catch (e2) {
+      setErr(e2.message || 'Something went wrong. Please try again.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -196,12 +211,17 @@ export default function Login() {
                 </div>
               )}
 
+              {err && (
+                <p className="text-[13px] font-medium -mt-1" style={{ fontFamily: FONT, color: '#FB7185' }}>{err}</p>
+              )}
+
               <button
                 type="submit"
-                className="w-full rounded-lg py-3 font-semibold text-[15px] transition-transform hover:scale-[1.01]"
+                disabled={busy}
+                className="w-full rounded-lg py-3 font-semibold text-[15px] transition-transform hover:scale-[1.01] disabled:opacity-60"
                 style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg, #C9C4F0 0%, #A79FE6 100%)' }}
               >
-                {isSignup ? 'Create account' : 'Sign in'}
+                {busy ? 'Please wait…' : isSignup ? 'Create account' : 'Sign in'}
               </button>
 
               <button

@@ -126,7 +126,7 @@ function AcceptModal({ onClose, onSend, contact, setContact, sending }) {
 
         {/* Optional banner upload */}
         <label className="block text-white/55 text-[15px] mt-5 mb-2" style={{ fontFamily: FONT }}>
-          Add a banner for the email (optional):
+          Add a banner for the email:
         </label>
         {banner ? (
           <div
@@ -146,7 +146,7 @@ function AcceptModal({ onClose, onSend, contact, setContact, sending }) {
           </div>
         ) : (
           <label
-            className="flex items-center justify-center gap-2 rounded-xl h-14 cursor-pointer text-white/60 hover:text-white/90 hover:border-white/25 transition-colors"
+            className="flex items-center justify-center gap-2 rounded-xl h-24 cursor-pointer text-white/60 hover:text-white/90 hover:border-white/25 transition-colors"
             style={{ fontFamily: FONT, background: 'rgba(0,0,0,0.45)', border: '1px dashed rgba(255,255,255,0.18)' }}
           >
             <span className="text-[14px]">＋ Upload a banner image</span>

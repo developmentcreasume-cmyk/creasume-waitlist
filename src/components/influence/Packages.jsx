@@ -42,7 +42,7 @@ function PackageCard({ p, i, isPopular, showCta, noId = false, carousel = false 
   return (
     <div
       id={!noId && i === 0 ? 'pkg-starter' : undefined}
-      className={`relative rounded-[22px] p-7 md:p-8 flex flex-col ${!carousel && isPopular ? 'md:-mt-6' : ''}`}
+      className={`relative rounded-[22px] p-7 md:p-8 flex flex-col ${carousel ? '' : 'md:h-full'} ${!carousel && isPopular ? 'md:scale-[1.06] md:origin-center' : ''}`}
       style={{
         width: 336,
         // minHeight (not a fixed height) so the card grows with its content
@@ -363,7 +363,7 @@ export default function Packages() {
       {showPackages && (<>
       {/* Desktop: a centered row. The popular card is lifted and has the CTA. */}
       <motion.div
-        className="hidden md:flex max-w-[1180px] mx-auto md:flex-row md:flex-wrap justify-center items-start gap-5"
+        className="hidden md:flex max-w-[1180px] mx-auto md:flex-row md:flex-wrap justify-center items-stretch gap-5"
         variants={staggerParent}
         initial="hidden"
         whileInView="show"
@@ -376,8 +376,9 @@ export default function Packages() {
             <motion.div
               key={p.tier}
               variants={fadeUp}
-              whileHover={{ y: -12, scale: 1.06 }}
+              whileHover={{ y: -12, scale: 1.04 }}
               transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+              className="flex"
             >
               <PackageCard p={p} i={i} isPopular={isPopular} showCta={showCta} />
             </motion.div>
