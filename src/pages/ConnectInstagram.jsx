@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { loginUrl } from '../services/dashboardApi.js'
+import ConnectDemo from './ConnectDemo.jsx'
 
 // Branded "Connect Instagram" intro shown before the Meta login + allow-access
 // screens. "Continue with Instagram" starts the real OAuth (→ /auth-success →
@@ -108,6 +109,14 @@ export default function ConnectInstagram() {
           <InstagramGlyph size={20} />
           Continue with Instagram
         </button>
+
+        {/* Looping walkthrough of what happens after you tap the button. */}
+        <div className="mt-6">
+          <p className="text-[13px] font-semibold mb-2.5 flex items-center gap-1.5" style={{ fontFamily: FONT, color: '#6b6b73' }}>
+            <span aria-hidden="true">▶</span> How connecting works
+          </p>
+          <ConnectDemo />
+        </div>
       </div>
     </div>
   )

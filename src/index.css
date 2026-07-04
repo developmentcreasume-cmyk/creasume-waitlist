@@ -569,6 +569,16 @@ body::-webkit-scrollbar {
   to   { opacity: 1; transform: scale(1); }
 }
 
+/* Connect-Instagram demo: per-step "video" progress bar + slide fade-in. */
+@keyframes demoBar {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+@keyframes demoSlide {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ===== Landing page continuous marquees (feature bar + brand logos) =====
    Two identical halves sit side by side; the track slides one half-width and
    loops, so the row scrolls seamlessly. Duration is set inline per row. */
