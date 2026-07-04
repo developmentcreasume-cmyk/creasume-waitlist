@@ -217,8 +217,8 @@ export default function PricingPage() {
                 const [label, ...values] = row
                 return (
                   <div key={ri} className={`grid ${gridCols} border-b border-white/50 last:border-b-0`}>
-                    <div className="p-3 sm:p-4 border-r border-white/50 flex items-center">
-                      <span className="text-white text-[13px] sm:text-[14px]" style={{ fontFamily: FONT }}>
+                    <div className="p-2.5 sm:p-4 border-r border-white/50 flex items-center min-w-0">
+                      <span className="text-white text-[12px] sm:text-[14px] leading-tight min-w-0 wrap-anywhere" style={{ fontFamily: FONT }}>
                         {label}
                       </span>
                     </div>
