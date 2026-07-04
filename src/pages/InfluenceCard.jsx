@@ -13,13 +13,16 @@ import { InfluenceDataProvider, useInfluence } from '../components/influence/Inf
 // never flashes empty/placeholder content before the real creator lands.
 function Loader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-black">
       <img
         src="/loading.png"
         alt="Loading…"
         className="w-24 h-24 animate-pulse select-none"
         style={{ objectFit: 'contain' }}
       />
+      <p className="text-white/60 text-[14px] tracking-wide animate-pulse" style={{ fontFamily: "'Outfit', sans-serif" }}>
+        Syncing data…
+      </p>
     </div>
   )
 }

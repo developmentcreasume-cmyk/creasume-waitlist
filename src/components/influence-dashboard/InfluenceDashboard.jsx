@@ -733,9 +733,10 @@ export default function InfluenceDashboard({ username }) {
 
   if (loading && !pub && !me) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#05060f' }}>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: '#05060f' }}>
         {/* Same loader mark as the public Influence Card (/loading.png). */}
         <img src="/loading.png" alt="Loading…" className="w-24 h-24 animate-pulse select-none" style={{ objectFit: 'contain' }} />
+        <p className="text-white/60 text-[14px] tracking-wide animate-pulse" style={{ fontFamily: FONT }}>Syncing data…</p>
       </div>
     )
   }
