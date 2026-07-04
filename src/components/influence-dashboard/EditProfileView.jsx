@@ -758,11 +758,18 @@ function DesignPanel({ theme, setTheme }) {
 
       <Label>Background Style</Label>
       <div className="grid grid-cols-2 gap-4 mb-9">
-        {BG_STYLES.map((b) => (
-          <button key={b.key} type="button" onClick={() => set('bg', b.key)} className="rounded-2xl h-32 grid place-items-center text-white/80 text-sm font-medium transition-all" style={{ fontFamily: FONT, background: b.bg, border: theme.bg === b.key ? '2px solid #8B5CF6' : '1px solid rgba(255,255,255,0.12)' }}>
+        {BG_STYLES.map((b) => {
+          // Preview the mesh swatch tinted with the SELECTED accent (matches the
+          // card); solid stays as its fixed dark style.
+          const swatchBg = b.key === 'mesh'
+            ? `radial-gradient(125% 90% at 50% -5%, ${primary}59 0%, ${primary}24 42%, rgba(0,0,0,0) 78%), linear-gradient(180deg, ${primary}14 0%, #070709 72%)`
+            : b.bg
+          return (
+          <button key={b.key} type="button" onClick={() => set('bg', b.key)} className="rounded-2xl h-32 grid place-items-center text-white/80 text-sm font-medium transition-all" style={{ fontFamily: FONT, background: swatchBg, border: theme.bg === b.key ? '2px solid #8B5CF6' : '1px solid rgba(255,255,255,0.12)' }}>
             {b.label}
           </button>
-        ))}
+          )
+        })}
       </div>
 
       <Label>Font</Label>

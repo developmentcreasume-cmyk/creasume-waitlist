@@ -45,10 +45,25 @@ function InfluenceCardInner() {
     playfair: "'Playfair Display', serif",
     lora: "'Lora', serif",
   }
-  const BG_MAP = {
-    mesh: 'radial-gradient(120% 120% at 30% 10%, #2b3aa0 0%, #141a4d 45%, #0a0c1f 100%)',
-    solid: 'linear-gradient(160deg,#0b0d18 0%,#05060f 100%)',
+  // Normalise the accent to a 6-digit hex so we can append an alpha channel
+  // (#RRGGBBAA) below. Falls back to the brand purple for the default theme.
+  const toHex6 = (c) => {
+    if (typeof c !== 'string') return '#5D65DC'
+    const m = c.trim().match(/^#?([0-9a-fA-F]{6})$/) || c.trim().match(/^#?([0-9a-fA-F]{3})$/)
+    if (!m) return '#5D65DC'
+    const h = m[1]
+    return '#' + (h.length === 3 ? h.split('').map((x) => x + x).join('') : h)
   }
+  const accent = toHex6(THEME?.primary)
+
+  // Mesh = the SELECTED accent tinting the dark card (an orange pick → warm mesh,
+  // green → green mesh, matching the picker). Solid/Dark stays near-black,
+  // independent of the accent color.
+  const meshBg =
+    `radial-gradient(125% 90% at 50% -5%, ${accent}59 0%, ${accent}24 42%, rgba(0,0,0,0) 78%), ` +
+    `linear-gradient(180deg, ${accent}14 0%, #070709 72%)`
+  const solidBg = 'linear-gradient(180deg, #0a0b10 0%, #050507 100%)'
+
   const rootStyle = {
     ...(THEME
       ? {
@@ -58,8 +73,8 @@ function InfluenceCardInner() {
           ...(THEME.font ? { '--card-font': FONT_MAP[THEME.font] || FONT_MAP.outfit } : {}),
         }
       : {}),
-    // Default the card background to Solid Dark; Mesh only when explicitly chosen.
-    background: BG_MAP[THEME?.bg] || BG_MAP.solid,
+    // Default the card background to Solid Dark; Mesh (accent-tinted) only when chosen.
+    background: THEME?.bg === 'mesh' ? meshBg : solidBg,
   }
   return (
     <MotionConfig reducedMotion="user">
