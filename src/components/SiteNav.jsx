@@ -113,14 +113,16 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
                 Login
               </a>
             )}
-            <a
-              href={cta.href}
-              onClick={navClick(cta.href)}
-              className="px-6 h-13 flex items-center rounded-full font-semibold whitespace-nowrap transition-transform hover:scale-[1.03]"
-              style={{ fontFamily: FONT, fontSize: '17px', ...ctaStyle }}
-            >
-              {cta.label}
-            </a>
+            {cta && (
+              <a
+                href={cta.href}
+                onClick={navClick(cta.href)}
+                className="px-6 h-13 flex items-center rounded-full font-semibold whitespace-nowrap transition-transform hover:scale-[1.03]"
+                style={{ fontFamily: FONT, fontSize: '17px', ...ctaStyle }}
+              >
+                {cta.label}
+              </a>
+            )}
           </div>
 
           {/* Mobile hamburger — collapses the whole nav into a dropdown menu */}
@@ -171,14 +173,16 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
                 Login
               </a>
             )}
-            <a
-              href={cta.href}
-              onClick={navClick(cta.href, () => setOpen(false))}
-              className="mt-1 px-4 py-3 rounded-xl font-semibold text-center whitespace-nowrap"
-              style={{ fontFamily: FONT, fontSize: '15px', ...ctaStyle }}
-            >
-              {cta.label}
-            </a>
+            {cta && (
+              <a
+                href={cta.href}
+                onClick={navClick(cta.href, () => setOpen(false))}
+                className="mt-1 px-4 py-3 rounded-xl font-semibold text-center whitespace-nowrap"
+                style={{ fontFamily: FONT, fontSize: '15px', ...ctaStyle }}
+              >
+                {cta.label}
+              </a>
+            )}
           </div>
         )}
       </div>

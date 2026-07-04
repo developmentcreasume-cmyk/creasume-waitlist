@@ -14,8 +14,6 @@ import { JoinedProof } from './shared/JoinedProof.jsx'
 import './App.css'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('home')
-  const [menuOpen, setMenuOpen] = useState(false)
   const isMobile = useIsMobile()
 
   // Founding Creator perks: cards start stacked and unstack to their grid spots,
@@ -133,7 +131,8 @@ function App() {
 
 
       {/* ============ NAVIGATION ============ */}
-      <SiteNav />
+      {/* Waitlist (pre-launch): no Login / Sign Up — creators can't sign in yet. */}
+      <SiteNav login={false} cta={null} />
 
       {/* ============ HERO SECTION ============ */}
       <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-6 pb-12 md:pt-20 md:pb-20">
