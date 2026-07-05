@@ -5,7 +5,7 @@ import { CountUp, Typewriter } from './anim.jsx'
 import SensesSection from './SensesSection.jsx'
 import LiveDemoCard from './LiveDemoCard.jsx'
 import Footer from './components/Footer.jsx'
-import SiteNav from './components/SiteNav.jsx'
+import WaitlistNav from './components/WaitlistNav.jsx'
 import { useIsMobile } from './shared/useIsMobile.js'
 import { ScrubCard } from './shared/ScrubCard.jsx'
 import { PERKS } from './shared/perks.jsx'
@@ -131,8 +131,8 @@ function App() {
 
 
       {/* ============ NAVIGATION ============ */}
-      {/* Waitlist (pre-launch): no Login / Sign Up — creators can't sign in yet. */}
-      <SiteNav login={false} cta={null} />
+      {/* Waitlist-specific header (flat black bar, blue active pill). */}
+      <WaitlistNav />
 
       {/* ============ HERO SECTION ============ */}
       <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-6 pb-12 md:pt-20 md:pb-20">

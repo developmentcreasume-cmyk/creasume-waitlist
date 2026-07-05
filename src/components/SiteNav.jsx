@@ -73,8 +73,8 @@ export default function SiteNav({ active, links = DEFAULT_NAV, cta = DEFAULT_CTA
     <nav id="home" className="relative z-50 px-4 sm:px-8 md:px-12 lg:px-20 py-6">
       <div className="relative w-full max-w-full lg:max-w-6xl mx-auto">
         <div className="nav-glass flex items-center justify-between lg:justify-between gap-3 sm:gap-6 lg:gap-8 px-0 sm:px-0 lg:px-8 py-0 lg:py-3 rounded-full">
-          {/* Logo in its own dark inset pill → back to the landing home. */}
-          <a href="/landing" onClick={navClick('/landing')} className="flex items-center rounded-full pl-3 pr-4 sm:pr-5 lg:pr-6 h-10 sm:h-11 lg:h-13 shrink-0" style={DARK_CHIP}>
+          {/* Plain logo (no pill/button) → back to the landing home. */}
+          <a href="/landing" onClick={navClick('/landing')} className="flex items-center pl-2 sm:pl-3 h-10 sm:h-11 lg:h-13 shrink-0">
             <img src="/creasumelogo.svg" alt="Creasume" className="h-6 sm:h-8 lg:h-9 w-auto" />
           </a>
 

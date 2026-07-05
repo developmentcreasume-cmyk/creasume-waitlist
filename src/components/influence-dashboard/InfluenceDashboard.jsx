@@ -479,6 +479,9 @@ function PlatformsPanel({ creator }) {
             </div>
             {p.connected ? (
               <span className="rounded-lg px-4 py-2 text-[12px] font-semibold" style={{ fontFamily: FONT, color: '#4DE0B0', background: 'rgba(77,224,176,0.12)' }}>Connected</span>
+            ) : p.key === 'youtube' ? (
+              // YouTube connect isn't built yet — show a disabled "Coming soon".
+              <span className="rounded-lg px-4 py-2 text-[12px] font-semibold text-white/40 cursor-default" style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.05)' }}>Coming soon</span>
             ) : (
               <a href={p.key === 'facebook' ? facebookLoginUrl() : loginUrl()} className="rounded-lg px-4 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-white/15 no-underline" style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.1)' }}>Connect</a>
             )}
