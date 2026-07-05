@@ -634,6 +634,14 @@ export default function InfluenceDashboard({ username }) {
       // old no-sign-in convenience.)
       // if (!isLoggedIn()) await ensureDevToken(username)
 
+      // PROTECTION: the dashboard is a private control center. Anonymous visitors
+      // can't open anyone's /<handle>/dashboard — send them to sign in. (The
+      // per-creator match is enforced further below once we know who `me` is.)
+      if (!isLoggedIn()) {
+        goToPath('/login')
+        return
+      }
+
       // Display data is keyed by the username IN THE URL — visiting
       // /<username>/dashboard always shows that creator's dashboard.
       const pubRes = await fetchPublic(username).catch(() => null)

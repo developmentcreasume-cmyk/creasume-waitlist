@@ -27,10 +27,26 @@ function Loader() {
   )
 }
 
+// Shown when the URL handle doesn't resolve to a creator — e.g. someone tried a
+// @username instead of the card's unguessable link. We don't render the card
+// template, so a card can't be opened by guessing a username.
+function NotAvailable() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-black text-white px-6 text-center">
+      <img src="/loading.png" alt="" className="w-16 h-16 opacity-70 select-none" style={{ objectFit: 'contain' }} />
+      <h1 className="text-2xl font-bold mt-2" style={{ fontFamily: "'Outfit', sans-serif" }}>This card isn&apos;t available</h1>
+      <p className="text-white/55 text-sm max-w-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>
+        This link isn&apos;t valid, or the creator&apos;s card is private. Ask them for their Creasume link.
+      </p>
+    </div>
+  )
+}
+
 // Inner page — reads `ready` from the provider and waits for it before painting.
 function InfluenceCardInner() {
-  const { ready, THEME } = useInfluence()
+  const { ready, notFound, THEME } = useInfluence()
   if (!ready) return <Loader />
+  if (notFound) return <NotAvailable />
   // Apply the creator's chosen palette + font + background as CSS variables /
   // inline styles on the root. Every themed element (LABEL_GRADIENT, accent
   // buttons, the avatar ring, fonts, …) reads these, so changing the theme

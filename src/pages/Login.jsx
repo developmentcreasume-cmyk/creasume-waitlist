@@ -54,11 +54,17 @@ export default function Login() {
     setBusy(true)
     try {
       if (isSignup) {
+        // New account → go connect Instagram first.
         await registerAccount({ name: form.name, email: form.email, password: form.password })
+        goToPath('/connect')
       } else {
-        await loginAccount({ email: form.email, password: form.password })
+        // Existing account → straight to their own dashboard if Instagram is
+        // already linked, otherwise send them to connect it.
+        const data = await loginAccount({ email: form.email, password: form.password })
+        const c = data.creator || {}
+        if (c.instagramConnected && c.publicId) goToPath(`/${c.publicId}/dashboard`)
+        else goToPath('/connect')
       }
-      goToPath('/connect')
     } catch (e2) {
       setErr(e2.message || 'Something went wrong. Please try again.')
     } finally {

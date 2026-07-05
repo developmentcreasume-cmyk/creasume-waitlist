@@ -28,6 +28,10 @@ export function InfluenceDataProvider({ children }) {
   // `ready` stays false until the FIRST fetch resolves, so the page can wait and
   // never flash the empty/placeholder hero before real data lands.
   const [ready, setReady] = useState(false)
+  // True when the handle in the URL doesn't resolve to a creator (e.g. someone
+  // typed a @username instead of the card's unguessable publicId link). The card
+  // then shows a "not available" page instead of an empty placeholder.
+  const [notFound, setNotFound] = useState(false)
   // Live-preview overrides: when the card is loaded inside the dashboard's Edit
   // Profile preview iframe (`?preview=…`), the editor postMessages the CURRENT
   // (unsaved) edits and we apply them on top of the fetched data so the card
@@ -50,7 +54,9 @@ export function InfluenceDataProvider({ children }) {
     const load = () =>
       fetchInfluenceData()
         .then((api) => {
-          if (api && alive) setValue(mapInfluenceData(api, DEFAULTS))
+          if (!alive) return
+          if (api) { setValue(mapInfluenceData(api, DEFAULTS)); setNotFound(false) }
+          else setNotFound(true) // handle didn't resolve (blocked username / bad link)
         })
         .catch(() => {}) // keep the current data on any failure
         .finally(() => { if (alive) setReady(true) })
@@ -96,5 +102,5 @@ export function InfluenceDataProvider({ children }) {
     return next
   }, [value, preview])
 
-  return <InfluenceContext.Provider value={{ ...merged, ready }}>{children}</InfluenceContext.Provider>
+  return <InfluenceContext.Provider value={{ ...merged, ready, notFound }}>{children}</InfluenceContext.Provider>
 }
