@@ -82,6 +82,14 @@ export function InfluenceDataProvider({ children }) {
 
     load()
 
+    // In preview/lookup mode (?lookup=…) the data is a one-off fetch of a
+    // rate-limited Instagram API — do NOT refetch on focus, or every tab switch
+    // re-hits it and trips the app's "(#4) request limit reached" error.
+    const isLookup = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('lookup')
+    if (isLookup) {
+      return () => { alive = false }
+    }
+
     // Refetch when the page regains focus (e.g. switching back from the admin
     // after editing social links) so changes show without a manual reload.
     const onFocus = () => { if (document.visibilityState !== 'hidden') load() }
