@@ -148,9 +148,13 @@ function pickRoute(route) {
   // /<username>/dashboard.
   if (route === '/dashboard') return null
 
-  // Creator dashboard at /<username>/dashboard[/…]. Matched BEFORE the bare
-  // `/<username>` card fallback below so the dashboard wins over the public card.
-  const dash = route.match(/^\/([^/]+)\/dashboard(?:\/(.*))?$/)
+  // Creator dashboard at /<username>/dashboard[/…] OR the fuller card-style form
+  // /<username>/<publicId>/dashboard[/…] (some links carry the publicId in the
+  // middle). Both resolve the same dashboard — keyed by the FIRST segment
+  // (username) — so the publicId-in-the-middle variant no longer falls through
+  // to the card route and errors. Matched BEFORE the bare `/<username>` card
+  // fallback so the dashboard wins over the public card.
+  const dash = route.match(/^\/([^/]+)(?:\/[^/]+)?\/dashboard(?:\/(.*))?$/)
   if (dash) {
     const username = decodeURIComponent(dash[1])
     const sub = dash[2] || ''
