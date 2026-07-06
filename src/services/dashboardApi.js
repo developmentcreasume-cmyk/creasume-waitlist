@@ -74,6 +74,18 @@ async function postAuth(path, body) {
 export const registerAccount = (body) => postAuth('/auth/register', body)
 export const loginAccount = (body) => postAuth('/auth/login', body)
 
+// Phone OTP via the MSG91 widget: the widget already verified the OTP and gave
+// us an access token; the backend confirms it and returns { token, creator }.
+export const verifyPhoneWidget = (accessToken, name) =>
+  postAuth('/auth/phone/verify-widget', { accessToken, name })
+
+// Google Sign-In. `credential` is the signed ID token from Google Identity
+// Services (see components/GoogleSignInButton.jsx). The backend verifies it,
+// then finds/links/creates the matching creator and returns the SAME
+// { token, creator } shape as email login — so callers can route on
+// instagramConnected / publicId exactly like loginAccount does.
+export const loginWithGoogle = (credential) => postAuth('/auth/google', { credential })
+
 // Password reset. forgotPassword always resolves (the backend never reveals
 // whether the email exists). resetPassword logs the creator in on success.
 export async function forgotPassword(email) {

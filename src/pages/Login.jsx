@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react'
-import { registerAccount, loginAccount } from '../services/dashboardApi.js'
+import { registerAccount, loginAccount, loginWithGoogle, verifyPhoneWidget } from '../services/dashboardApi.js'
+import { loadMsg91Widget, widgetSendOtp, widgetVerifyOtp, widgetRetryOtp } from '../services/msg91Widget.js'
 import { goToPath } from '../router.js'
+import GoogleSignInButton from '../components/GoogleSignInButton.jsx'
+
+// Turn whatever the user typed into "country code + number, no +". Defaults to
+// India (91) when they enter a bare 10-digit number.
+const normalizePhoneInput = (raw) => {
+  const digits = (raw || '').replace(/[^\d]/g, '')
+  return digits.length === 10 ? `91${digits}` : digits
+}
 
 // Standalone auth page (/login) — a centered two-panel card: a blue "Get Started"
 // stepper panel on the left and the "Welcome" sign-in form on the right, over a
@@ -21,12 +30,77 @@ export default function Login() {
   const [err, setErr] = useState('')
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
+  // Phone OTP (MSG91 widget) as an alternative to email/password.
+  const [method, setMethod] = useState('email') // 'email' | 'phone'
+  const [phone, setPhone] = useState('')
+  const [otp, setOtp] = useState('')
+  const [otpSent, setOtpSent] = useState(false)
+  const [resendIn, setResendIn] = useState(0) // seconds until "Resend" re-enables
+
   // Same component serves /login and /signup; the route decides the copy, fields
   // and highlighted step. The stepper marks step 1 for sign-up, step 2 for login.
   const isSignup = typeof window !== 'undefined' && window.location.pathname.replace(/\/+$/, '') === '/signup'
   const activeStep = isSignup ? 1 : 2
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
+
+  // Preload the MSG91 widget when the user switches to phone sign-in.
+  useEffect(() => {
+    if (method === 'phone') loadMsg91Widget().catch((e) => setErr(e.message))
+  }, [method])
+
+  // Countdown that gates the "Resend OTP" button after each send.
+  useEffect(() => {
+    if (resendIn <= 0) return
+    const id = setTimeout(() => setResendIn((s) => s - 1), 1000)
+    return () => clearTimeout(id)
+  }, [resendIn])
+
+  // Both email and phone logins return the same { token, creator }. Route the
+  // same way: to the dashboard when Instagram is linked, else to Connect.
+  const routeAfterAuth = (data) => {
+    const c = data.creator || {}
+    if (c.instagramConnected && c.publicId) goToPath(`/${c.publicId}/dashboard`)
+    else goToPath('/connect')
+  }
+
+  // Phone step 1 — send the OTP via the widget.
+  const handleSendOtp = async () => {
+    if (busy) return
+    const identifier = normalizePhoneInput(phone)
+    if (identifier.length < 11) {
+      setErr('Enter a valid phone number with country code.')
+      return
+    }
+    setErr('')
+    setBusy(true)
+    try {
+      await loadMsg91Widget()
+      await widgetSendOtp(identifier)
+      setOtpSent(true)
+    } catch (e2) {
+      setErr(e2.message || 'Could not send OTP.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Phone step 2 — verify the OTP, hand the access token to our backend, log in.
+  const handleVerifyOtp = async () => {
+    if (busy) return
+    if (!otp.trim()) { setErr('Enter the OTP you received.'); return }
+    setErr('')
+    setBusy(true)
+    try {
+      const accessToken = await widgetVerifyOtp(otp.trim())
+      const data = await verifyPhoneWidget(accessToken, form.name)
+      routeAfterAuth(data)
+    } catch (e2) {
+      setErr(e2.message || 'OTP verification failed.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   // Sign up / sign in with email + password against the account-auth endpoints.
   // On success the JWT is stored; we then send the creator to the Connect
@@ -35,6 +109,13 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (busy) return
+
+    // Phone method: the submit button drives the two-step OTP flow instead.
+    if (method === 'phone') {
+      if (otpSent) return handleVerifyOtp()
+      return handleSendOtp()
+    }
+
     setErr('')
     setBusy(true)
     try {
@@ -46,12 +127,30 @@ export default function Login() {
         // Existing account → straight to their own dashboard if Instagram is
         // already linked, otherwise send them to connect it.
         const data = await loginAccount({ email: form.email, password: form.password })
-        const c = data.creator || {}
-        if (c.instagramConnected && c.publicId) goToPath(`/${c.publicId}/dashboard`)
-        else goToPath('/connect')
+        routeAfterAuth(data)
       }
     } catch (e2) {
       setErr(e2.message || 'Something went wrong. Please try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Google Sign-In. The button hands us a signed credential; the backend
+  // verifies it and returns the same { token, creator } as email login, so we
+  // route the same way: straight to the dashboard when Instagram is already
+  // linked, otherwise to the Connect step. Works for both /login and /signup.
+  const handleGoogle = async (credential) => {
+    if (busy) return
+    setErr('')
+    setBusy(true)
+    try {
+      const data = await loginWithGoogle(credential)
+      const c = data.creator || {}
+      if (c.instagramConnected && c.publicId) goToPath(`/${c.publicId}/dashboard`)
+      else goToPath('/connect')
+    } catch (e2) {
+      setErr(e2.message || 'Google sign-in failed. Please try again.')
     } finally {
       setBusy(false)
     }
@@ -151,55 +250,101 @@ export default function Login() {
                   />
                 </div>
               )}
-              <div>
-                <label className="block text-white text-[13px] font-medium mb-2" style={{ fontFamily: FONT }}>Email</label>
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => set('email', e.target.value)}
-                  placeholder="Enter your email"
-                  className="w-full rounded-lg px-4 py-3 text-[15px] text-white outline-none transition-colors focus:border-white/40 placeholder:text-white/35"
-                  style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.14)' }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-white text-[13px] font-medium mb-2" style={{ fontFamily: FONT }}>Password</label>
-                <div className="relative">
-                  <input
-                    type={show ? 'text' : 'password'}
-                    value={form.password}
-                    onChange={(e) => set('password', e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full rounded-lg px-4 py-3 pr-11 text-[15px] text-white outline-none transition-colors focus:border-white/40 placeholder:text-white/35"
-                    style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.14)' }}
-                  />
-                  <button
-                    type="button"
-                    aria-label={show ? 'Hide password' : 'Show password'}
-                    onClick={() => setShow((s) => !s)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/45 hover:text-white/80 transition-colors"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="2.5" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              {!isSignup && (
-                <div className="flex items-center justify-between text-[13px]">
-                  <label className="flex items-center gap-2 text-white/70 cursor-pointer select-none" style={{ fontFamily: FONT }}>
+              {method === 'email' ? (
+                <>
+                  <div>
+                    <label className="block text-white text-[13px] font-medium mb-2" style={{ fontFamily: FONT }}>Email</label>
                     <input
-                      type="checkbox"
-                      checked={form.remember}
-                      onChange={(e) => set('remember', e.target.checked)}
-                      className="w-4 h-4 rounded accent-[#9B93E8]"
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => set('email', e.target.value)}
+                      placeholder="Enter your email"
+                      className="w-full rounded-lg px-4 py-3 text-[15px] text-white outline-none transition-colors focus:border-white/40 placeholder:text-white/35"
+                      style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.14)' }}
                     />
-                    Remember for 30 days
-                  </label>
-                  <a href="/forgot-password" onClick={(e) => { e.preventDefault(); goToPath('/forgot-password') }} className="font-medium hover:underline" style={{ fontFamily: FONT, color: '#9B93E8' }}>Forgot Password</a>
-                </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-white text-[13px] font-medium mb-2" style={{ fontFamily: FONT }}>Password</label>
+                    <div className="relative">
+                      <input
+                        type={show ? 'text' : 'password'}
+                        value={form.password}
+                        onChange={(e) => set('password', e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full rounded-lg px-4 py-3 pr-11 text-[15px] text-white outline-none transition-colors focus:border-white/40 placeholder:text-white/35"
+                        style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.14)' }}
+                      />
+                      <button
+                        type="button"
+                        aria-label={show ? 'Hide password' : 'Show password'}
+                        onClick={() => setShow((s) => !s)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/45 hover:text-white/80 transition-colors"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="2.5" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {!isSignup && (
+                    <div className="flex items-center justify-between text-[13px]">
+                      <label className="flex items-center gap-2 text-white/70 cursor-pointer select-none" style={{ fontFamily: FONT }}>
+                        <input
+                          type="checkbox"
+                          checked={form.remember}
+                          onChange={(e) => set('remember', e.target.checked)}
+                          className="w-4 h-4 rounded accent-[#9B93E8]"
+                        />
+                        Remember for 30 days
+                      </label>
+                      <a href="/forgot-password" onClick={(e) => { e.preventDefault(); goToPath('/forgot-password') }} className="font-medium hover:underline" style={{ fontFamily: FONT, color: '#9B93E8' }}>Forgot Password</a>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-white text-[13px] font-medium mb-2" style={{ fontFamily: FONT }}>Phone number</label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => { setPhone(e.target.value); if (otpSent) setOtpSent(false) }}
+                      placeholder="e.g. 9812345678"
+                      disabled={otpSent}
+                      className="w-full rounded-lg px-4 py-3 text-[15px] text-white outline-none transition-colors focus:border-white/40 placeholder:text-white/35 disabled:opacity-60"
+                      style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.14)' }}
+                    />
+                    <p className="text-white/40 text-[12px] mt-1.5" style={{ fontFamily: FONT }}>
+                      Indian numbers work as-is; for others include the country code.
+                    </p>
+                  </div>
+
+                  {otpSent && (
+                    <div>
+                      <label className="block text-white text-[13px] font-medium mb-2" style={{ fontFamily: FONT }}>Enter OTP</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        placeholder="6-digit code"
+                        autoFocus
+                        className="w-full rounded-lg px-4 py-3 text-[15px] tracking-[0.3em] text-white outline-none transition-colors focus:border-white/40 placeholder:text-white/35 placeholder:tracking-normal"
+                        style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.14)' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => { setOtpSent(false); setOtp('') }}
+                        className="text-[12px] mt-2 font-medium hover:underline"
+                        style={{ fontFamily: FONT, color: '#9B93E8' }}
+                      >
+                        Change number / resend
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
 
               {err && (
@@ -212,10 +357,41 @@ export default function Login() {
                 className="w-full rounded-lg py-3 font-semibold text-[15px] transition-transform hover:scale-[1.01] disabled:opacity-60"
                 style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg, #C9C4F0 0%, #A79FE6 100%)' }}
               >
-                {busy ? 'Please wait…' : isSignup ? 'Create account' : 'Sign in'}
+                {busy
+                  ? 'Please wait…'
+                  : method === 'phone'
+                    ? (otpSent ? 'Verify & continue' : 'Send OTP')
+                    : isSignup ? 'Create account' : 'Sign in'}
               </button>
 
             </form>
+
+            {/* ===== or — continue with Google ===== */}
+            <div className="flex items-center gap-3 my-6">
+              <span className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
+              <span className="text-white/40 text-[12px]" style={{ fontFamily: FONT }}>or</span>
+              <span className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
+            </div>
+
+            <GoogleSignInButton
+              text={isSignup ? 'signup_with' : 'signin_with'}
+              onCredential={handleGoogle}
+              onError={setErr}
+            />
+
+            <button
+              type="button"
+              onClick={() => {
+                setErr('')
+                setOtpSent(false)
+                setOtp('')
+                setMethod((m) => (m === 'phone' ? 'email' : 'phone'))
+              }}
+              className="w-full mt-3 rounded-lg py-3 font-semibold text-[15px] transition-colors"
+              style={{ fontFamily: FONT, color: '#fff', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)' }}
+            >
+              {method === 'phone' ? 'Continue with Email' : 'Continue with Phone'}
+            </button>
 
             <p className="text-center text-white/55 text-[13px] mt-7" style={{ fontFamily: FONT }}>
               {isSignup ? (
