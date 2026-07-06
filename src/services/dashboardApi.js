@@ -197,6 +197,8 @@ export async function fetchPublic(username) {
 
 // ---- Creator (private) ----
 export const fetchMe = () => dapi.get('/creator/me')
+// Set or change the account password (signed in). { currentPassword?, newPassword }
+export const setPassword = (body) => dapi.post('/auth/set-password', body)
 export const fetchDashboardStats = () => dapi.get('/creator/dashboard-stats')
 export const updateProfile = (body) => dapi.put('/creator/update', body)
 export const deleteAccount = () => dapi.del('/creator/me')

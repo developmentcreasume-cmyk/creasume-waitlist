@@ -18,6 +18,7 @@ import {
   fetchDashboardStats,
   fetchMyInquiries,
   updateProfile,
+  setPassword,
   deleteAccount,
   isLoggedIn,
   loginUrl,
@@ -415,6 +416,25 @@ function AccountPanel({ creator }) {
   const [deleting, setDeleting] = useState(false)
   useEffect(() => { setEmail(creator?.email || '') }, [creator])
 
+  // ----- Password (set / change) -----
+  const [hasPw, setHasPw] = useState(!!creator?.hasPassword)
+  const [curPw, setCurPw] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [pwSaving, setPwSaving] = useState(false)
+  const [pwMsg, setPwMsg] = useState('')
+  useEffect(() => { setHasPw(!!creator?.hasPassword) }, [creator])
+  const pwFlash = (m) => { setPwMsg(m); setTimeout(() => setPwMsg(''), 2600) }
+  const savePassword = async () => {
+    if (pwSaving) return
+    if (newPw.length < 8) { pwFlash('Password must be at least 8 characters.'); return }
+    setPwSaving(true)
+    try {
+      await setPassword({ currentPassword: curPw, newPassword: newPw })
+      setHasPw(true); setCurPw(''); setNewPw(''); pwFlash('Password saved ✓')
+    } catch (e) { pwFlash(e.message || 'Could not save password') }
+    finally { setPwSaving(false) }
+  }
+
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 2400) }
   const save = async () => {
     if (saving) return
@@ -442,7 +462,29 @@ function AccountPanel({ creator }) {
           </button>
           {msg && <span className="text-[13px] font-semibold" style={{ fontFamily: FONT, color: msg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{msg}</span>}
         </div>
-        <p className="text-[12px] text-white/40" style={{ fontFamily: FONT }}>You sign in with Instagram, so there's no password to manage here.</p>
+        {/* ----- Password: set (first time) or change ----- */}
+        <div className="pt-5 mt-1 border-t border-white/10">
+          <p className="text-white/85 text-[14px] font-semibold" style={{ fontFamily: FONT }}>
+            {hasPw ? 'Change Password' : 'Set a Password'}
+          </p>
+          <p className="text-[12px] text-white/40 mt-1 mb-4" style={{ fontFamily: FONT }}>
+            {hasPw
+              ? 'Update the password you use to sign in with your email.'
+              : 'Set a password so you can also sign in with your email — not just Instagram.'}
+          </p>
+          <div className="flex flex-col gap-4">
+            {hasPw && (
+              <SField label="Current Password" type="password" placeholder="Current password" value={curPw} onChange={(e) => setCurPw(e.target.value)} />
+            )}
+            <SField label="New Password" type="password" placeholder="At least 8 characters" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={savePassword} disabled={pwSaving} className="rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60" style={{ fontFamily: FONT, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}>
+                {pwSaving ? 'Saving…' : hasPw ? 'Update Password' : 'Set Password'}
+              </button>
+              {pwMsg && <span className="text-[13px] font-semibold" style={{ fontFamily: FONT, color: pwMsg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{pwMsg}</span>}
+            </div>
+          </div>
+        </div>
       </div>
       <div className="mt-10 max-w-md rounded-2xl p-5" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.28)' }}>
         <div className="flex items-center gap-2 text-[15px] font-semibold" style={{ fontFamily: FONT, color: '#FB7185' }}>
