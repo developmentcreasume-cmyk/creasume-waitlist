@@ -160,6 +160,11 @@ function pickRoute(route) {
     if (sub === 'inquiries') return <InfluenceInquiries username={username} />
     return <InfluenceDashboard username={username} />
   }
+  // `/preview?lookup=<username>` renders the full Influence Card populated by an
+  // ON-THE-FLY public fetch (real IG data, no creator account). influenceApi
+  // reads the ?lookup= param. Matched before the `/<username>` catch-all.
+  if (route === '/preview') return <InfluenceCard />
+
   // `/landing` renders the new marketing landing page (distinct from the
   // waitlist home). Matched before the `/<username>` catch-all below.
   if (route === '/landing') return <LandingPage />

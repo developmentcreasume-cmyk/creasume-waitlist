@@ -12,7 +12,7 @@ export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 // page (`/`), the legal pages, and the app routes are reserved and return no
 // creator. The SPA rewrite in vercel.json makes these deep links / refreshes
 // serve index.html.
-const RESERVED_PATHS = ['privacy-policy', 'terms', 'contact', 'pricing', 'how-it-works', 'influence', 'dashboard', 'waitlist', 'auth-success', 'dev-login']
+const RESERVED_PATHS = ['privacy-policy', 'terms', 'contact', 'pricing', 'how-it-works', 'influence', 'dashboard', 'waitlist', 'auth-success', 'dev-login', 'preview', 'landing']
 export function resolveUsername() {
   if (typeof window === 'undefined') return ''
   const path = window.location.pathname.replace(/\/+$/, '')
@@ -36,9 +36,68 @@ export function formatCount(n) {
   return String(num)
 }
 
+// Convert the /public/lookup payload (real public IG data for ANY username, no
+// login) into the same `api` shape mapInfluenceData() consumes, so the full
+// Influence Card renders with the FETCHED public data. Only the fields Instagram
+// exposes publicly are filled; reach/impressions/demographics stay empty (they
+// need the creator's own token), so those card sections hide themselves.
+function lookupToApiShape(d) {
+  const media = (d.recentPosts || []).map((p) => ({
+    id: p.id,
+    caption: p.caption || '',
+    media_type: p.isVideo ? 'VIDEO' : 'IMAGE',
+    media_url: p.thumbnail,
+    thumbnail_url: p.thumbnail,
+    permalink: p.permalink,
+    like_count: p.likes || 0,
+    comments_count: p.comments || 0,
+  }))
+  return {
+    creator: {
+      username: d.username,
+      name: d.fullName || d.username,
+      bio: d.bio || '',
+      profilePicture: d.profilePicture || '',
+      isVerified: d.isVerified,
+      // Preview mode: no publicId (this isn't a saved Creasume creator).
+    },
+    stats: {
+      followersCount: d.followers,
+      followsCount: d.following,
+      mediaCount: d.posts,
+      engagementRate: d.engagementRateEstimate,
+      totalLikes: media.reduce((s, m) => s + (m.like_count || 0), 0),
+      totalComments: media.reduce((s, m) => s + (m.comments_count || 0), 0),
+    },
+    media,
+    demographics: null,
+    collaborations: [],
+    packages: [],
+    growth: [],
+    isLookupPreview: true,
+  }
+}
+
 // GET /public/:username → the raw backend payload, or null if there's no
 // configured creator, the request fails, or the creator isn't found.
+//
+// PREVIEW MODE: when the URL carries `?lookup=<username>`, fetch REAL public data
+// from /public/lookup/<username> instead and render the Influence Card with it —
+// so you can open any creator's card populated by the on-the-fly fetch.
 export async function fetchInfluenceData() {
+  if (typeof window !== 'undefined') {
+    const lookup = new URLSearchParams(window.location.search).get('lookup')
+    if (lookup) {
+      const res = await fetch(
+        `${API_BASE}/public/lookup/${encodeURIComponent(lookup.replace(/^@/, ''))}`,
+        { cache: 'no-store' },
+      )
+      const data = await res.json().catch(() => null)
+      if (!data?.success || !data.data) return null
+      return lookupToApiShape(data.data)
+    }
+  }
+
   const username = resolveUsername()
   if (!username) return null
   const res = await fetch(`${API_BASE}/public/${encodeURIComponent(username)}`, { cache: 'no-store' })
