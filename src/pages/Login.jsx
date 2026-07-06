@@ -295,7 +295,7 @@ export default function Login() {
                         type="button"
                         aria-label={show ? 'Hide password' : 'Show password'}
                         onClick={() => setShow((s) => !s)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/45 hover:text-white/80 transition-colors"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/75 hover:text-white transition-colors"
                       >
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="2.5" />

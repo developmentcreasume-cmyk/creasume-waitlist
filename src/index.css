@@ -682,3 +682,17 @@ body::-webkit-scrollbar {
 @media (prefers-reduced-motion: reduce) {
   .founding-badge::before { animation: none; }
 }
+
+/* Keep autofilled inputs on the dark auth forms (Login / Reset Password) dark.
+   Chrome forces a light background + dark text on autofill, which hides
+   light-coloured controls like the show/hide-password eye. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: #ffffff;
+  caret-color: #ffffff;
+  -webkit-box-shadow: 0 0 0 1000px #0b0d18 inset;
+  box-shadow: 0 0 0 1000px #0b0d18 inset;
+  transition: background-color 9999s ease-in-out 0s;
+}

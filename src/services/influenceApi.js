@@ -184,10 +184,29 @@ export async function fetchInfluenceData() {
 
   const username = resolveUsername()
   if (!username) return null
-  const res = await fetch(`${API_BASE}/public/${encodeURIComponent(username)}`, { cache: 'no-store' })
+  // Inside the dashboard's Edit-Profile preview iframe (`?preview=…`), send the
+  // owner's token so the backend grants isOwner and serves the card even when
+  // it isn't live yet. The normal (public) card load stays token-less, so
+  // visitors keep the public-only behaviour.
+  const res = await fetch(`${API_BASE}/public/${encodeURIComponent(username)}`, {
+    cache: 'no-store',
+    headers: previewAuthHeader(),
+  })
   const data = await res.json().catch(() => null)
   if (!data?.success || !data.creator) return null
   return data
+}
+
+// Bearer header carrying the signed-in creator's token, but ONLY when the card
+// is rendered in the dashboard preview iframe (same-origin, so localStorage is
+// shared with the dashboard). Empty for a normal public card view.
+function previewAuthHeader() {
+  try {
+    if (typeof window === 'undefined') return {}
+    if (!new URLSearchParams(window.location.search).has('preview')) return {}
+    const t = localStorage.getItem('creasume_token')
+    return t ? { Authorization: `Bearer ${t}` } : {}
+  } catch { return {} }
 }
 
 // POST /inquiry/send/:username — used by the "Work With Me" form. The backend

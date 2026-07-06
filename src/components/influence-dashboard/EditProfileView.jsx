@@ -887,9 +887,18 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
     { ref: saveRef, title: 'Save & Publish', desc: "Don't forget to save your changes to update your live link." },
   ]
 
-  const handle = creator.username || username || ''
-  const previewSrc = handle ? `/${encodeURIComponent(handle)}?preview=${previewKey}` : `/?preview=${previewKey}`
-  const avatarSrc = handle ? `${API_BASE}/public/avatar/${encodeURIComponent(handle)}` : ''
+  // The public card + avatar resolve STRICTLY by the opaque publicId (always the
+  // LAST path segment) — a bare /<username> is rejected ("This card isn't
+  // available"). Build the canonical /<username>/<publicId> so the preview loads
+  // the real card. `username` (the URL handle) is the publicId after login, so
+  // it's a safe fallback when creator.publicId hasn't loaded yet.
+  const uname = creator.username || ''
+  const pubId = creator.publicId || username || ''
+  const cardPath = pubId
+    ? (uname ? `/${encodeURIComponent(uname)}/${encodeURIComponent(pubId)}` : `/${encodeURIComponent(pubId)}`)
+    : (uname ? `/${encodeURIComponent(uname)}` : '')
+  const previewSrc = cardPath ? `${cardPath}?preview=${previewKey}` : `/?preview=${previewKey}`
+  const avatarSrc = pubId ? `${API_BASE}/public/avatar/${encodeURIComponent(pubId)}` : ''
 
   // Seed Profile / Design from the creator prop.
   useEffect(() => {
