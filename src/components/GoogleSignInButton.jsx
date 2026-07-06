@@ -59,7 +59,7 @@ export default function GoogleSignInButton({ onCredential, onError, label = 'Con
   // Track the wrapper's width so the (transparent) Google button can match it and
   // capture clicks across the whole button. GIS caps the width at 400px.
   useEffect(() => {
-    if (!CLIENT_ID || !wrapRef.current) return
+    if (!wrapRef.current) return
     const el = wrapRef.current
     const measure = () => setWidth(Math.min(400, Math.round(el.getBoundingClientRect().width)))
     measure()
@@ -97,12 +97,17 @@ export default function GoogleSignInButton({ onCredential, onError, label = 'Con
     return () => { cancelled = true }
   }, [width])
 
-  if (!CLIENT_ID) return null
-
   return (
     <div ref={wrapRef} className="relative w-full select-none">
-      {/* Visible, site-styled button (purely presentational) */}
-      <div
+      {/* Visible, site-styled button. Always rendered so it can never silently
+          vanish; when Google isn't configured, clicking reports why. When it IS
+          configured, the transparent Google button below sits on top and takes
+          the click, so this onClick doesn't fire. */}
+      <button
+        type="button"
+        onClick={() => {
+          if (!CLIENT_ID) onError?.('Google sign-in is not configured (missing VITE_GOOGLE_CLIENT_ID).')
+        }}
         className="w-full rounded-lg py-3 flex items-center justify-center gap-3 font-semibold text-[15px] transition-colors"
         style={{
           fontFamily: FONT,
@@ -113,14 +118,16 @@ export default function GoogleSignInButton({ onCredential, onError, label = 'Con
       >
         <GoogleG />
         {label}
-      </div>
+      </button>
 
       {/* The real Google button, transparent, on top — it takes the click and
-          keeps GIS's credential flow. Centered so it covers the visible button. */}
-      <div
-        ref={holderRef}
-        className="absolute inset-0 flex items-center justify-center overflow-hidden opacity-0"
-      />
+          keeps GIS's credential flow. Only mounted when configured. */}
+      {CLIENT_ID && (
+        <div
+          ref={holderRef}
+          className="absolute inset-0 flex items-center justify-center overflow-hidden opacity-0"
+        />
+      )}
     </div>
   )
 }
