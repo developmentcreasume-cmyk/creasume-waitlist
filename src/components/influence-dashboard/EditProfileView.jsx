@@ -899,6 +899,9 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
     : (uname ? `/${encodeURIComponent(uname)}` : '')
   const previewSrc = cardPath ? `${cardPath}?preview=${previewKey}` : `/?preview=${previewKey}`
   const avatarSrc = pubId ? `${API_BASE}/public/avatar/${encodeURIComponent(pubId)}` : ''
+  // The visible @handle (for the ProfilePanel header); the openable card link
+  // uses cardPath, which must end in the publicId.
+  const handle = uname || username || ''
 
   // Seed Profile / Design from the creator prop.
   useEffect(() => {
@@ -1064,7 +1067,7 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
         <div className="md:hidden flex flex-col gap-3">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-wrap">
             <h1 className="font-bold text-2xl sm:text-3xl whitespace-nowrap shrink-0" style={{ fontFamily: FONT }}>Edit Influence Card</h1>
-            <a href={handle ? `/${handle}` : '/'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 ml-12 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 no-underline shrink-0" style={{ fontFamily: FONT, background: '#fff' }}>{I.eye} Preview</a>
+            <a href={cardPath || '/'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 ml-12 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 no-underline shrink-0" style={{ fontFamily: FONT, background: '#fff' }}>{I.eye} Preview</a>
           </div>
           <div className="flex items-center gap-3">
             <nav ref={visRef(tabsRef)} className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -1097,7 +1100,7 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
           <div className="ml-auto flex items-center gap-3 shrink-0">
             {savedMsg && <span className="text-[13px] font-semibold whitespace-nowrap" style={{ fontFamily: FONT, color: savedMsg.includes('✓') ? '#4DE0B0' : '#FB7185' }}>{savedMsg}</span>}
             <DeviceToggle device={device} setDevice={setDevice} refCb={visRef(deviceRef)} />
-            <a href={handle ? `/${handle}` : '/'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 no-underline shrink-0" style={{ fontFamily: FONT, background: '#fff' }}>{I.eye} Preview</a>
+            <a href={cardPath || '/'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-[#11132f] transition-opacity hover:opacity-90 no-underline shrink-0" style={{ fontFamily: FONT, background: '#fff' }}>{I.eye} Preview</a>
             <button ref={visRef(saveRef)} type="button" onClick={onSave} disabled={saving} title="Save Changes" aria-label="Save Changes" className="inline-flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60" style={{ fontFamily: FONT, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}>{I.save} Save Changes</button>
           </div>
         </div>
