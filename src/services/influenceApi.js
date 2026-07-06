@@ -17,9 +17,13 @@ export function resolveUsername() {
   if (typeof window === 'undefined') return ''
   const path = window.location.pathname.replace(/\/+$/, '')
   const parts = path.split('/').filter(Boolean)
-  const seg = parts[0]
-  if (!seg || RESERVED_PATHS.includes(seg)) return ''
-  return decodeURIComponent(seg)
+  if (!parts.length || RESERVED_PATHS.includes(parts[0])) return ''
+  // Card URLs are /<username>/<publicId> (username visible, unguessable id) — or
+  // the legacy /<publicId>. Either way the card is resolved by the opaque
+  // publicId, which is ALWAYS the LAST path segment. A bare /<username> (no id)
+  // therefore resolves to the username, which the backend rejects (publicId-only)
+  // → the card stays private.
+  return decodeURIComponent(parts[parts.length - 1])
 }
 
 // 1234567 → "1.2M", 12500 → "12.5K". Returns null for missing/NaN so callers

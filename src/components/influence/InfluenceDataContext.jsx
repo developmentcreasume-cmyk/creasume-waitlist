@@ -17,6 +17,22 @@ const DEFAULTS = {
 
 const InfluenceContext = createContext({ ...DEFAULTS, ready: false })
 
+// After the card loads, normalise the address bar to /<username>/<publicId> so
+// the @username is visible even when opened via a legacy /<publicId> link or a
+// wrong username. The publicId (last segment) is what actually resolved it, so
+// this is purely cosmetic. Skipped in the Edit-Profile preview iframe.
+function canonicalizeCardUrl(creator) {
+  try {
+    if (typeof window === 'undefined' || !creator || !creator.publicId || !creator.username) return
+    if (new URLSearchParams(window.location.search).has('preview')) return
+    const want = `/${encodeURIComponent(creator.username)}/${creator.publicId}`
+    const current = window.location.pathname.replace(/\/+$/, '')
+    if (current !== want) {
+      window.history.replaceState({}, '', want + window.location.search + window.location.hash)
+    }
+  } catch { /* ignore */ }
+}
+
 // Every influence section reads its data through this hook, so swapping demo
 // data for the live creator is a single fetch at the provider.
 export function useInfluence() {
@@ -55,7 +71,10 @@ export function InfluenceDataProvider({ children }) {
       fetchInfluenceData()
         .then((api) => {
           if (!alive) return
-          if (api) { setValue(mapInfluenceData(api, DEFAULTS)); setNotFound(false) }
+          if (api) {
+            setValue(mapInfluenceData(api, DEFAULTS)); setNotFound(false)
+            canonicalizeCardUrl(api.creator) // show /<username>/<publicId> in the bar
+          }
           else setNotFound(true) // handle didn't resolve (blocked username / bad link)
         })
         .catch(() => {}) // keep the current data on any failure

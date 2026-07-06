@@ -791,11 +791,13 @@ export default function InfluenceDashboard({ username }) {
   // always verified.
   const isFounding = !!creator.isFoundingCreator
   const isVerified = !!(creator.isVerified || creator.isFoundingCreator)
-  // Public share link uses the OPAQUE publicId only — the card can't be opened by
-  // guessing a @username, only via this exact shared link. The backend now
-  // resolves the public card strictly by publicId.
-  const cardHandle = creator.publicId || handle
-  const cardUrl = `creasume.com/${cardHandle}`
+  // Public share link: /<username>/<publicId> — the @username is visible (nice,
+  // branded), but the card is resolved by the opaque publicId (the LAST segment),
+  // so it can't be opened by guessing the username. `cardPath` is URL-encoded for
+  // the href; `cardUrl` is the plain display/copy string.
+  const pid = creator.publicId || handle
+  const cardPath = creator.username ? `${encodeURIComponent(creator.username)}/${pid}` : pid
+  const cardUrl = `creasume.com/${creator.username ? `${creator.username}/${pid}` : pid}`
   const fc0 = (v) => formatCount(v) ?? '0'
 
   const inquiryCount =
@@ -1129,7 +1131,7 @@ export default function InfluenceDashboard({ username }) {
               )}
               <a
                 ref={viewProfileRef}
-                href={`/${creator.publicId || handle}`}
+                href={`/${cardPath}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium hover:bg-white/5 transition-colors no-underline"
