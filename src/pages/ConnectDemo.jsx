@@ -8,18 +8,6 @@ import { useEffect, useState } from 'react'
 const FONT = "'Outfit', sans-serif"
 const STEP_MS = 2200
 
-// Green scalloped "verified" seal (same geometry as the profile badge).
-const SEAL_PATH = (() => {
-  const N = 24, cx = 12, cy = 12, rOuter = 12, rInner = 10.4
-  let d = ''
-  for (let i = 0; i < N * 2; i++) {
-    const r = i % 2 === 0 ? rOuter : rInner
-    const a = (Math.PI / N) * i - Math.PI / 2
-    d += `${i ? 'L' : 'M'}${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)} `
-  }
-  return `${d}Z`
-})()
-
 // Instagram script wordmark (cursive fallback — no font to load).
 function IgWordmark({ size = 30 }) {
   return (
@@ -65,7 +53,79 @@ function PermRow({ label, on = true, dim = false }) {
   )
 }
 
-// ---- The five slides ----
+// Instagram glyph (IG gradient) for the intro slide.
+function IgGlyph({ size = 40 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="cdIg" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#F58529" /><stop offset="0.35" stopColor="#DD2A7B" />
+          <stop offset="0.7" stopColor="#8134AF" /><stop offset="1" stopColor="#515BD4" />
+        </linearGradient>
+      </defs>
+      <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="url(#cdIg)" strokeWidth="2" />
+      <circle cx="12" cy="12" r="4.5" stroke="url(#cdIg)" strokeWidth="2" />
+      <circle cx="17.3" cy="6.7" r="1.4" fill="url(#cdIg)" />
+    </svg>
+  )
+}
+
+// ---- The slides ----
+
+// Intro: "Connect Instagram" — shown FIRST, above the login flow.
+function SlideConnect() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-4 py-4 text-center">
+      <IgGlyph size={44} />
+      <div>
+        <h3 className="font-bold text-[18px] leading-tight" style={{ fontFamily: FONT, color: '#1b1b20' }}>
+          Connect Instagram
+        </h3>
+        <p className="mt-1.5 text-[13px] leading-snug max-w-[240px] mx-auto" style={{ fontFamily: FONT, color: '#6b6b73' }}>
+          Switch to a Public Account and unlock earnings once you reach 1,000 followers.
+        </p>
+      </div>
+      <span
+        className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold text-white"
+        style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#a855f7 0%,#ec4899 100%)' }}
+      >
+        Continue with Instagram
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+      </span>
+    </div>
+  )
+}
+
+// Final: success tick + "data is safe" box BELOW it.
+function SlideConnected() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-4 py-3 text-center">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="11" fill="#22C55E" />
+        <path d="m7.5 12.2 2.9 2.9L16.6 9" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <div>
+        <h3 className="font-bold text-[17px] leading-tight" style={{ fontFamily: FONT, color: '#1b1b20' }}>
+          Instagram Connected Successfully
+        </h3>
+        <p className="mt-1 text-[12.5px]" style={{ fontFamily: FONT, color: '#8a8a93' }}>
+          Your influence card is ready.
+        </p>
+      </div>
+      {/* data-is-safe box, shown below the tick */}
+      <div className="rounded-xl px-4 py-3 w-full" style={{ background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.22)' }}>
+        <p className="font-bold text-[14px] mb-1.5 flex items-center gap-2" style={{ fontFamily: FONT, color: '#1b1b20' }}>
+          <span aria-hidden="true">🔒</span> Your data is <span style={{ color: '#16A34A' }}>safe.</span>
+        </p>
+        <ul className="space-y-1 text-[12.5px] text-left" style={{ fontFamily: FONT, color: '#33333a' }}>
+          <li>– We only request what's needed.</li>
+          <li>– Your data is never shared.</li>
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 function SlideLogin({ submitting }) {
   return (
     <div className="flex flex-col gap-3.5">
@@ -114,32 +174,13 @@ function SlideAllow() {
   )
 }
 
-function SlideSafe() {
-  return (
-    <div className="flex flex-col items-center justify-center h-full gap-5 py-4">
-      <svg width="72" height="72" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d={SEAL_PATH} fill="#22C55E" />
-        <path d="m8 12 2.6 2.6L16.2 9" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <div className="rounded-xl px-4 py-3.5 w-full" style={{ background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.22)' }}>
-        <p className="font-bold text-[15px] mb-2 flex items-center gap-2" style={{ fontFamily: FONT, color: '#1b1b20' }}>
-          <span aria-hidden="true">🔒</span> Your data is <span style={{ color: '#16A34A' }}>safe.</span>
-        </p>
-        <ul className="space-y-1 text-[13px] text-left" style={{ fontFamily: FONT, color: '#33333a' }}>
-          <li>– We only request what's needed.</li>
-          <li>– Your data is never shared.</li>
-        </ul>
-      </div>
-    </div>
-  )
-}
-
 const SLIDES = [
+  (k) => <SlideConnect key={k} />,
   (k) => <SlideLogin key={k} submitting={false} />,
   (k) => <SlideLogin key={k} submitting />,
   (k) => <SlidePermissions key={k} />,
   (k) => <SlideAllow key={k} />,
-  (k) => <SlideSafe key={k} />,
+  (k) => <SlideConnected key={k} />,
 ]
 
 export default function ConnectDemo() {
