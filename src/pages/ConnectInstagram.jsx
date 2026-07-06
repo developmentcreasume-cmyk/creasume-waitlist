@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { connectInstagramUrl } from '../services/dashboardApi.js'
 
 // "No Instagram Account Connected" screen shown after sign-in (and from the
@@ -29,6 +29,28 @@ function InstagramGlyph({ size = 44 }) {
 export default function ConnectInstagram() {
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
+  // A blocked connect (Instagram already linked to another account, or a Facebook
+  // that manages a different Instagram) redirects here with a reason param.
+  const [notice, setNotice] = useState('')
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const ig = p.get('ig')
+    const fb = p.get('fb')
+    const igUser = p.get('ig_user') || p.get('ig') || ''
+    let msg = ''
+    if (ig === 'taken' || fb === 'taken') {
+      msg = `That Instagram${igUser ? ` (@${igUser})` : ''} is already connected to another Creasume account. An Instagram account can only be linked to one account — connect a different one.`
+    } else if (fb === 'mismatch') {
+      msg = 'That Facebook manages a different Instagram than the one on your account. Connect the Facebook Page linked to your own Instagram.'
+    }
+    if (msg) {
+      setNotice(msg)
+      ;['ig', 'fb', 'ig_user'].forEach((k) => p.delete(k))
+      const qs = p.toString()
+      window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''))
+    }
+  }, [])
+
   // Link Instagram to the account the creator just signed into (carries their
   // JWT). Falls back to plain Instagram login if somehow not signed in.
   const connect = () => { window.location.href = connectInstagramUrl() }
@@ -47,6 +69,14 @@ export default function ConnectInstagram() {
 
           {/* ===== Connect hero (RIGHT on desktop, top on mobile) ===== */}
           <div className="md:order-2 text-center">
+            {notice && (
+              <div
+                className="mb-6 rounded-xl px-4 py-3 text-left text-[13.5px] leading-snug text-white"
+                style={{ fontFamily: FONT, background: 'rgba(244,96,122,0.12)', border: '1px solid rgba(244,96,122,0.4)' }}
+              >
+                {notice}
+              </div>
+            )}
             <div className="flex justify-center mb-6">
               <InstagramGlyph size={44} />
             </div>
