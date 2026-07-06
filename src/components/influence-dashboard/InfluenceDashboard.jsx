@@ -866,7 +866,7 @@ export default function InfluenceDashboard({ username }) {
                 // Clear the stored token/username, then do a FULL reload to the
                 // home page so all in-memory creator state is wiped and the local
                 // dev auto-token can't silently sign the user back in.
-                onClick={() => { clearAuth(); window.location.href = '/' }}
+                onClick={() => { clearAuth(); window.location.replace('/login') }}
                 className="flex items-center gap-3 rounded-xl px-4 py-3 w-full text-left text-[15px] font-medium text-white/70 hover:text-white hover:bg-red-500/10 transition-colors"
                 style={{ fontFamily: FONT }}
               >
@@ -993,7 +993,7 @@ export default function InfluenceDashboard({ username }) {
               {loggedIn ? (
                 <button
                   type="button"
-                  onClick={() => { clearAuth(); window.location.href = '/' }}
+                  onClick={() => { clearAuth(); window.location.replace('/login') }}
                   className="flex items-center gap-3 rounded-xl px-4 py-3 w-full text-left text-[15px] font-medium text-white/70 hover:bg-red-500/10 transition-colors"
                   style={{ fontFamily: FONT }}
                 >

@@ -74,6 +74,18 @@ async function postAuth(path, body) {
 export const registerAccount = (body) => postAuth('/auth/register', body)
 export const loginAccount = (body) => postAuth('/auth/login', body)
 
+// Password reset. forgotPassword always resolves (the backend never reveals
+// whether the email exists). resetPassword logs the creator in on success.
+export async function forgotPassword(email) {
+  const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  return res.json().catch(() => ({ success: true }))
+}
+export const resetPassword = (body) => postAuth('/auth/reset-password', body)
+
 // Start Instagram OAuth to LINK it to the currently-signed-in account (instead
 // of creating a brand-new Instagram-only creator). Carries the JWT so the
 // backend's /auth/instagram/connect route knows which creator to attach it to.

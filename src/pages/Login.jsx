@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { loginUrl, registerAccount, loginAccount } from '../services/dashboardApi.js'
+import { registerAccount, loginAccount } from '../services/dashboardApi.js'
 import { goToPath } from '../router.js'
 
 // Standalone auth page (/login) — a centered two-panel card: a blue "Get Started"
@@ -14,16 +14,6 @@ const STEPS = [
   { n: 3, label: 'Create your Influence Card' },
 ]
 
-function InstagramGlyph({ size = 20 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="#fff" strokeWidth="2" />
-      <circle cx="12" cy="12" r="4.5" stroke="#fff" strokeWidth="2" />
-      <circle cx="17.3" cy="6.7" r="1.3" fill="#fff" />
-    </svg>
-  )
-}
-
 export default function Login() {
   const [form, setForm] = useState({ name: '', email: '', password: '', remember: false })
   const [show, setShow] = useState(false)
@@ -37,10 +27,6 @@ export default function Login() {
   const activeStep = isSignup ? 1 : 2
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
-
-  // "Continue with Google" still uses the Instagram OAuth entry for now (Google
-  // sign-in isn't wired on the frontend yet).
-  const startLogin = () => { window.location.href = loginUrl() }
 
   // Sign up / sign in with email + password against the account-auth endpoints.
   // On success the JWT is stored; we then send the creator to the Connect
@@ -212,7 +198,7 @@ export default function Login() {
                     />
                     Remember for 30 days
                   </label>
-                  <a href="#forgot" className="font-medium hover:underline" style={{ fontFamily: FONT, color: '#9B93E8' }}>Forgot Password</a>
+                  <a href="/forgot-password" onClick={(e) => { e.preventDefault(); goToPath('/forgot-password') }} className="font-medium hover:underline" style={{ fontFamily: FONT, color: '#9B93E8' }}>Forgot Password</a>
                 </div>
               )}
 
@@ -229,30 +215,6 @@ export default function Login() {
                 {busy ? 'Please wait…' : isSignup ? 'Create account' : 'Sign in'}
               </button>
 
-              {/* Divider */}
-              <div className="flex items-center gap-3 my-1">
-                <span className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
-                <span className="text-white/40 text-[12px]" style={{ fontFamily: FONT }}>or</span>
-                <span className="h-px flex-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
-              </div>
-
-              {/* Instagram login — the path for creators who joined with Instagram
-                  (older accounts with no email/password). Starts the real OAuth. */}
-              <button
-                type="button"
-                onClick={startLogin}
-                className="w-full rounded-lg py-3 font-semibold text-[15px] text-white inline-flex items-center justify-center gap-2.5 transition-transform hover:scale-[1.01]"
-                style={{
-                  fontFamily: FONT,
-                  background: 'linear-gradient(90deg, #515BD4 0%, #8134AF 30%, #DD2A7B 60%, #F58529 100%)',
-                }}
-              >
-                <InstagramGlyph size={20} />
-                Continue with Instagram
-              </button>
-              <p className="text-center text-white/40 text-[12px]" style={{ fontFamily: FONT }}>
-                Joined with Instagram before? Use this to sign in.
-              </p>
             </form>
 
             <p className="text-center text-white/55 text-[13px] mt-7" style={{ fontFamily: FONT }}>

@@ -13,6 +13,8 @@ const ContactUs = lazy(() => import('./pages/ContactUs.jsx'))
 const PricingPage = lazy(() => import('./pages/PricingPage.jsx'))
 const HowItWorks = lazy(() => import('./pages/HowItWorks.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'))
 const ConnectInstagram = lazy(() => import('./pages/ConnectInstagram.jsx'))
 const InfluenceCard = lazy(() => import('./pages/InfluenceCard.jsx'))
 const InfluenceDashboard = lazy(() => import('./components/influence-dashboard/InfluenceDashboard.jsx'))
@@ -129,6 +131,8 @@ function pickRoute(route) {
   if (route === '/pricing') return <PricingPage />
   if (route === '/how-it-works') return <HowItWorks />
   if (route === '/login' || route === '/signup') return <Login />
+  if (route === '/forgot-password') return <ForgotPassword />
+  if (route === '/reset-password') return <ResetPassword />
   if (route === '/connect') return <ConnectInstagram />
 
   // Instagram login redirect target — stores the token, then forwards to the
