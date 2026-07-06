@@ -134,11 +134,15 @@ export default function PaperPlaneFlight() {
         x.set(pt.x)
         y.set(pt.y)
         // Rotation: ease out of the parked 8° at takeoff, follow the path, then
-        // settle into a level landscape (nose right, like the → arrow) on landing.
+        // settle nose-up-right on landing (a "flying off" look, not a nose-dive).
+        // +42 is the image's nose offset (PLANE.png points up-right at 0°), so
+        // `angle + 42` aligns the nose with the direction of travel mid-flight.
+        // LAND_ROT (< 42) keeps the nose above horizontal where it comes to rest.
+        const LAND_ROT = 15
         const pathRot = angle + 42
         let rot = pathRot
         if (v < 0.18) rot = lerp(8, pathRot, v / 0.18)
-        else if (v > 0.82) rot = lerp(pathRot, 42, (v - 0.82) / 0.18) // land in landscape
+        else if (v > 0.82) rot = lerp(pathRot, LAND_ROT, (v - 0.82) / 0.18) // ease nose up on landing
         rotate.set(rot)
         scale.set(lerp(1, endScale, v))
         trail.set(v)

@@ -157,7 +157,7 @@ export default function WorkWithMe() {
                 // landing never changes the button's width.
                 <span className="inline-flex items-center justify-center shrink-0" style={{ width: 26, height: 26 }}>
                   {landed ? (
-                    <img src="/PLANE.png" alt="" draggable={false} style={{ width: 24, height: 24, objectFit: 'contain', transform: 'rotate(42deg)' }} />
+                    <img src="/PLANE.png" alt="" draggable={false} style={{ width: 24, height: 24, objectFit: 'contain', transform: 'rotate(15deg)' }} />
                   ) : (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 12h14M13 6l6 6-6 6" />
