@@ -72,11 +72,14 @@ const ICONS = {
 }
 
 // Dark URL pill with a copy button (shows a check on success).
-const CardLinkPill = forwardRef(function CardLinkPill({ url }, ref) {
+// `display` is the clean link shown to the creator (id hidden); `copyUrl` is the
+// FULL link actually copied/shared (keeps the opaque publicId so the card stays
+// private). So the dashboard looks clean while the shared link stays unguessable.
+const CardLinkPill = forwardRef(function CardLinkPill({ display, copyUrl }, ref) {
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(`https://${url}`)
+      await navigator.clipboard.writeText(`https://${copyUrl || display}`)
       setCopied(true)
       setTimeout(() => setCopied(false), 1600)
     } catch { /* clipboard unavailable */ }
@@ -90,7 +93,7 @@ const CardLinkPill = forwardRef(function CardLinkPill({ url }, ref) {
       className="flex items-center gap-3 rounded-lg px-5 py-3 text-[15px] font-medium self-start sm:self-auto transition-colors hover:bg-white/10"
       style={{ fontFamily: MONO, background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)' }}
     >
-      <span style={{ color: '#3DDC84' }}>{url}</span>
+      <span style={{ color: '#3DDC84' }}>{display}</span>
       <span style={{ color: copied ? '#3DDC84' : '#fff' }}>{copied ? ICONS.check : ICONS.copy}</span>
     </button>
   )
@@ -797,7 +800,10 @@ export default function InfluenceDashboard({ username }) {
   // the href; `cardUrl` is the plain display/copy string.
   const pid = creator.publicId || handle
   const cardPath = creator.username ? `${encodeURIComponent(creator.username)}/${pid}` : pid
+  // Full link that's actually copied/shared — keeps the publicId so it's private.
   const cardUrl = `creasume.com/${creator.username ? `${creator.username}/${pid}` : pid}`
+  // Clean link shown in the pill — the id is hidden from view (but still copied).
+  const cardDisplay = `creasume.com/${creator.username || pid}`
   const fc0 = (v) => formatCount(v) ?? '0'
 
   const inquiryCount =
@@ -1155,7 +1161,7 @@ export default function InfluenceDashboard({ username }) {
                 <div className="text-white font-semibold text-xl mb-1.5" style={{ fontFamily: FONT }}>Your Influence Card Link</div>
                 <div className="text-white/55 text-base" style={{ fontFamily: FONT }}>Share this with brands instead of a PDF media kit.</div>
               </div>
-              <CardLinkPill ref={cardLinkRef} url={cardUrl} />
+              <CardLinkPill ref={cardLinkRef} display={cardDisplay} copyUrl={cardUrl} />
             </div>
 
             {/* Stat grid — a real 2 / 3 / 4-per-row CSS grid so every card lines
