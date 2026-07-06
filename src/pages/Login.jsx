@@ -78,8 +78,24 @@ export default function Login() {
       await loadMsg91Widget()
       await widgetSendOtp(identifier)
       setOtpSent(true)
+      setResendIn(30)
     } catch (e2) {
       setErr(e2.message || 'Could not send OTP.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Resend the OTP (default channel) and restart the cooldown.
+  const handleResendOtp = async () => {
+    if (busy || resendIn > 0) return
+    setErr('')
+    setBusy(true)
+    try {
+      await widgetRetryOtp(null)
+      setResendIn(30)
+    } catch (e2) {
+      setErr(e2.message || 'Could not resend OTP.')
     } finally {
       setBusy(false)
     }
@@ -334,14 +350,29 @@ export default function Login() {
                         className="w-full rounded-lg px-4 py-3 text-[15px] tracking-[0.3em] text-white outline-none transition-colors focus:border-white/40 placeholder:text-white/35 placeholder:tracking-normal"
                         style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.14)' }}
                       />
-                      <button
-                        type="button"
-                        onClick={() => { setOtpSent(false); setOtp('') }}
-                        className="text-[12px] mt-2 font-medium hover:underline"
-                        style={{ fontFamily: FONT, color: '#9B93E8' }}
-                      >
-                        Change number / resend
-                      </button>
+                      <div className="flex items-center justify-between mt-2 text-[12px]" style={{ fontFamily: FONT }}>
+                        <button
+                          type="button"
+                          onClick={() => { setOtpSent(false); setOtp(''); setResendIn(0) }}
+                          className="font-medium hover:underline"
+                          style={{ color: '#9B93E8' }}
+                        >
+                          Change number
+                        </button>
+                        {resendIn > 0 ? (
+                          <span className="text-white/40">Resend OTP in {resendIn}s</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleResendOtp}
+                            disabled={busy}
+                            className="font-medium hover:underline disabled:opacity-50"
+                            style={{ color: '#9B93E8' }}
+                          >
+                            Resend OTP
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )}
                 </>
