@@ -791,10 +791,10 @@ export default function InfluenceDashboard({ username }) {
   // always verified.
   const isFounding = !!creator.isFoundingCreator
   const isVerified = !!(creator.isVerified || creator.isFoundingCreator)
-  // Public share link uses the pretty handle (slug / @username) — the dashboard
-  // URL stays on the opaque publicId, but the link creators share shows their
-  // name. The backend resolves slug/username/publicId all the same.
-  const cardHandle = creator.slug || creator.username || handle
+  // Public share link uses the OPAQUE publicId only — the card can't be opened by
+  // guessing a @username, only via this exact shared link. The backend now
+  // resolves the public card strictly by publicId.
+  const cardHandle = creator.publicId || handle
   const cardUrl = `creasume.com/${cardHandle}`
   const fc0 = (v) => formatCount(v) ?? '0'
 
@@ -1129,7 +1129,7 @@ export default function InfluenceDashboard({ username }) {
               )}
               <a
                 ref={viewProfileRef}
-                href={`/${handle}`}
+                href={`/${creator.publicId || handle}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium hover:bg-white/5 transition-colors no-underline"
