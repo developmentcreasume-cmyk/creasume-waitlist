@@ -92,8 +92,7 @@ export default function ConnectInstagram() {
               className="inline-flex items-center gap-2 rounded-full px-7 py-3 font-semibold text-white text-[15px] transition-transform hover:scale-[1.02]"
               style={{
                 fontFamily: FONT,
-                background: 'linear-gradient(90deg, #8B5CF6 0%, #C13584 55%, #F58529 100%)',
-                boxShadow: '0 12px 30px rgba(193,53,132,0.35)',
+                background: 'linear-gradient(90deg, #a855f7 0%, #ec4899 100%)',
               }}
             >
               Connect Now
@@ -111,7 +110,7 @@ export default function ConnectInstagram() {
               loop
               muted
               playsInline
-              className="w-full max-w-[420px] rounded-2xl block"
+              className="w-full max-w-[300px] mx-auto rounded-2xl block"
               style={{ border: '1px solid rgba(255,255,255,0.08)' }}
             >
               <source src="/connect-demo.mp4" type="video/mp4" />
