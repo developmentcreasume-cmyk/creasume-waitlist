@@ -405,7 +405,7 @@ export default function Login() {
             </div>
 
             <GoogleSignInButton
-              text={isSignup ? 'signup_with' : 'signin_with'}
+              label={isSignup ? 'Sign up with Google' : 'Sign in with Google'}
               onCredential={handleGoogle}
               onError={setErr}
             />

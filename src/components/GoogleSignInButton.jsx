@@ -1,14 +1,15 @@
-// The official "Sign in with Google" button, rendered by Google Identity
-// Services (GIS). Loads the GIS script once, initialises it with our OAuth Web
-// client id, and hands the resulting `credential` (a signed ID token) back to
-// the parent via onCredential — which POSTs it to the backend /auth/google.
+// "Continue with Google" — a button styled to match the rest of the auth card,
+// not Google's default chrome. Google Identity Services (GIS) only lets you
+// render ITS own button, so we use the well-known overlay technique: draw our
+// own styled button, then render the real (themeable-only) Google button on top
+// of it, fully transparent, so it captures the click and still hands us the
+// signed `credential` (ID token). The parent POSTs that to /auth/google.
 //
-// Requires VITE_GOOGLE_CLIENT_ID to be set to the SAME OAuth 2.0 Web client id
-// the backend verifies against (GOOGLE_CLIENT_ID). If it's missing the button
-// renders nothing and reports via onError, so the email/password form still
-// works on its own.
-import { useEffect, useRef } from 'react'
+// Requires VITE_GOOGLE_CLIENT_ID (same value as the backend GOOGLE_CLIENT_ID).
+// When it's missing the component renders nothing so the rest of the form works.
+import { useEffect, useRef, useState } from 'react'
 
+const FONT = "'Outfit', sans-serif"
 const GIS_SRC = 'https://accounts.google.com/gsi/client'
 const CLIENT_ID = (import.meta.env.VITE_GOOGLE_CLIENT_ID || '').trim()
 
@@ -30,10 +31,24 @@ function loadGis() {
   return gisPromise
 }
 
-export default function GoogleSignInButton({ onCredential, onError, text = 'continue_with' }) {
-  const holderRef = useRef(null)
-  // Keep the latest callbacks in refs so the render effect can stay keyed only on
-  // `text` — re-running it would re-mount the Google button and lose its state.
+// The official multi-colour Google "G".
+function GoogleG() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  )
+}
+
+export default function GoogleSignInButton({ onCredential, onError, label = 'Continue with Google' }) {
+  const wrapRef = useRef(null)   // the styled button wrapper (sets the width)
+  const holderRef = useRef(null) // where GIS renders its real button
+  const [width, setWidth] = useState(0)
+
+  // Keep the latest callbacks in refs so the render effect stays keyed on width.
   const cbRef = useRef(onCredential)
   const errRef = useRef(onError)
   useEffect(() => {
@@ -41,13 +56,25 @@ export default function GoogleSignInButton({ onCredential, onError, text = 'cont
     errRef.current = onError
   })
 
+  // Track the wrapper's width so the (transparent) Google button can match it and
+  // capture clicks across the whole button. GIS caps the width at 400px.
+  useEffect(() => {
+    if (!CLIENT_ID || !wrapRef.current) return
+    const el = wrapRef.current
+    const measure = () => setWidth(Math.min(400, Math.round(el.getBoundingClientRect().width)))
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Render the real Google button once we know the width.
   useEffect(() => {
     if (!CLIENT_ID) {
-      // Not configured yet — stay silent so the email/password form is unaffected.
-      // (Set VITE_GOOGLE_CLIENT_ID to enable the button.)
       console.warn('[GoogleSignInButton] VITE_GOOGLE_CLIENT_ID is not set — Google sign-in is hidden.')
       return
     }
+    if (!width) return
     let cancelled = false
     loadGis()
       .then(() => {
@@ -59,18 +86,41 @@ export default function GoogleSignInButton({ onCredential, onError, text = 'cont
         holderRef.current.innerHTML = ''
         window.google.accounts.id.renderButton(holderRef.current, {
           type: 'standard',
-          theme: 'filled_black',
+          theme: 'outline',
           size: 'large',
-          shape: 'pill',
-          text,           // 'continue_with' | 'signin_with' | 'signup_with'
-          logo_alignment: 'left',
-          width: 320,
+          text: 'continue_with',
+          shape: 'rectangular',
+          width,
         })
       })
       .catch((e) => { if (!cancelled) errRef.current?.(e.message) })
     return () => { cancelled = true }
-  }, [text])
+  }, [width])
 
   if (!CLIENT_ID) return null
-  return <div ref={holderRef} className="flex justify-center" />
+
+  return (
+    <div ref={wrapRef} className="relative w-full select-none">
+      {/* Visible, site-styled button (purely presentational) */}
+      <div
+        className="w-full rounded-lg py-3 flex items-center justify-center gap-3 font-semibold text-[15px] transition-colors"
+        style={{
+          fontFamily: FONT,
+          color: '#fff',
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.14)',
+        }}
+      >
+        <GoogleG />
+        {label}
+      </div>
+
+      {/* The real Google button, transparent, on top — it takes the click and
+          keeps GIS's credential flow. Centered so it covers the visible button. */}
+      <div
+        ref={holderRef}
+        className="absolute inset-0 flex items-center justify-center overflow-hidden opacity-0"
+      />
+    </div>
+  )
 }

@@ -55,10 +55,26 @@ function lookupToApiShape(d) {
   // Sample (dummy) collaborations + packages shown ONLY in the lookup preview,
   // so a creator who isn't on Creasume yet can see what their full card would
   // look like. Real followers/likes/comments stay real; these are placeholders.
+  // Per-collab metrics are scaled to the real follower count so the sample cards
+  // read believably (reach ~ followers, views ~ 1.7×, etc.). Thumbnails reuse the
+  // creator's own fetched posts so each collab card has a real-looking image.
+  const collabThumb = (i) => (media[i] && media[i].thumbnail_url) || (media[0] && media[0].thumbnail_url) || ''
+  const collabMetrics = (mult) => {
+    const f = d.followers || 1000
+    const reach = Math.round(f * 0.6 * mult)
+    const likes = Math.round(f * 0.09 * mult)
+    const comments = Math.round(f * 0.012 * mult)
+    const shares = Math.round(f * 0.006 * mult)
+    const saves = Math.round(f * 0.02 * mult)
+    const views = Math.round(reach * 1.7)
+    const interactions = likes + comments + shares + saves
+    const er = reach ? Math.round((interactions / reach) * 100 * 10) / 10 : 0
+    return { reach, views, likes, comments, shares, saves, engagementRate: er }
+  }
   const SAMPLE_COLLABS = [
-    { brandName: 'Nykaa', campaignTitle: 'Festive Glow Campaign', category: 'Beauty', description: 'Sample brand collaboration — this is placeholder work to preview your card.' },
-    { brandName: 'Myntra', campaignTitle: 'Summer Styling Reel', category: 'Fashion', description: 'Sample brand collaboration — add your real deals once you join Creasume.' },
-    { brandName: 'boAt', campaignTitle: 'Everyday Audio', category: 'Tech', description: 'Sample brand collaboration to show how partnerships appear on your card.' },
+    { brandName: 'Nykaa', campaignTitle: 'Festive Glow Campaign', category: 'Beauty', description: 'Sample brand collaboration — this is placeholder work to preview your card.', mediaType: 'IMAGE', postImage: collabThumb(0), createdAt: new Date(Date.now() - 30 * 86400000).toISOString(), ...collabMetrics(1.15) },
+    { brandName: 'Myntra', campaignTitle: 'Summer Styling Reel', category: 'Fashion', description: 'Sample brand collaboration — add your real deals once you join Creasume.', mediaType: 'VIDEO', postImage: collabThumb(1), createdAt: new Date(Date.now() - 55 * 86400000).toISOString(), ...collabMetrics(1.4) },
+    { brandName: 'boAt', campaignTitle: 'Everyday Audio', category: 'Tech', description: 'Sample brand collaboration to show how partnerships appear on your card.', mediaType: 'IMAGE', postImage: collabThumb(2), createdAt: new Date(Date.now() - 80 * 86400000).toISOString(), ...collabMetrics(0.9) },
   ]
   const SAMPLE_PACKAGES = [
     { title: 'Starter', pricing: 5000, deliverables: ['1 Reel', '1 Story'], turnaroundTime: '3 days' },
