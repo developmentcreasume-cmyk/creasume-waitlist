@@ -618,6 +618,9 @@ export default function InfluenceDashboard({ username }) {
   const [showTour, setShowTour] = useState(false)
   // Per-metric "show on Influence Card" toggles. key → boolean (default on).
   const [visibility, setVisibility] = useState({})
+  // Message surfaced from an Instagram/Facebook connect redirect (e.g. the
+  // "already linked to another account" guard).
+  const [notice, setNotice] = useState('')
 
   // Targets the first-login tour spotlights.
   const editNavRef = useRef(null)
@@ -706,6 +709,28 @@ export default function InfluenceDashboard({ username }) {
   }, [username])
 
   useEffect(() => { load() }, [load])
+
+  // Surface Instagram/Facebook connect outcomes that the OAuth callback passes
+  // back as query params (e.g. the "this Instagram is already linked to another
+  // account" guard), then strip them so a refresh doesn't repeat the message.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    const ig = p.get('ig')
+    const fb = p.get('fb')
+    const igUser = p.get('ig_user') || ''
+    let msg = ''
+    if (ig === 'taken' || fb === 'taken') {
+      msg = `That Instagram${igUser ? ` (@${igUser})` : ''} is already connected to another Creasume account. An Instagram account can only be linked to one account.`
+    } else if (fb === 'mismatch') {
+      msg = 'That Facebook manages a different Instagram than the one on your account. Connect the Facebook Page linked to your own Instagram.'
+    }
+    if (msg) {
+      setNotice(msg)
+      ;['ig', 'fb', 'ig_user', 'handle', 'owner'].forEach((k) => p.delete(k))
+      const qs = p.toString()
+      window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''))
+    }
+  }, [])
 
   // Guided tour — shown ONCE ever (first visit to the dashboard). The flag in
   // localStorage persists across logins/sessions on this browser.
@@ -823,6 +848,24 @@ export default function InfluenceDashboard({ username }) {
 
   return (
     <div className="relative min-h-screen text-white" style={{ background: '#05060f' }}>
+      {notice && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-[560px]">
+          <div
+            className="flex items-start gap-3 rounded-xl px-4 py-3 shadow-lg"
+            style={{ background: 'rgba(244,96,122,0.12)', border: '1px solid rgba(244,96,122,0.4)', backdropFilter: 'blur(8px)' }}
+          >
+            <span className="text-[14px] leading-snug text-white flex-1" style={{ fontFamily: FONT }}>{notice}</span>
+            <button
+              type="button"
+              onClick={() => setNotice('')}
+              aria-label="Dismiss"
+              className="text-white/60 hover:text-white bg-transparent border-0 cursor-pointer shrink-0 text-lg leading-none"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
       {showTour && view === 'dashboard' && <DashboardTour steps={tourSteps} onDone={finishTour} />}
       <div className="flex min-h-screen">
         {/* ===== Sidebar ===== */}
