@@ -52,28 +52,96 @@ function lookupToApiShape(d) {
     like_count: p.likes || 0,
     comments_count: p.comments || 0,
   }))
+  // Sample (dummy) collaborations + packages shown ONLY in the lookup preview,
+  // so a creator who isn't on Creasume yet can see what their full card would
+  // look like. Real followers/likes/comments stay real; these are placeholders.
+  const SAMPLE_COLLABS = [
+    { brandName: 'Nykaa', campaignTitle: 'Festive Glow Campaign', category: 'Beauty', description: 'Sample brand collaboration — this is placeholder work to preview your card.' },
+    { brandName: 'Myntra', campaignTitle: 'Summer Styling Reel', category: 'Fashion', description: 'Sample brand collaboration — add your real deals once you join Creasume.' },
+    { brandName: 'boAt', campaignTitle: 'Everyday Audio', category: 'Tech', description: 'Sample brand collaboration to show how partnerships appear on your card.' },
+  ]
+  const SAMPLE_PACKAGES = [
+    { title: 'Starter', pricing: 5000, deliverables: ['1 Reel', '1 Story'], turnaroundTime: '3 days' },
+    { title: 'Core', pricing: 12000, deliverables: ['2 Reels', '3 Stories', '1 Post'], turnaroundTime: '5 days', isPopular: true },
+    { title: 'Campaign', pricing: 30000, deliverables: ['4 Reels', '6 Stories', '2 Posts'], turnaroundTime: '10 days' },
+  ]
+
+  // ---- Dummy data for the metrics Instagram DOESN'T expose publicly ----
+  // (reach, views, impressions, demographics, follower growth, engagement chart,
+  // Creasume Score). Scaled to the REAL follower count so the preview looks
+  // believable — these are placeholders, replaced by real numbers once the
+  // creator connects their account.
+  const followers = d.followers || 0
+  const realLikes = media.reduce((s, m) => s + (m.like_count || 0), 0)
+  const realComments = media.reduce((s, m) => s + (m.comments_count || 0), 0)
+  const engRate = d.engagementRateEstimate || 4.5
+
+  // Reach ≈ 55% of followers, views ≈ 1.6× reach, impressions = views (sample).
+  const reach = Math.round(followers * 0.55) || 1200
+  const views = Math.round(reach * 1.6)
+  const impressions = views
+
+  // 12-month follower growth trending up to the current real count.
+  const growth = Array.from({ length: 12 }, (_, i) => {
+    const monthsAgo = 11 - i
+    const factor = 1 - monthsAgo * 0.045 // ~4.5% growth/month back-cast
+    const date = new Date()
+    date.setMonth(date.getMonth() - monthsAgo)
+    return {
+      date: date.toISOString(),
+      followers: Math.max(1, Math.round(followers * factor)),
+      engagement: Math.round((engRate + (i - 6) * 0.15) * 10) / 10,
+    }
+  })
+
+  // Sample audience demographics ({key,value} arrays like the real backend).
+  const demographics = {
+    age: [
+      { key: '18-24', value: 42 }, { key: '25-34', value: 33 },
+      { key: '13-17', value: 12 }, { key: '35-44', value: 9 }, { key: '45-54', value: 4 },
+    ],
+    gender: [{ key: 'F', value: 58 }, { key: 'M', value: 40 }, { key: 'U', value: 2 }],
+    country: [
+      { key: 'IN', value: 72 }, { key: 'US', value: 9 },
+      { key: 'GB', value: 5 }, { key: 'AE', value: 4 }, { key: 'CA', value: 3 },
+    ],
+    city: [
+      { key: 'Mumbai, Maharashtra', value: 18 }, { key: 'Delhi, Delhi', value: 14 },
+      { key: 'Bengaluru, Karnataka', value: 9 },
+    ],
+  }
+
   return {
     creator: {
       username: d.username,
       name: d.fullName || d.username,
       bio: d.bio || '',
       profilePicture: d.profilePicture || '',
-      isVerified: d.isVerified,
+      // Preview: show the founding badge + verified tick as a sample of the
+      // full card. (Real cards derive these from the creator's admin flags.)
+      isVerified: true,
+      isFoundingCreator: true,
       // Preview mode: no publicId (this isn't a saved Creasume creator).
     },
     stats: {
       followersCount: d.followers,
       followsCount: d.following,
       mediaCount: d.posts,
-      engagementRate: d.engagementRateEstimate,
-      totalLikes: media.reduce((s, m) => s + (m.like_count || 0), 0),
-      totalComments: media.reduce((s, m) => s + (m.comments_count || 0), 0),
+      engagementRate: engRate,
+      totalLikes: realLikes,
+      totalComments: realComments,
+      // Dummy — not publicly fetchable:
+      reach,
+      views,
+      impressions,
+      creasumeScore: Math.min(98, Math.max(42, Math.round(50 + engRate * 4 + Math.log10(followers + 1) * 6))),
     },
     media,
-    demographics: null,
-    collaborations: [],
-    packages: [],
-    growth: [],
+    demographics,
+    collaborations: SAMPLE_COLLABS,
+    packages: SAMPLE_PACKAGES,
+    packagesActive: true,
+    growth,
     isLookupPreview: true,
   }
 }
