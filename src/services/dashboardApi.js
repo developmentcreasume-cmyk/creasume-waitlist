@@ -216,6 +216,59 @@ export const createPackage = (body) => dapi.post('/packages/create', body)
 export const updatePackage = (id, body) => dapi.put(`/packages/update/${id}`, body)
 export const deletePackage = (id) => dapi.del(`/packages/delete/${id}`)
 
+// ---- Billing (Razorpay) ----
+export const fetchPlans = () => dapi.get('/billing/plans')
+export const fetchBillingStatus = () => dapi.get('/billing/status')
+export const cancelSubscription = () => dapi.post('/billing/cancel', {})
+
+let _rzpScript = null
+function loadRazorpay() {
+  if (typeof window !== 'undefined' && window.Razorpay) return Promise.resolve(true)
+  if (_rzpScript) return _rzpScript
+  _rzpScript = new Promise((resolve, reject) => {
+    const s = document.createElement('script')
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    s.onload = () => resolve(true)
+    s.onerror = () => reject(new Error('Failed to load Razorpay checkout.'))
+    document.body.appendChild(s)
+  })
+  return _rzpScript
+}
+
+// Buy a plan: create the checkout on the backend, open Razorpay (order OR
+// subscription), verify. Resolves { plan, status } on success.
+export async function buyPlan(planId) {
+  await loadRazorpay()
+  const res = await dapi.post('/billing/checkout', { planId })
+  return new Promise((resolve, reject) => {
+    const common = {
+      key: res.keyId,
+      name: 'Creasume',
+      description: `${res.plan.name} — ₹${res.plan.priceInr}`,
+      prefill: res.prefill || {},
+      theme: { color: '#7C5CFF' },
+      handler: async (r) => {
+        try {
+          const out = await dapi.post('/billing/verify', {
+            razorpay_order_id: r.razorpay_order_id,
+            razorpay_subscription_id: r.razorpay_subscription_id,
+            razorpay_payment_id: r.razorpay_payment_id,
+            razorpay_signature: r.razorpay_signature,
+          })
+          resolve(out)
+        } catch (err) { reject(err) }
+      },
+      modal: { ondismiss: () => reject(new Error('Checkout closed before payment.')) },
+    }
+    const options = res.type === 'subscription'
+      ? { ...common, subscription_id: res.subscriptionId }
+      : { ...common, order_id: res.orderId, amount: res.amount, currency: res.currency }
+    const rzp = new window.Razorpay(options)
+    rzp.on('payment.failed', (resp) => reject(new Error(resp.error?.description || 'Payment failed.')))
+    rzp.open()
+  })
+}
+
 // ---- Collaborations / Portfolio (private) ----
 export const fetchMyCollaborations = () => dapi.get('/collaborations/my-collaborations')
 export const createCollaboration = (body) => dapi.post('/collaborations/create', body)

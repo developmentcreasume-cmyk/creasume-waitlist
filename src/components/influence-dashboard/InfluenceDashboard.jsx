@@ -30,6 +30,10 @@ import {
   mapInquiry,
   formatCount,
   shortenLocation,
+  fetchPlans,
+  fetchBillingStatus,
+  buyPlan,
+  cancelSubscription,
 } from '../../services/dashboardApi.js'
 
 const NAV = [
@@ -538,29 +542,117 @@ function PlatformsPanel({ creator }) {
 }
 
 function BillingPanel() {
-  const features = ['Unlimited portfolio items', 'Custom domain support', 'Advanced audience analytics', 'Remove Creasume branding']
+  const [status, setStatus] = useState(null)   // { plan, status, currentEnd }
+  const [plans, setPlans] = useState([])
+  const [busy, setBusy] = useState('')
+  const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+
+  const load = () => {
+    Promise.all([fetchBillingStatus().catch(() => null), fetchPlans().catch(() => null)])
+      .then(([s, p]) => {
+        if (s) setStatus(s)
+        if (p) setPlans(p.plans || [])
+      })
+  }
+  useEffect(load, [])
+
+  const current = status?.plan || null
+  const isFree = !current || current.pricePaise === 0
+  const state = status?.status || 'inactive'
+
+  // Upgrade targets = active PAID plans that aren't the current one.
+  const upgradeTargets = plans.filter((p) => p.pricePaise > 0 && p.slug !== current?.slug)
+
+  async function buy(plan) {
+    setErr(''); setMsg(''); setBusy(plan.id)
+    try {
+      await buyPlan(plan.id)
+      setMsg(`You're now on the ${plan.name} plan.`)
+      load()
+    } catch (e) {
+      setErr(e.message || 'Payment could not be completed.')
+    } finally { setBusy('') }
+  }
+
+  async function cancel() {
+    setErr(''); setBusy('cancel')
+    try {
+      await cancelSubscription()
+      setMsg('Your plan will not renew. Access continues until it ends.')
+      load()
+    } catch (e) {
+      setErr(e.message || 'Could not cancel.')
+    } finally { setBusy('') }
+  }
+
+  const endLabel = status?.currentEnd
+    ? new Date(status.currentEnd).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null
+
+  const STATE_TEXT = { active: 'Active', past_due: 'Payment failed', canceled: 'Cancels at period end', inactive: '', trial: 'Trial' }
+
   return (
     <div className="max-w-lg">
       <SHead title="Current Plan" />
+
+      {err && <div className="mb-4 rounded-lg px-4 py-2.5 text-[13px] text-white" style={{ fontFamily: FONT, background: 'rgba(244,96,122,0.15)', border: '1px solid rgba(244,96,122,0.4)' }}>{err}</div>}
+      {msg && <div className="mb-4 rounded-lg px-4 py-2.5 text-[13px] text-white" style={{ fontFamily: FONT, background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.4)' }}>{msg}</div>}
+
       <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <span className="inline-block rounded-full px-3 py-1 text-[12px] font-semibold" style={{ fontFamily: FONT, color: '#C4B5FD', background: 'rgba(124,92,255,0.2)' }}>Pro Plan</span>
-            <p className="mt-3 text-white font-bold text-2xl" style={{ fontFamily: FONT }}>$12<span className="text-white/55 text-sm font-medium">/month</span></p>
-            <p className="mt-1 text-white/45 text-[12px]" style={{ fontFamily: MONO }}>Renews on Oct 24, 2026</p>
+            <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[12px] font-semibold" style={{ fontFamily: FONT, color: '#C4B5FD', background: 'rgba(124,92,255,0.2)' }}>
+              {current?.name || 'Free'} Plan
+              {state && state !== 'inactive' && <span className="text-white/50">· {STATE_TEXT[state] || state}</span>}
+            </span>
+            <p className="mt-3 text-white font-bold text-2xl" style={{ fontFamily: FONT }}>
+              ₹{current ? current.priceInr : 0}
+              <span className="text-white/55 text-sm font-medium">
+                {isFree ? '/forever' : current.billingType === 'recurring' ? '/month' : `/${current.durationDays} days`}
+              </span>
+            </p>
+            {endLabel && (
+              <p className="mt-1 text-white/45 text-[12px]" style={{ fontFamily: MONO }}>
+                {state === 'canceled' ? 'Access until' : 'Renews on'} {endLabel}
+              </p>
+            )}
           </div>
-          <button type="button" className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/10" style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>Manage Billing</button>
+          {!isFree && state === 'active' && (
+            <button type="button" onClick={cancel} disabled={busy === 'cancel'} className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/10" style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>
+              {busy === 'cancel' ? 'Cancelling…' : 'Cancel plan'}
+            </button>
+          )}
         </div>
       </div>
-      <h3 className="mt-8 mb-3 text-white font-semibold text-lg" style={{ fontFamily: FONT }}>Plan Features</h3>
-      <ul className="flex flex-col gap-2.5">
-        {features.map((f) => (
-          <li key={f} className="flex items-center gap-2.5 text-white/75 text-sm" style={{ fontFamily: FONT }}>
-            <span className="rounded-full" style={{ width: 6, height: 6, background: '#9C7CF0' }} />{f}
-          </li>
-        ))}
-      </ul>
-      <button type="button" className="mt-8 w-full rounded-xl py-3.5 text-[15px] font-semibold text-white transition-opacity hover:opacity-95" style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#7C5CFF 0%,#C04DCC 55%,#EC4899 100%)' }}>Upgrade to Premium</button>
+
+      {/* Current plan perks */}
+      {(current?.perks || []).length > 0 && (
+        <>
+          <h3 className="mt-8 mb-3 text-white font-semibold text-lg" style={{ fontFamily: FONT }}>Plan Features</h3>
+          <ul className="flex flex-col gap-2.5">
+            {current.perks.map((f) => (
+              <li key={f} className="flex items-center gap-2.5 text-white/75 text-sm" style={{ fontFamily: FONT }}>
+                <span className="rounded-full" style={{ width: 6, height: 6, background: '#9C7CF0' }} />{f}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {/* Upgrade buttons — one per available paid plan */}
+      {upgradeTargets.map((p) => (
+        <button
+          key={p.id}
+          type="button"
+          onClick={() => buy(p)}
+          disabled={busy === p.id}
+          className="mt-6 w-full rounded-xl py-3.5 text-[15px] font-semibold text-white transition-opacity hover:opacity-95 disabled:opacity-60"
+          style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#7C5CFF 0%,#C04DCC 55%,#EC4899 100%)' }}
+        >
+          {busy === p.id ? 'Processing…' : `Upgrade to ${p.name} — ₹${p.priceInr}`}
+        </button>
+      ))}
     </div>
   )
 }
