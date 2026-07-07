@@ -115,8 +115,10 @@ export default function ProfessionalPresence() {
         >
           {SOCIALS.map((s, i) => {
             // Admin-added links carry an explicit url; demo rows derive one from
-            // the handle.
-            const url = s.url || getSocialUrl(s.name, s.handle)
+            // the handle. Ensure a protocol so a bare "youtube.com" opens the real
+            // site instead of navigating relatively to /<handle>/youtube.com.
+            const rawUrl = s.url || getSocialUrl(s.name, s.handle)
+            const url = rawUrl && !/^https?:\/\//i.test(rawUrl) ? `https://${rawUrl}` : rawUrl
             const content = (
               <div className="group w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 cursor-pointer transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.03]"
                 style={{ background: 'rgba(40,46,112,0.30)', border: '1px solid rgba(255,255,255,0.08)' }}

@@ -568,7 +568,16 @@ function BillingPanel() {
     setErr(''); setMsg(''); setBusy(plan.id)
     try {
       await buyPlan(plan.id)
-      setMsg(`You're now on the ${plan.name} plan.`)
+      // Access is granted by the Razorpay webhook (source of truth). Poll the
+      // billing status a few times so the panel reflects it once it lands.
+      setMsg('Payment received — activating your plan…')
+      let active = false
+      for (let i = 0; i < 6 && !active; i++) {
+        await new Promise((r) => setTimeout(r, 2000))
+        const s = await fetchBillingStatus().catch(() => null)
+        if (s?.status === 'active' && s?.plan?.slug === plan.slug) active = true
+      }
+      setMsg(active ? `You're now on the ${plan.name} plan.` : 'Payment received. Your plan will activate shortly.')
       load()
     } catch (e) {
       setErr(e.message || 'Payment could not be completed.')
@@ -593,7 +602,7 @@ function BillingPanel() {
   const STATE_TEXT = { active: 'Active', past_due: 'Payment failed', canceled: 'Cancels at period end', inactive: '', trial: 'Trial' }
 
   return (
-    <div className="max-w-lg">
+    <div className="max-w-3xl">
       <SHead title="Current Plan" />
 
       {err && <div className="mb-4 rounded-lg px-4 py-2.5 text-[13px] text-white" style={{ fontFamily: FONT, background: 'rgba(244,96,122,0.15)', border: '1px solid rgba(244,96,122,0.4)' }}>{err}</div>}
@@ -640,19 +649,66 @@ function BillingPanel() {
         </>
       )}
 
-      {/* Upgrade buttons — one per available paid plan */}
-      {upgradeTargets.map((p) => (
-        <button
-          key={p.id}
-          type="button"
-          onClick={() => buy(p)}
-          disabled={busy === p.id}
-          className="mt-6 w-full rounded-xl py-3.5 text-[15px] font-semibold text-white transition-opacity hover:opacity-95 disabled:opacity-60"
-          style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#7C5CFF 0%,#C04DCC 55%,#EC4899 100%)' }}
-        >
-          {busy === p.id ? 'Processing…' : `Upgrade to ${p.name} — ₹${p.priceInr}`}
-        </button>
-      ))}
+      {/* Upgrade options — each shows the plan's price, duration AND what's
+          included, so the creator knows exactly what they're paying for. */}
+      {upgradeTargets.length > 0 && (
+        <>
+          <h3 className="mt-9 mb-3 text-white font-semibold text-lg" style={{ fontFamily: FONT }}>
+            {isFree ? 'Upgrade your plan' : 'Other plans'}
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+            {upgradeTargets.map((p) => (
+              <div
+                key={p.id}
+                className="rounded-2xl p-6 md:p-7 flex flex-col h-full"
+                style={{ background: 'rgba(255,255,255,0.03)', border: p.isPopular ? '1px solid rgba(124,92,255,0.55)' : '1px solid rgba(255,255,255,0.08)' }}
+              >
+                {/* Header: name + popular pill + price */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-semibold text-[19px]" style={{ fontFamily: FONT }}>{p.name}</span>
+                    {p.isPopular && (
+                      <span className="rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ fontFamily: FONT, color: '#fff', background: 'linear-gradient(90deg,#7C5CFF,#EC4899)' }}>POPULAR</span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-white font-bold text-2xl leading-none" style={{ fontFamily: FONT }}>₹{p.priceInr}</div>
+                    <div className="text-white/45 text-[11px] mt-0.5" style={{ fontFamily: MONO }}>
+                      {p.billingType === 'recurring' ? 'per month' : `for ${p.durationDays} days`}
+                    </div>
+                  </div>
+                </div>
+
+                {p.description && (
+                  <p className="mt-2 text-white/55 text-[13px]" style={{ fontFamily: FONT }}>{p.description}</p>
+                )}
+
+                {/* What's included — grows so both cards' buttons align at the bottom */}
+                {(p.perks || []).length > 0 && (
+                  <ul className="mt-3.5 flex flex-col gap-2 flex-1">
+                    {p.perks.map((perk) => (
+                      <li key={perk} className="flex items-start gap-2.5 text-white/80 text-[13.5px]" style={{ fontFamily: FONT }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0"><path d="M20 6 9 17l-5-5" stroke="#9C7CF0" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                        {perk}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => buy(p)}
+                  disabled={busy === p.id}
+                  className="mt-5 w-full rounded-xl py-3 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-95 disabled:opacity-60"
+                  style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#7C5CFF 0%,#C04DCC 55%,#EC4899 100%)' }}
+                >
+                  {busy === p.id ? 'Processing…' : `Get ${p.name} — ₹${p.priceInr}`}
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

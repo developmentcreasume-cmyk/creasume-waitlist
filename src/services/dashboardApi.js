@@ -247,17 +247,10 @@ export async function buyPlan(planId) {
       description: `${res.plan.name} — ₹${res.plan.priceInr}`,
       prefill: res.prefill || {},
       theme: { color: '#7C5CFF' },
-      handler: async (r) => {
-        try {
-          const out = await dapi.post('/billing/verify', {
-            razorpay_order_id: r.razorpay_order_id,
-            razorpay_subscription_id: r.razorpay_subscription_id,
-            razorpay_payment_id: r.razorpay_payment_id,
-            razorpay_signature: r.razorpay_signature,
-          })
-          resolve(out)
-        } catch (err) { reject(err) }
-      },
+      // Access is granted by the Razorpay WEBHOOK (source of truth), not here.
+      // On checkout success we just resolve; the UI then re-fetches
+      // /billing/status (the webhook flips the plan to active server-side).
+      handler: () => resolve({ pending: true }),
       modal: { ondismiss: () => reject(new Error('Checkout closed before payment.')) },
     }
     const options = res.type === 'subscription'
