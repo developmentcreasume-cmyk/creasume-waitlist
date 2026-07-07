@@ -32,16 +32,16 @@ export default function WaitlistNav() {
   }
 
   return (
-    <nav id="home" className="relative z-50 w-full px-5 sm:px-8 md:px-14 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.5)' }}>
-      <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-4">
+    <nav id="home" className="relative z-50 w-full px-3 sm:px-8 md:px-14 py-4 sm:py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.5)' }}>
+      <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-2 sm:gap-4">
         {/* Logo (plain, no pill) — nudged left */}
-        <a href="#home" onClick={go('home')} className="shrink-0 -ml-2 sm:-ml-4 md:-ml-6">
-          <img src="/creasumelogo.svg" alt="Creasume" className="h-8 sm:h-10 md:h-12 w-auto" />
+        <a href="#home" onClick={go('home')} className="shrink-0 -ml-1 sm:-ml-4 md:-ml-6">
+          <img src="/creasumelogo.svg" alt="Creasume" className="h-7 sm:h-10 md:h-12 w-auto" />
         </a>
 
         {/* Links grouped in a dark-navy pill; active = outlined navy pill */}
         <div
-          className="flex items-center gap-2 rounded-full p-1.5 shrink-0"
+          className="flex items-center gap-0.5 sm:gap-2 rounded-full p-1 sm:p-1.5 shrink-0"
           style={{ background: '#06061a', border: '1px solid rgba(255,255,255,0.08)' }}
         >
           {LINKS.map((l) => {
@@ -51,7 +51,7 @@ export default function WaitlistNav() {
                 key={l.id}
                 href={`#${l.id}`}
                 onClick={go(l.id)}
-                className="px-5 sm:px-7 py-2.5 rounded-full text-[16px] sm:text-[18px] font-semibold whitespace-nowrap transition-colors"
+                className="px-3 sm:px-7 py-1.5 sm:py-2.5 rounded-full text-[13px] sm:text-[18px] font-semibold whitespace-nowrap transition-colors"
                 style={{
                   fontFamily: FONT,
                   color: '#fff',
