@@ -46,7 +46,7 @@ export default function ScrollCue({ label = 'Scroll', side = 'right' }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 12 }}
           transition={{ duration: 0.45, delay: 0.6 }}
-          className={`fixed ${pos} top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-3 pointer-events-none select-none`}
+          className={`fixed ${pos} top-1/2 -translate-y-1/2 z-40 flex ${up ? 'flex-col-reverse' : 'flex-col'} items-center gap-3 pointer-events-none select-none`}
           style={{ fontFamily: "'Outfit', sans-serif" }}
         >
           {/* Vertical "SCROLL" label reads down the side */}
