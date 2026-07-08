@@ -11,6 +11,7 @@ import { ScrubCard } from './shared/ScrubCard.jsx'
 import { PERKS } from './shared/perks.jsx'
 import { FeatureCards } from './shared/FeatureCards.jsx'
 import { JoinedProof } from './shared/JoinedProof.jsx'
+import ScrollCue from './shared/ScrollCue.jsx'
 import './App.css'
 
 function App() {
@@ -109,6 +110,9 @@ function App() {
     <div className="relative min-h-screen flex flex-col overflow-x-clip bg-black text-white">
       {/* Starfield */}
       <div className="starfield" />
+
+      {/* "Scroll down for more" hint on the hero (fades out once they scroll) */}
+      <ScrollCue />
 
       {/* Hero decorative background texture */}
       <img

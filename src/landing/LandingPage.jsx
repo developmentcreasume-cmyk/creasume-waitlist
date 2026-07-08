@@ -10,6 +10,7 @@ import { useIsMobile } from '../shared/useIsMobile.js'
 import { ScrubCard } from '../shared/ScrubCard.jsx'
 import { PERKS } from '../shared/perks.jsx'
 import { FeatureCards } from '../shared/FeatureCards.jsx'
+import ScrollCue from '../shared/ScrollCue.jsx'
 import Testimonials from './Testimonials.jsx'
 import Pricing from './Pricing.jsx'
 import Application from './Application.jsx'
@@ -94,6 +95,9 @@ export default function LandingPage() {
   return (
     <MotionConfig reducedMotion="user">
     <div className="relative min-h-screen flex flex-col overflow-x-clip bg-black text-white">
+      {/* "Scroll down for more" hint on the hero (fades out once they scroll) */}
+      <ScrollCue />
+
       {/* Starfield */}
       <div className="starfield" />
 
