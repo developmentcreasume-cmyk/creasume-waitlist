@@ -1,39 +1,55 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// A gentle "scroll down for more" hint pinned to the bottom-centre of the first
-// viewport. It bounces so it's noticeable, and fades away the moment the visitor
-// starts scrolling (so it never gets in the way). Shared by the landing + waitlist
-// heroes, where people otherwise don't realise how much more is below.
-export default function ScrollCue({ label = 'Scroll' }) {
+// A gentle "scroll down for more" hint pinned to the SIDE of the first viewport
+// (hero only). It bounces so it's noticeable, and fades away the moment the
+// visitor starts scrolling past the hero — so it never overlaps the rest of the
+// page. Shared by the landing + waitlist heroes.
+//
+// `side` = 'right' (default) | 'left'.
+export default function ScrollCue({ label = 'Scroll', side = 'right' }) {
   const [hidden, setHidden] = useState(false)
 
   useEffect(() => {
-    // Hide once they've scrolled a little — works with Lenis (scrolls the real
-    // document) and native touch scrolling alike.
-    const onScroll = () => setHidden(window.scrollY > 60)
+    // Hide once they've scrolled out of the hero — works with Lenis (scrolls the
+    // real document) and native touch scrolling alike. Tie it to ~60% of the
+    // viewport height so it lives only on the hero, not the whole page.
+    const onScroll = () => {
+      const threshold = Math.max(80, window.innerHeight * 0.55)
+      setHidden(window.scrollY > threshold)
+    }
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
   }, [])
+
+  const pos = side === 'left' ? 'left-3 sm:left-5' : 'right-3 sm:right-5'
 
   return (
     <AnimatePresence>
       {!hidden && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
+          exit={{ opacity: 0, y: 12 }}
           transition={{ duration: 0.5, delay: 0.8 }}
-          className="fixed left-1/2 -translate-x-1/2 bottom-5 sm:bottom-6 z-40 flex flex-col items-center gap-2 pointer-events-none select-none"
+          className={`fixed ${pos} top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-3 pointer-events-none select-none`}
           style={{ fontFamily: "'Outfit', sans-serif" }}
         >
-          <span className="text-white/55 text-[10px] sm:text-[11px] font-semibold tracking-[0.28em] uppercase">
+          {/* Vertical "SCROLL" label reads down the side */}
+          <span
+            className="text-white/50 text-[10px] sm:text-[11px] font-semibold tracking-[0.3em] uppercase"
+            style={{ writingMode: 'vertical-rl' }}
+          >
             {label}
           </span>
 
           {/* Mouse outline with an animated wheel dot */}
-          <div className="w-[26px] h-[42px] rounded-full border-2 border-white/35 flex justify-center pt-2">
+          <div className="w-6 h-10 rounded-full border-2 border-white/35 flex justify-center pt-2">
             <motion.span
               className="block w-1 h-2 rounded-full bg-white/70"
               animate={{ y: [0, 9, 0], opacity: [1, 0.25, 1] }}
@@ -41,9 +57,9 @@ export default function ScrollCue({ label = 'Scroll' }) {
             />
           </div>
 
-          {/* Bouncing chevron for an extra, unmistakable "keep going" cue */}
+          {/* Bouncing chevron for an unmistakable "keep going" cue */}
           <motion.svg
-            width="20" height="12" viewBox="0 0 20 12" fill="none"
+            width="18" height="11" viewBox="0 0 20 12" fill="none"
             className="text-white/45"
             animate={{ y: [0, 4, 0], opacity: [0.9, 0.4, 0.9] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut', delay: 0.15 }}
