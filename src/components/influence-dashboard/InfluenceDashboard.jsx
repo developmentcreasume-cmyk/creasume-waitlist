@@ -1085,11 +1085,10 @@ export default function InfluenceDashboard({ username }) {
                   ref={n.key === 'edit' ? editNavRef : undefined}
                   type="button"
                   onClick={() => setView(n.key)}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-left text-[15px] font-medium transition-colors"
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-left text-[15px] font-medium transition-colors bg-transparent hover:bg-white/10"
                   style={{
                     fontFamily: FONT,
                     color: active ? '#fff' : 'rgba(255,255,255,0.6)',
-                    background: active ? 'linear-gradient(90deg,#5D65DC 0%, #8B5CF6 100%)' : 'transparent',
                   }}
                 >
                   <span className={active ? 'text-white' : 'text-white/55'}>{ICONS[n.icon]}</span>
@@ -1217,11 +1216,10 @@ export default function InfluenceDashboard({ username }) {
                   key={n.key}
                   type="button"
                   onClick={() => { setView(n.key); setMobileNav(false) }}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-left text-[15px] font-medium"
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-left text-[15px] font-medium transition-colors bg-transparent hover:bg-white/10"
                   style={{
                     fontFamily: FONT,
                     color: n.key === view ? '#fff' : 'rgba(255,255,255,0.6)',
-                    background: n.key === view ? 'linear-gradient(90deg,#5D65DC 0%, #8B5CF6 100%)' : 'transparent',
                   }}
                 >
                   <span className={n.key === view ? 'text-white' : 'text-white/55'}>{ICONS[n.icon]}</span>
