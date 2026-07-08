@@ -8,6 +8,34 @@ import Packages from '../components/influence/Packages.jsx'
 import WorkWithMe from '../components/influence/WorkWithMe.jsx'
 import PaperPlaneFlight from '../components/influence/PaperPlaneFlight.jsx'
 import { InfluenceDataProvider, useInfluence } from '../components/influence/InfluenceDataContext.jsx'
+import { isLoggedIn, getStoredUsername, dashboardBase } from '../services/dashboardApi.js'
+import { goToPath } from '../router.js'
+
+// Floating "Dashboard" button — shown only to a signed-in creator so they can
+// jump from their public card back to their own dashboard. Hidden from visitors.
+function DashboardFab() {
+  const uname = getStoredUsername()
+  if (!isLoggedIn() || !uname) return null
+  return (
+    <button
+      type="button"
+      onClick={() => goToPath(dashboardBase(uname))}
+      aria-label="Go to your dashboard"
+      className="fixed top-4 right-4 z-[60] inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold text-white transition-transform hover:scale-[1.03]"
+      style={{
+        fontFamily: "'Outfit', sans-serif",
+        background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+      }}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" />
+      </svg>
+      Dashboard
+    </button>
+  )
+}
 
 // Full-screen loader shown until the first data fetch resolves, so the page
 // never flashes empty/placeholder content before the real creator lands.
@@ -100,6 +128,9 @@ function InfluenceCardInner() {
       <div id="influence-card-root" className="relative min-h-screen overflow-x-clip bg-black text-white" style={rootStyle}>
         {/* Ambient brand background */}
         <div className="starfield" />
+
+        {/* Signed-in creator: quick link back to their dashboard */}
+        <DashboardFab />
 
         {/* Click-driven paper-airplane flight (fired by the CTA button) */}
         <PaperPlaneFlight />
