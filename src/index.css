@@ -530,6 +530,29 @@ body::-webkit-scrollbar {
   }
 }
 
+/* ===== Cursor-following shine =====
+   A soft radial highlight that tracks the mouse inside the element on hover.
+   The element sets --mx/--my (local cursor px) via an onMouseMove handler; the
+   ::before is clipped to the element's rounded shape (needs overflow-hidden). */
+.shine-cursor::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    130px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0) 60%
+  );
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+.shine-cursor:hover::before {
+  opacity: 1;
+}
+
 /* ===== Mobile paint budget =====
    On phones, pause the always-on decorative animations. The shine rings animate
    a conic-gradient via an @property angle, which forces a full background repaint

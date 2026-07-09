@@ -93,6 +93,15 @@ export default function LandingPage() {
     offset: ['start end', 'end start'],
   })
 
+  // Cursor-following shine: set --mx/--my to the local cursor position so the
+  // .shine-cursor radial highlight tracks the mouse inside the button.
+  const shineMove = (e) => {
+    const el = e.currentTarget
+    const r = el.getBoundingClientRect()
+    el.style.setProperty('--mx', `${e.clientX - r.left}px`)
+    el.style.setProperty('--my', `${e.clientY - r.top}px`)
+  }
+
   return (
     <MotionConfig reducedMotion="user">
     <div className="relative min-h-screen flex flex-col overflow-x-clip bg-black text-white">
@@ -192,15 +201,17 @@ export default function LandingPage() {
               <motion.a
                 href="/signup"
                 onClick={(e) => { e.preventDefault(); goToPath('/signup') }}
-                className="no-underline cursor-pointer rounded-full flex items-center justify-center shrink-0 whitespace-nowrap w-full sm:w-[260px]"
+                onMouseMove={shineMove}
+                className="shine-cursor relative overflow-hidden no-underline cursor-pointer rounded-full flex items-center justify-center shrink-0 whitespace-nowrap w-full sm:w-[260px]"
                 whileHover={{ scale: 1.05, boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.5)' }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{ height: '59px', fontWeight: 600, fontSize: 'clamp(16px, 4.5vw, 22px)', fontFamily: "'Gelion', 'Outfit', sans-serif", background: 'linear-gradient(180deg, #5D65DC 0%, #9CA2E1 100%)', color: '#0B0B27' }}
               >
-                Start Now
+                <span className="relative z-10">Start Now</span>
               </motion.a>
               <motion.a
-                href="#vision"
+                href="/browse"
+                onClick={(e) => { e.preventDefault(); goToPath('/browse') }}
                 className="no-underline cursor-pointer shine-border shine-animate-mobile rounded-full text-white flex items-center justify-center px-7 shrink-0 whitespace-nowrap w-full sm:w-auto"
                 whileHover={{ backgroundColor: '#FFFFFF', color: '#000000' }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
@@ -404,8 +415,8 @@ export default function LandingPage() {
 
           {/* Start Now CTA + security trust */}
           <div className="mt-24 md:mt-36 text-center relative z-10">
-            <a href="/signup" onClick={(e) => { e.preventDefault(); goToPath('/signup') }} className="inline-flex items-center justify-center rounded-full px-12 h-11 font-semibold text-white mb-16" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}>
-              Start Now
+            <a href="/signup" onClick={(e) => { e.preventDefault(); goToPath('/signup') }} onMouseMove={shineMove} className="shine-cursor relative overflow-hidden inline-flex items-center justify-center rounded-full px-12 h-11 font-semibold text-white mb-16" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}>
+              <span className="relative z-10">Start Now</span>
             </a>
             <p className="text-2xl md:text-3xl font-bold text-white mb-6">
               <svg aria-hidden="true" className="inline-block mr-3 align-middle" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -481,10 +492,10 @@ export default function LandingPage() {
           Your next brand deal starts here
         </motion.h2>
         <motion.a
-          href="/signup" onClick={(e) => { e.preventDefault(); goToPath('/signup') }} className="inline-flex items-center justify-center rounded-full px-10 h-[54px] font-semibold text-white" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}
+          href="/signup" onClick={(e) => { e.preventDefault(); goToPath('/signup') }} onMouseMove={shineMove} className="shine-cursor relative overflow-hidden inline-flex items-center justify-center rounded-full px-10 h-[54px] font-semibold text-white" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}
           initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
         >
-          Start Now
+          <span className="relative z-10">Start Now</span>
         </motion.a>
       </section>
 
