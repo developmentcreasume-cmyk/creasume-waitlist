@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { motion, MotionConfig, useScroll } from 'framer-motion'
+import { goToPath } from '../router.js'
 import { fadeUp, outlineDraw, staggerParent } from '../motion-variants.js'
 import { CountUp, Typewriter } from '../anim.jsx'
 import SensesSection from '../SensesSection.jsx'
@@ -189,13 +190,14 @@ export default function LandingPage() {
             </motion.p>
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:flex-nowrap gap-6 sm:gap-8 relative z-10">
               <motion.a
-                href="#apply"
+                href="/signup"
+                onClick={(e) => { e.preventDefault(); goToPath('/signup') }}
                 className="no-underline cursor-pointer rounded-full flex items-center justify-center shrink-0 whitespace-nowrap w-full sm:w-[260px]"
                 whileHover={{ scale: 1.05, boxShadow: '0 0 0 2px rgba(255, 255, 255, 0.5)' }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{ height: '59px', fontWeight: 600, fontSize: 'clamp(16px, 4.5vw, 22px)', fontFamily: "'Gelion', 'Outfit', sans-serif", background: 'linear-gradient(180deg, #5D65DC 0%, #9CA2E1 100%)', color: '#0B0B27' }}
               >
-                Go To Dashboard
+                Start Now
               </motion.a>
               <motion.a
                 href="#vision"
@@ -402,7 +404,7 @@ export default function LandingPage() {
 
           {/* Start Now CTA + security trust */}
           <div className="mt-24 md:mt-36 text-center relative z-10">
-            <a href="#apply" className="inline-flex items-center justify-center rounded-full px-12 h-11 font-semibold text-white mb-16" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}>
+            <a href="/signup" onClick={(e) => { e.preventDefault(); goToPath('/signup') }} className="inline-flex items-center justify-center rounded-full px-12 h-11 font-semibold text-white mb-16" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}>
               Start Now
             </a>
             <p className="text-2xl md:text-3xl font-bold text-white mb-6">
@@ -479,10 +481,10 @@ export default function LandingPage() {
           Your next brand deal starts here
         </motion.h2>
         <motion.a
-          href="#apply" className="inline-flex items-center justify-center rounded-full px-10 h-[54px] font-semibold text-white" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}
+          href="/signup" onClick={(e) => { e.preventDefault(); goToPath('/signup') }} className="inline-flex items-center justify-center rounded-full px-10 h-[54px] font-semibold text-white" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}
           initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
         >
-          Go To Dashboard
+          Start Now
         </motion.a>
       </section>
 
