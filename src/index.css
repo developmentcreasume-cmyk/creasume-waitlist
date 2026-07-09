@@ -530,27 +530,40 @@ body::-webkit-scrollbar {
   }
 }
 
-/* ===== Cursor-following shine =====
-   A soft radial highlight that tracks the mouse inside the element on hover.
-   The element sets --mx/--my (local cursor px) via an onMouseMove handler; the
-   ::before is clipped to the element's rounded shape (needs overflow-hidden). */
-.shine-cursor::before {
+/* ===== Hover shiny border =====
+   An animated conic-gradient ring (same mask trick as .shine-border) that stays
+   hidden until the element is hovered, then fades in and rotates. */
+.hover-shine {
+  position: relative;
+}
+.hover-shine::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(
-    110px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(0, 0, 0, 0.24),
-    rgba(0, 0, 0, 0) 62%
+  padding: 2px; /* ring thickness */
+  background: conic-gradient(
+    from var(--shine-angle),
+    rgba(255, 255, 255, 0.15) 0deg,
+    rgba(255, 255, 255, 0.15) 280deg,
+    rgba(255, 255, 255, 0.95) 330deg,
+    rgba(255, 255, 255, 0.45) 352deg,
+    rgba(255, 255, 255, 0.15) 360deg
   );
+  /* show only the padding ring, not the fill */
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 2;
   opacity: 0;
   transition: opacity 0.25s ease;
-  pointer-events: none;
-  z-index: 0;
 }
-.shine-cursor:hover::before {
+.hover-shine:hover::before {
   opacity: 1;
+  animation: shine-spin 2.2s linear infinite;
 }
 
 /* ===== Mobile paint budget =====
