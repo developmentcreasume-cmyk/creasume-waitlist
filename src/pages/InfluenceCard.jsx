@@ -11,11 +11,19 @@ import { InfluenceDataProvider, useInfluence } from '../components/influence/Inf
 import { isLoggedIn, getStoredUsername, dashboardBase } from '../services/dashboardApi.js'
 import { goToPath } from '../router.js'
 
-// Floating "Dashboard" button — shown only to a signed-in creator so they can
-// jump from their public card back to their own dashboard. Hidden from visitors.
+// Floating "Dashboard" button — shown ONLY on the signed-in creator's OWN card
+// (their stored username matches the card's username in the URL), so browsing
+// another creator's card never shows a stray Dashboard button. Hidden from
+// logged-out visitors entirely.
 function DashboardFab() {
   const uname = getStoredUsername()
   if (!isLoggedIn() || !uname) return null
+  // First path segment is the card's username (/<username>/<publicId>).
+  const seg =
+    typeof window !== 'undefined'
+      ? decodeURIComponent((window.location.pathname.split('/').filter(Boolean)[0] || ''))
+      : ''
+  if (seg.toLowerCase() !== uname.toLowerCase()) return null
   return (
     <button
       type="button"

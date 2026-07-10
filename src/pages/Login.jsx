@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { registerAccount, loginAccount, loginWithGoogle, verifyPhoneWidget } from '../services/dashboardApi.js'
+import { registerAccount, loginAccount, loginWithGoogle, verifyPhoneWidget, captureReferralCode, clearReferralCode, getReferralCode, setReferralCode } from '../services/dashboardApi.js'
 import { loadMsg91Widget, widgetSendOtp, widgetVerifyOtp, widgetRetryOtp } from '../services/msg91Widget.js'
 import { goToPath } from '../router.js'
 import GoogleSignInButton from '../components/GoogleSignInButton.jsx'
@@ -42,6 +42,14 @@ export default function Login() {
   const isSignup = typeof window !== 'undefined' && window.location.pathname.replace(/\/+$/, '') === '/signup'
   const activeStep = isSignup ? 1 : 2
 
+  // Capture a ?ref=CODE referral link on arrival and remember it until signup.
+  const [referred] = useState(() => { captureReferralCode(); return Boolean(getReferralCode()) })
+  // The referral code shown in the signup field — prefilled from the link, but
+  // editable so someone who was sent the code as text can type it in. Writing it
+  // back through setReferralCode() means the existing signup calls pick it up.
+  const [refCode, setRefCode] = useState(() => getReferralCode())
+  const onRefCodeChange = (v) => { const u = v.toUpperCase(); setRefCode(u); setReferralCode(u) }
+
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
   // Preload the MSG91 widget when the user switches to phone sign-in.
@@ -59,6 +67,9 @@ export default function Login() {
   // Both email and phone logins return the same { token, creator }. Route the
   // same way: to the dashboard when Instagram is linked, else to Connect.
   const routeAfterAuth = (data) => {
+    // The referral code (if any) has now been consumed by the signup — drop it
+    // so it can't attach to a different account signed up later on this browser.
+    clearReferralCode()
     const c = data.creator || {}
     if (c.instagramConnected && c.publicId) goToPath(`/${c.publicId}/dashboard`)
     else goToPath('/connect')
@@ -138,6 +149,7 @@ export default function Login() {
       if (isSignup) {
         // New account → go connect Instagram first.
         await registerAccount({ name: form.name, email: form.email, password: form.password })
+        clearReferralCode()
         goToPath('/connect')
       } else {
         // Existing account → straight to their own dashboard if Instagram is
@@ -162,6 +174,7 @@ export default function Login() {
     setBusy(true)
     try {
       const data = await loginWithGoogle(credential)
+      clearReferralCode()
       const c = data.creator || {}
       if (c.instagramConnected && c.publicId) goToPath(`/${c.publicId}/dashboard`)
       else goToPath('/connect')
@@ -251,6 +264,16 @@ export default function Login() {
             <p className="text-center text-white/55 mb-8" style={{ fontFamily: FONT, fontSize: 14 }}>
               {isSignup ? 'Let’s get you started — create your CREASUME.' : 'Welcome back! Please enter your details.'}
             </p>
+
+            {referred && isSignup && (
+              <div
+                className="mb-6 rounded-xl px-4 py-3 flex items-center gap-2.5 text-[13px] font-medium"
+                style={{ fontFamily: FONT, color: '#C9C4F0', background: 'rgba(155,147,232,0.10)', border: '1px solid rgba(155,147,232,0.30)' }}
+              >
+                <span aria-hidden>🎁</span>
+                You were invited by a friend — sign up and you both get 50% off your plan.
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               {isSignup && (
@@ -376,6 +399,23 @@ export default function Login() {
                     </div>
                   )}
                 </>
+              )}
+
+              {isSignup && (
+                <div>
+                  <label className="block text-white text-[13px] font-medium mb-2" style={{ fontFamily: FONT }}>
+                    Referral code <span className="text-white/40 font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={refCode}
+                    onChange={(e) => onRefCodeChange(e.target.value)}
+                    placeholder="Have a friend's code? Enter it"
+                    autoCapitalize="characters"
+                    className="w-full rounded-lg px-4 py-3 text-[15px] tracking-wider text-white outline-none transition-colors focus:border-white/40 placeholder:text-white/35 placeholder:tracking-normal"
+                    style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.14)' }}
+                  />
+                </div>
               )}
 
               {err && (

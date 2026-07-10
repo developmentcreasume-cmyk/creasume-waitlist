@@ -12,6 +12,7 @@ const TermsConditions = lazy(() => import('./pages/TermsConditions.jsx'))
 const ContactUs = lazy(() => import('./pages/ContactUs.jsx'))
 const PricingPage = lazy(() => import('./pages/PricingPage.jsx'))
 const HowItWorks = lazy(() => import('./pages/HowItWorks.jsx'))
+const BrowseCreators = lazy(() => import('./pages/BrowseCreators.jsx'))
 const Login = lazy(() => import('./pages/Login.jsx'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'))
@@ -130,6 +131,7 @@ function pickRoute(route) {
   if (route === '/contact') return <ContactUs />
   if (route === '/pricing') return <PricingPage />
   if (route === '/how-it-works') return <HowItWorks />
+  if (route === '/browse') return <BrowseCreators />
   if (route === '/login' || route === '/signup') return <Login />
   if (route === '/forgot-password') return <ForgotPassword />
   if (route === '/reset-password') return <ResetPassword />

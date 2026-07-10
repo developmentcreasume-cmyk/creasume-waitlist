@@ -12,7 +12,15 @@ export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 // page (`/`), the legal pages, and the app routes are reserved and return no
 // creator. The SPA rewrite in vercel.json makes these deep links / refreshes
 // serve index.html.
-const RESERVED_PATHS = ['privacy-policy', 'terms', 'contact', 'pricing', 'how-it-works', 'influence', 'dashboard', 'waitlist', 'auth-success', 'dev-login', 'preview', 'landing']
+const RESERVED_PATHS = ['privacy-policy', 'terms', 'contact', 'pricing', 'how-it-works', 'influence', 'dashboard', 'waitlist', 'auth-success', 'dev-login', 'preview', 'landing', 'browse']
+
+// Public creator directory for the "Discover Top Creators" browse page.
+export async function fetchCreators() {
+  const res = await fetch(`${API_BASE}/public/creators`)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || data.success === false) throw new Error(data.error || 'Failed to load creators')
+  return data.creators || []
+}
 export function resolveUsername() {
   if (typeof window === 'undefined') return ''
   const path = window.location.pathname.replace(/\/+$/, '')

@@ -71,20 +71,50 @@ async function postAuth(path, body) {
   if (data.creator?.username) setStoredUsername(data.creator.username)
   return data
 }
-export const registerAccount = (body) => postAuth('/auth/register', body)
+export const registerAccount = (body) => postAuth('/auth/register', { ...body, referralCode: getReferralCode() })
 export const loginAccount = (body) => postAuth('/auth/login', body)
 
 // Phone OTP via the MSG91 widget: the widget already verified the OTP and gave
 // us an access token; the backend confirms it and returns { token, creator }.
 export const verifyPhoneWidget = (accessToken, name) =>
-  postAuth('/auth/phone/verify-widget', { accessToken, name })
+  postAuth('/auth/phone/verify-widget', { accessToken, name, referralCode: getReferralCode() })
 
 // Google Sign-In. `credential` is the signed ID token from Google Identity
 // Services (see components/GoogleSignInButton.jsx). The backend verifies it,
 // then finds/links/creates the matching creator and returns the SAME
 // { token, creator } shape as email login — so callers can route on
 // instagramConnected / publicId exactly like loginAccount does.
-export const loginWithGoogle = (credential) => postAuth('/auth/google', { credential })
+export const loginWithGoogle = (credential) => postAuth('/auth/google', { credential, referralCode: getReferralCode() })
+
+// ---- Refer & Earn ----
+// The referral code from a ?ref=CODE signup link is captured on first visit and
+// kept until the user actually signs up (survives the Google popup / page
+// switches), then forwarded to whichever signup method they use.
+const REFERRAL_KEY = 'creasume_ref'
+export function captureReferralCode() {
+  try {
+    const ref = new URLSearchParams(window.location.search).get('ref')
+    if (ref && ref.trim()) localStorage.setItem(REFERRAL_KEY, ref.trim())
+  } catch { /* storage unavailable */ }
+}
+export function getReferralCode() {
+  try { return localStorage.getItem(REFERRAL_KEY) || '' } catch { return '' }
+}
+// Set/replace the pending code (used by the typed "referral code" field on the
+// signup form). Uppercased to match how codes are stored/looked up.
+export function setReferralCode(code) {
+  try {
+    const c = (code || '').trim().toUpperCase()
+    if (c) localStorage.setItem(REFERRAL_KEY, c)
+    else localStorage.removeItem(REFERRAL_KEY)
+  } catch { /* storage unavailable */ }
+}
+export function clearReferralCode() {
+  try { localStorage.removeItem(REFERRAL_KEY) } catch { /* storage unavailable */ }
+}
+
+// The signed-in creator's Refer & Earn panel data (code, link, coupons, friends).
+export const fetchReferrals = () => dapi.get('/creator/referrals')
 
 // Password reset. forgotPassword always resolves (the backend never reveals
 // whether the email exists). resetPassword logs the creator in on success.
@@ -220,6 +250,8 @@ export const deletePackage = (id) => dapi.del(`/packages/delete/${id}`)
 export const fetchPlans = () => dapi.get('/billing/plans')
 export const fetchBillingStatus = () => dapi.get('/billing/status')
 export const cancelSubscription = () => dapi.post('/billing/cancel', {})
+// Check a typed referral code before checkout → { valid, discountPercent, reason }.
+export const validateReferralCode = (code) => dapi.post('/billing/referral/validate', { code })
 
 let _rzpScript = null
 function loadRazorpay() {
@@ -237,9 +269,9 @@ function loadRazorpay() {
 
 // Buy a plan: create the checkout on the backend, open Razorpay (order OR
 // subscription), verify. Resolves { plan, status } on success.
-export async function buyPlan(planId) {
+export async function buyPlan(planId, referralCode = '') {
   await loadRazorpay()
-  const res = await dapi.post('/billing/checkout', { planId })
+  const res = await dapi.post('/billing/checkout', { planId, referralCode })
   return new Promise((resolve, reject) => {
     const common = {
       key: res.keyId,

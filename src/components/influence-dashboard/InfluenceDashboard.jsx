@@ -11,6 +11,7 @@ import { useState, useEffect, useCallback, useRef, forwardRef } from 'react'
 import { FONT, MONO } from '../influence/influenceData.js'
 import { goToPath } from '../../router.js'
 import EditProfileView from './EditProfileView.jsx'
+import ReferAndEarn from './ReferAndEarn.jsx'
 import DashboardTour from './DashboardTour.jsx'
 import {
   fetchPublic,
@@ -34,11 +35,13 @@ import {
   fetchBillingStatus,
   buyPlan,
   cancelSubscription,
+  validateReferralCode,
 } from '../../services/dashboardApi.js'
 
 const NAV = [
   { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
   { key: 'edit', label: 'Edit Profile', icon: 'user' },
+  { key: 'refer', label: 'Refer & Earn', icon: 'gift' },
   { key: 'settings', label: 'Settings', icon: 'gear' },
 ]
 
@@ -67,6 +70,7 @@ const ICONS = {
   ytMark: (<svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M21.6 7.2c-.2-.9-.9-1.6-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4c-.9.2-1.6.9-1.8 1.8C2 8.8 2 12 2 12s0 3.2.4 4.8c.2.9.9 1.6 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4c.9-.2 1.6-.9 1.8-1.8C22 15.2 22 12 22 12s0-3.2-.4-4.8zM10 15V9l5 3-5 3z" /></svg>),
   sparkle: (<svg {...ic}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z" /><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7.7-2Z" /></svg>),
   share: (<svg {...ic}><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6" /></svg>),
+  gift: (<svg {...ic}><path d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8" /><path d="M2 7h20v5H2z" /><path d="M12 22V7" /><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7Z" /><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7Z" /></svg>),
   message: (<svg {...ic}><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9 9 0 0 1-3.8-.8L3 21l1.9-5.2A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5Z" /></svg>),
   handshake: (<svg {...ic}><path d="m11 17 2 2a1 1 0 0 0 1.4 0l3.6-3.6" /><path d="M14 14l2.5 2.5a1 1 0 0 0 1.4-1.4L13 10l-2.5 2a2 2 0 0 1-2.6-3L11 7l3-1 6 5" /><path d="M4 12l3 3M4 6l3-1 2 1" /></svg>),
   info: (<svg {...ic} width="15" height="15"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>),
@@ -548,6 +552,31 @@ function BillingPanel() {
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
 
+  // Refer & Earn coupon at checkout.
+  const [coupon, setCoupon] = useState('')
+  const [couponInfo, setCouponInfo] = useState(null) // { valid, discountPercent, reason }
+  const [checkingCoupon, setCheckingCoupon] = useState(false)
+
+  async function applyCoupon() {
+    const code = coupon.trim()
+    if (!code) { setCouponInfo(null); return }
+    setCheckingCoupon(true)
+    try {
+      const res = await validateReferralCode(code)
+      setCouponInfo({ valid: res.valid, discountPercent: res.discountPercent, reason: res.reason })
+    } catch (e) {
+      setCouponInfo({ valid: false, reason: e.message || 'Could not check that code.' })
+    } finally {
+      setCheckingCoupon(false)
+    }
+  }
+  // Discounted rupee price for a plan when a valid coupon is applied (one-time
+  // plans only — recurring can't be discounted per-invoice). null = no discount.
+  const discountedInr = (p) => {
+    if (!couponInfo?.valid || p.billingType !== 'one_time') return null
+    return Math.max(1, Math.round(p.priceInr * (100 - couponInfo.discountPercent) / 100))
+  }
+
   const load = () => {
     Promise.all([fetchBillingStatus().catch(() => null), fetchPlans().catch(() => null)])
       .then(([s, p]) => {
@@ -567,7 +596,8 @@ function BillingPanel() {
   async function buy(plan) {
     setErr(''); setMsg(''); setBusy(plan.id)
     try {
-      await buyPlan(plan.id)
+      // Pass the coupon only when it validated (the backend re-checks anyway).
+      await buyPlan(plan.id, couponInfo?.valid ? coupon.trim() : '')
       // Access is granted by the Razorpay webhook (source of truth). Poll the
       // billing status a few times so the panel reflects it once it lands.
       setMsg('Payment received — activating your plan…')
@@ -656,6 +686,38 @@ function BillingPanel() {
           <h3 className="mt-9 mb-3 text-white font-semibold text-lg" style={{ fontFamily: FONT }}>
             {isFree ? 'Upgrade your plan' : 'Other plans'}
           </h3>
+
+          {/* Refer & Earn coupon */}
+          <div className="rounded-2xl p-4 mb-4" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <label className="block text-white text-[13px] font-semibold mb-2" style={{ fontFamily: FONT }}>Have a referral code?</label>
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <input
+                value={coupon}
+                onChange={(e) => { setCoupon(e.target.value.toUpperCase()); setCouponInfo(null) }}
+                placeholder="Enter a friend's code"
+                className="flex-1 rounded-lg px-3.5 py-2.5 text-[14px] tracking-wider text-white outline-none placeholder:tracking-normal"
+                style={{ fontFamily: FONT, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.14)' }}
+              />
+              <button
+                type="button"
+                onClick={applyCoupon}
+                disabled={checkingCoupon || !coupon.trim()}
+                className="rounded-lg px-5 py-2.5 text-[14px] font-semibold whitespace-nowrap transition-colors disabled:opacity-50"
+                style={{ fontFamily: FONT, color: '#fff', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)' }}
+              >
+                {checkingCoupon ? 'Checking…' : 'Apply'}
+              </button>
+            </div>
+            {couponInfo?.reason && (
+              <p className="mt-2 text-[13px] font-medium" style={{ fontFamily: FONT, color: couponInfo.valid ? '#4DE0B0' : '#FB7185' }}>
+                {couponInfo.valid ? '✓ ' : ''}{couponInfo.reason}
+              </p>
+            )}
+            {couponInfo?.valid && (
+              <p className="mt-1 text-white/40 text-[12px]" style={{ fontFamily: FONT }}>Discount applies to one-time plans at checkout.</p>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
             {upgradeTargets.map((p) => (
               <div
@@ -672,7 +734,14 @@ function BillingPanel() {
                     )}
                   </div>
                   <div className="text-right">
-                    <div className="text-white font-bold text-2xl leading-none" style={{ fontFamily: FONT }}>₹{p.priceInr}</div>
+                    {discountedInr(p) != null ? (
+                      <div className="flex items-baseline gap-1.5 justify-end">
+                        <span className="text-white/40 text-base line-through" style={{ fontFamily: FONT }}>₹{p.priceInr}</span>
+                        <span className="text-white font-bold text-2xl leading-none" style={{ fontFamily: FONT, color: '#4DE0B0' }}>₹{discountedInr(p)}</span>
+                      </div>
+                    ) : (
+                      <div className="text-white font-bold text-2xl leading-none" style={{ fontFamily: FONT }}>₹{p.priceInr}</div>
+                    )}
                     <div className="text-white/45 text-[11px] mt-0.5" style={{ fontFamily: MONO }}>
                       {p.billingType === 'recurring' ? 'per month' : `for ${p.durationDays} days`}
                     </div>
@@ -702,7 +771,7 @@ function BillingPanel() {
                   className="mt-5 w-full rounded-xl py-3 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-95 disabled:opacity-60"
                   style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#7C5CFF 0%,#C04DCC 55%,#EC4899 100%)' }}
                 >
-                  {busy === p.id ? 'Processing…' : `Get ${p.name} — ₹${p.priceInr}`}
+                  {busy === p.id ? 'Processing…' : `Get ${p.name} — ₹${discountedInr(p) ?? p.priceInr}`}
                 </button>
               </div>
             ))}
@@ -811,6 +880,8 @@ export default function InfluenceDashboard({ username }) {
   const [showTour, setShowTour] = useState(false)
   // Per-metric "show on Influence Card" toggles. key → boolean (default on).
   const [visibility, setVisibility] = useState({})
+  // "Copied!" feedback for the benchmark reward coupon on the dashboard.
+  const [benchCopied, setBenchCopied] = useState(false)
   // Message surfaced from an Instagram/Facebook connect redirect (e.g. the
   // "already linked to another account" guard).
   const [notice, setNotice] = useState('')
@@ -1252,7 +1323,7 @@ export default function InfluenceDashboard({ username }) {
             </div>
           </aside>
 
-          {view === 'settings' ? <SettingsView creator={creator} /> : view === 'edit' ? <EditProfileView creator={creator} username={handle} onSaved={load} saveSignal={editSaveSignal} /> : (
+          {view === 'settings' ? <SettingsView creator={creator} /> : view === 'refer' ? <div className="px-5 sm:px-8 md:px-24 py-10"><ReferAndEarn /></div> : view === 'edit' ? <EditProfileView creator={creator} username={handle} onSaved={load} saveSignal={editSaveSignal} /> : (
           <>
           {/* Header band */}
           <header
@@ -1340,6 +1411,36 @@ export default function InfluenceDashboard({ username }) {
             {error && (
               <div className="rounded-xl px-5 py-4 text-[14px]" style={{ fontFamily: FONT, color: '#FB7185', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
                 {error}
+              </div>
+            )}
+
+            {/* Benchmark reward — appears on the main dashboard once an admin has
+                approved the creator's 500-Creasume-Score-benchmark coupon. */}
+            {stats?.benchmark?.rewarded && stats.benchmark.couponCode && (
+              <div
+                className="rounded-2xl px-7 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                style={{ background: 'linear-gradient(120% 120% at 0% 0%, #1c3a2e 0%, #0d2a1f 55%, #0a1f18 100%)', border: '1px solid rgba(77,224,176,0.4)' }}
+              >
+                <div>
+                  <div className="text-white font-semibold text-xl mb-1.5" style={{ fontFamily: FONT }}>
+                    ⚡ Benchmark reward unlocked
+                  </div>
+                  <div className="text-white/60 text-base" style={{ fontFamily: FONT }}>
+                    You hit the 500 Creasume Score benchmark. Here's your {stats.benchmark.discountPercent}%-off coupon.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(stats.benchmark.couponCode).catch(() => {})
+                    setBenchCopied(true)
+                    setTimeout(() => setBenchCopied(false), 1600)
+                  }}
+                  className="font-bold tracking-wider px-5 py-3 rounded-xl text-[16px] whitespace-nowrap self-start sm:self-auto"
+                  style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg,#7BF0C4 0%,#4DE0B0 100%)' }}
+                >
+                  {benchCopied ? 'Copied!' : stats.benchmark.couponCode}
+                </button>
               </div>
             )}
 
