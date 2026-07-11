@@ -37,8 +37,19 @@ function CreatorCard({ c }) {
     : `/${encodeURIComponent(c.username)}`
   return (
     <div className="rounded-2xl overflow-hidden border transition-transform hover:-translate-y-1" style={{ background: '#0e0e14', borderColor: 'rgba(255,255,255,0.08)' }}>
-      {/* Banner + avatar */}
+      {/* Banner + avatar. The creator's uploaded banner (Edit Profile → Profile
+          Banner) covers the gradient when they have one; the gradient is the
+          fallback. NOTE: no overflow-hidden here — it would clip the avatar. */}
       <div className="relative h-24" style={{ background: 'linear-gradient(135deg,#3a2a63 0%, #241d3f 55%, #14121e 100%)' }}>
+        {c.banner && (
+          <img
+            src={c.banner}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover"
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+          />
+        )}
         <div className="absolute -bottom-9 left-6">
           <div className="w-[76px] h-[76px] rounded-full overflow-hidden border-4" style={{ borderColor: '#0e0e14', background: '#1a1a22' }}>
             {c.avatar

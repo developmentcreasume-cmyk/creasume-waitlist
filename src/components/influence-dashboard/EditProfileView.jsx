@@ -233,8 +233,25 @@ function LivePreview({ device, setDevice, deviceRefCb, src }) {
 }
 
 // ===== Profile tab (controlled by the parent) =====
-function ProfilePanel({ profile, setProfile, socials, setSocials, username, avatarSrc, onSaveLinks }) {
+function ProfilePanel({ profile, setProfile, socials, setSocials, username, avatarSrc, onSaveLinks, banner, setBanner, existingBanner }) {
   const set = (k, v) => setProfile((p) => ({ ...p, [k]: v }))
+
+  // Banner picking. `banner` is null (unchanged), a data: URL (new), or '' (removed).
+  // What we SHOW = the new pick if there is one, else the saved banner (unless removed).
+  const [bannerErr, setBannerErr] = useState('')
+  const bannerSrc = banner === null ? existingBanner : banner // '' → nothing shown
+  const pickBanner = (e) => {
+    const file = e.target.files && e.target.files[0]
+    e.target.value = '' // allow re-picking the same file
+    if (!file) return
+    setBannerErr('')
+    if (!/^image\//.test(file.type)) { setBannerErr('Please choose an image file.'); return }
+    if (file.size > 8 * 1024 * 1024) { setBannerErr('Image must be under 8 MB.'); return }
+    const reader = new FileReader()
+    reader.onload = () => setBanner(reader.result) // data: URL → saved on "Save"
+    reader.onerror = () => setBannerErr('Could not read that file.')
+    reader.readAsDataURL(file)
+  }
   const removeSocial = (key) => setSocials((s) => s.filter((x) => x.key !== key))
   const addSocial = () => setSocials((s) => [...s, { key: Date.now(), platform: '', url: '', enabled: true }])
   const updateSocial = (key, field, v) => setSocials((s) => s.map((x) => (x.key === key ? { ...x, [field]: v } : x)))
@@ -262,6 +279,63 @@ function ProfilePanel({ profile, setProfile, socials, setSocials, username, avat
             <p className="mt-3 text-white/35 text-[12px]" style={{ fontFamily: MONO }}>Reconnect Instagram from Settings → Platforms to refresh it.</p>
           </div>
         </div>
+
+        {/* ===== Profile Banner (cover image) ===== */}
+        <div className="rounded-2xl p-6 mb-6" style={PANEL}>
+          <div className="text-white font-bold text-xl" style={{ fontFamily: FONT }}>Profile Banner</div>
+
+          {/* NOTE — why we're asking for this */}
+          <p className="mt-1 text-white/50 text-sm leading-relaxed" style={{ fontFamily: FONT }}>
+            This is the cover image brands see on your <strong className="text-white/75">Influence Card</strong> and on the
+            public <strong className="text-white/75">Browse Creators</strong> page — it&apos;s the first thing they notice, so
+            make it count.
+          </p>
+          <p className="mt-2 text-white/40 text-[12.5px] leading-relaxed" style={{ fontFamily: FONT }}>
+            Use a <strong className="text-white/60">wide (landscape)</strong> image that represents your content — a hero shot,
+            your best work, or your personal branding. Recommended <strong className="text-white/60">1600 × 400 px</strong>{' '}
+            (4:1). JPG or PNG, under 8 MB. Avoid putting important text near the edges — it may get cropped on small screens.
+          </p>
+
+          {/* Preview */}
+          <div
+            className="mt-4 w-full rounded-xl overflow-hidden flex items-center justify-center"
+            style={{ aspectRatio: '4 / 1', background: 'rgba(0,0,0,0.35)', border: '1px dashed rgba(255,255,255,0.18)' }}
+          >
+            {bannerSrc ? (
+              <img src={bannerSrc} alt="Banner preview" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-white/35 text-[13px]" style={{ fontFamily: FONT }}>No banner yet — upload one below</span>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <label
+              className="cursor-pointer rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+              style={{ fontFamily: FONT, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}
+            >
+              {bannerSrc ? 'Change Banner' : 'Upload Banner'}
+              <input type="file" accept="image/*" onChange={pickBanner} className="hidden" />
+            </label>
+            {bannerSrc && (
+              <button
+                type="button"
+                onClick={() => { setBanner(''); setBannerErr('') }}
+                className="rounded-xl px-4 py-2.5 text-[13px] font-medium text-white/70 hover:text-white bg-transparent cursor-pointer transition-colors"
+                style={{ fontFamily: FONT, border: '1px solid rgba(255,255,255,0.16)' }}
+              >
+                Remove
+              </button>
+            )}
+            <span className="text-white/35 text-[12px]" style={{ fontFamily: FONT }}>
+              Changes apply when you hit <strong className="text-white/55">Save</strong>.
+            </span>
+          </div>
+          {bannerErr && (
+            <p className="mt-2 text-[13px]" style={{ fontFamily: FONT, color: '#FB7185' }}>{bannerErr}</p>
+          )}
+        </div>
+
         {/* Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <Field label="Display Name"><TextInput value={profile.name} onChange={(e) => set('name', e.target.value)} placeholder="Your name" /></Field>
@@ -856,6 +930,9 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
   // Controlled form state, seeded from the creator record.
   const [profile, setProfile] = useState({ name: '', bio: '', niche: '', location: '' })
   const [socials, setSocials] = useState([])
+  // Banner (cover image). null = unchanged, a data: URL = newly picked,
+  // '' = the creator removed it. Only sent to the API when it isn't null.
+  const [banner, setBanner] = useState(null)
   const [theme, setTheme] = useState({ ...DEFAULT_THEME })
   const [pkgs, setPkgs] = useState([])
   const [collabs, setCollabs] = useState([])
@@ -914,6 +991,7 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
     const links = Array.isArray(creator.socialLinks) ? creator.socialLinks : []
     setSocials(links.map((l, i) => ({ key: i + 1, platform: l.platform || '', url: l.url || '', enabled: l.enabled !== false })))
     setTheme(parseTheme(creator.theme))
+    setBanner(null) // fresh creator data → no pending banner change
   }, [creator])
 
   // Load the creator's existing packages + collaborations.
@@ -953,6 +1031,9 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
       niche: profile.niche,
       location: profile.location,
       theme: JSON.stringify(theme),
+      // Only send `banner` when the creator actually changed it (a data: URL to
+      // set one, '' to remove). Omitting it leaves the existing banner alone.
+      ...(banner !== null ? { banner } : {}),
       socialLinks: socials
         .filter((s) => s.platform.trim() && s.url.trim())
         .map((s) => ({ platform: s.platform.trim(), url: s.url.trim(), enabled: s.enabled !== false })),
@@ -1111,7 +1192,15 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
         <div className="px-4 sm:px-6 md:px-16 lg:px-24 pb-16">
           <LivePreview device={device} setDevice={setDevice} deviceRefCb={visRef(deviceRef)} src={previewSrc} />
           <div className="pt-8">
-            {tab === 'Profile' && <ProfilePanel profile={profile} setProfile={setProfile} socials={socials} setSocials={setSocials} username={handle} avatarSrc={avatarSrc} onSaveLinks={saveLinks} />}
+            {tab === 'Profile' && (
+              <ProfilePanel
+                profile={profile} setProfile={setProfile}
+                socials={socials} setSocials={setSocials}
+                username={handle} avatarSrc={avatarSrc} onSaveLinks={saveLinks}
+                banner={banner} setBanner={setBanner}
+                existingBanner={creator.hasBanner && creator.publicId ? `${API_BASE}/public/banner/${creator.publicId}` : ''}
+              />
+            )}
             {tab === 'Portfolio' && <PortfolioPanel collabs={collabs} onAdd={addCollab} onRemove={removeCollab} />}
             {tab === 'Packages' && <PackagesPanel pkgs={pkgs} setPkgs={setPkgs} onRemove={removePkg} onSave={savePackagesAndPreview} />}
             {tab === 'Design' && <DesignPanel theme={theme} setTheme={setTheme} />}
