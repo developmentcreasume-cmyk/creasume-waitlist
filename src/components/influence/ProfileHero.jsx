@@ -398,8 +398,13 @@ export default function ProfileHero() {
     try {
       // Load the heavy libs only when the button is actually clicked, so they
       // never bloat the card's initial bundle.
+      //
+      // html2canvas-pro (NOT the original html2canvas): Tailwind v4 emits colours
+      // as oklch()/oklab(), which the original (unmaintained since 2022) can't
+      // parse — it threw `unsupported color function "oklab"`. The -pro fork is a
+      // drop-in replacement that supports oklch/oklab/color().
       const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-        import('html2canvas'),
+        import('html2canvas-pro'),
         import('jspdf'),
       ])
 

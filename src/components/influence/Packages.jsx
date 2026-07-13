@@ -374,7 +374,9 @@ export default function Packages() {
           const showCta = true // Book Now on every package card
           return (
             <motion.div
-              key={p.tier}
+              // Two packages can share a tier name (e.g. both "STARTER"), so the
+              // tier alone isn't a unique key — pair it with the index.
+              key={p.id || `${p.tier}-${i}`}
               variants={fadeUp}
               whileHover={{ y: -12, scale: 1.04 }}
               transition={{ type: 'spring', stiffness: 320, damping: 22 }}
@@ -437,7 +439,7 @@ export default function Packages() {
           <div className="flex items-center justify-center gap-2 mt-4">
             {PACKAGES.map((p, i) => (
               <button
-                key={p.tier}
+                key={p.id || `${p.tier}-${i}`}
                 type="button"
                 aria-label={`Go to ${p.tier}`}
                 onClick={() => goTo(pos - logical + i)}
