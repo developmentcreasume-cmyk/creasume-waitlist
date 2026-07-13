@@ -368,7 +368,10 @@ function LearnMoreModal({ data, onClose }) {
 // Public-facing hero of the influence card: avatar + name + headline pills +
 // bio + actions, then the 3×3 metric grid.
 export default function ProfileHero() {
-  const { CREATOR } = useInfluence()
+  // The WHOLE payload — the PDF export renders a static document from it
+  // (see CardPdfDocument), not from this live DOM.
+  const data = useInfluence()
+  const { CREATOR } = data
   // Try each avatar source in turn: backend proxy → raw Instagram CDN URL →
   // (finally) the name initial. The proxy is most reliable once deployed; the
   // raw URL covers the gap before that (Instagram often serves it with
@@ -386,151 +389,65 @@ export default function ProfileHero() {
   // Mobile score badge flip state (front = score, back = description + learn more).
   const [scoreFlipped, setScoreFlipped] = useState(false)
 
-  // "Download PDF" — builds a real .pdf FILE in the browser with html2canvas
-  // (rasterise the card) + jsPDF (assemble the pages), so it downloads directly
-  // with no print dialog.
+  // "Download PDF" — renders a PURPOSE-BUILT static document and converts it.
   //
-  // This replaced a server-side headless-Chrome route: Chrome needs far more RAM
-  // than the instance has, so it got OOM-killed and took the whole API down.
-  // Doing it client-side is instant and can't crash anything.
+  // We do NOT rasterise the live card any more. The live card is a scroll-driven
+  // experience (framer-motion entrances, 3D flip cards, scroll-linked marquees,
+  // sticky carousels, backdrop-filter glass) and html2canvas supports none of
+  // that — it produced mirrored card-backs, giant misplaced band text, near-empty
+  // carousel pages and washed-out grey glass.
+  //
+  // Instead we mount <CardPdfDocument> OFF-SCREEN: the same data and design, but
+  // a plain STATIC document (no animation/transforms/glass, all posts + collabs +
+  // packages shown as grids). Every section is a self-contained [data-pdf-block]
+  // shorter than a page, so pagination never cuts content in half. We capture it,
+  // build the PDF, then unmount it. The user never sees it.
   const [pdfing, setPdfing] = useState(false)
   const handleDownloadPdf = async () => {
     if (pdfing) return
-    const el = document.getElementById('influence-card-root')
-    if (!el) return
     setPdfing(true)
+
+    let host = null
+    let root = null
     try {
-      // Load the heavy libs only when the button is actually clicked, so they
-      // never bloat the card's initial bundle.
-      //
-      // html2canvas-pro (NOT the original html2canvas): Tailwind v4 emits colours
-      // as oklch()/oklab(), which the original (unmaintained since 2022) can't
-      // parse — it threw `unsupported color function "oklab"`. The -pro fork is a
-      // drop-in replacement that supports oklch/oklab/color().
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-        import('html2canvas-pro'),
-        import('jspdf'),
-      ])
+      // Heavy libs load only on click, so they never bloat the card's bundle.
+      const [{ default: html2canvas }, { jsPDF }, { createRoot }, { default: CardPdfDocument, PDF_WIDTH }] =
+        await Promise.all([
+          import('html2canvas-pro'),
+          import('jspdf'),
+          import('react-dom/client'),
+          import('./CardPdfDocument.jsx'),
+        ])
 
-      // 1) Sections animate in with framer-motion `whileInView`. Anything never
-      //    scrolled into view is still opacity:0 and would capture BLANK — so
-      //    scroll the whole page once to trigger every entrance.
-      const startY = window.scrollY
-      await new Promise((resolve) => {
-        let y = 0
-        const step = () => {
-          window.scrollTo(0, y)
-          y += 800
-          if (y < document.body.scrollHeight) setTimeout(step, 40)
-          else { window.scrollTo(0, 0); setTimeout(resolve, 400) }
-        }
-        step()
-      })
+      // ---- 1. Mount the static document off-screen ----
+      host = document.createElement('div')
+      host.style.cssText =
+        `position:fixed;left:-10000px;top:0;width:${PDF_WIDTH}px;background:#07070b;z-index:-1;`
+      document.body.appendChild(host)
 
-      // 2) Wait for images + fonts, or they rasterise missing.
+      root = createRoot(host)
+      root.render(<CardPdfDocument data={data} />)
+
+      // Let React paint it.
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+
+      // ---- 2. Wait for its images + fonts, else they rasterise blank ----
       await Promise.all(
-        Array.from(document.images)
+        Array.from(host.querySelectorAll('img'))
           .filter((img) => !img.complete)
-          .map((img) => new Promise((resolve) => { img.onload = img.onerror = resolve }))
+          .map((img) => new Promise((res) => { img.onload = img.onerror = res }))
       )
       try { await document.fonts.ready } catch { /* unsupported — fine */ }
 
-      // Export mode: zeroes the scroll-driven transform on the heading bands
-      // ([data-pdf-static]) so they rasterise as clean static bands instead of
-      // giant misplaced text. See the `.pdf-exporting` rules in index.css.
-      document.documentElement.classList.add('pdf-exporting')
-      // Let the style change actually apply before we start capturing.
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
-
-      // 3) Capture SECTION BY SECTION rather than one giant image of the page.
-      //    Slicing a single tall capture at fixed page heights cut cards clean in
-      //    half across the page break. Capturing each block separately lets us
-      //    keep it whole and start a new page when it doesn't fit.
-      //
-      //    Skipped (`ignoreElements`):
-      //      • data-pdf-back  — the rotateY(180deg) BACK of the flip cards.
-      //        html2canvas can't do backface-visibility, so it painted these
-      //        mirrored over the fronts.
-      //      • data-pdf-hide  — interactive-only chrome (buttons/FABs).
-      //      • starfield      — ambient decoration.
-      // NOTE: the giant CREASUME wordmark (.giant-text) is deliberately NOT
-      // skipped — it's the branding that closes out the card, so it belongs at
-      // the bottom of the PDF too.
-      const skip = (node) => {
-        if (!node.hasAttribute) return true
-        if (
-          node.hasAttribute('data-pdf-back') ||
-          node.hasAttribute('data-pdf-hide') ||
-          node.classList?.contains?.('starfield')
-        ) return true
-        // Out-of-flow overlays (fixed FABs, animation layers) aren't document
-        // content — capturing them produced giant BLANK blocks / blank pages.
-        if (getComputedStyle(node).position === 'fixed') return true
-        return false
-      }
-
-      // A block worth putting on a page: it must actually show something.
-      // (An empty wrapper would otherwise consume a whole page of nothing.)
-      const hasContent = (node) =>
-        Boolean(node.innerText?.trim()) || Boolean(node.querySelector('img, svg, canvas, video'))
-
-      const shotOpts = {
-        scale: Math.min(2, window.devicePixelRatio || 1.5),
-        backgroundColor: '#07070b',
-        useCORS: true,
-        logging: false,
-        ignoreElements: skip,
-      }
-
-      // Crop empty background off the top/bottom of a capture.
-      //
-      // Scroll-driven sections (Top Posts is a sticky carousel) are deliberately
-      // VERY tall to give the scroll room, while only a small card is actually
-      // visible — capturing them produced a page that was 90% dead space. This
-      // scans for the first/last row containing a non-background pixel and crops
-      // to that, so a block only takes the space it actually fills.
-      const trimEmpty = (c) => {
-        try {
-          const ctx = c.getContext('2d')
-          const { width, height } = c
-          if (!width || !height) return c
-          const { data } = ctx.getImageData(0, 0, width, height)
-          // Page bg is ~#07070b — treat near-black pixels as "empty".
-          const rowHasInk = (y) => {
-            for (let x = 0; x < width; x += 3) { // sample every 3rd px for speed
-              const i = (y * width + x) * 4
-              if (data[i] > 24 || data[i + 1] > 24 || data[i + 2] > 28) return true
-            }
-            return false
-          }
-          let top = 0
-          let bottom = height - 1
-          while (top < bottom && !rowHasInk(top)) top++
-          while (bottom > top && !rowHasInk(bottom)) bottom--
-          const pad = Math.round(10 * (shotOpts.scale || 1))
-          top = Math.max(0, top - pad)
-          bottom = Math.min(height - 1, bottom + pad)
-          const h = bottom - top + 1
-          if (h < 8 || h >= height - 4) return c // nothing meaningful to trim
-          const out = document.createElement('canvas')
-          out.width = width
-          out.height = h
-          out.getContext('2d').drawImage(c, 0, top, width, h, 0, 0, width, h)
-          return out
-        } catch {
-          return c // canvas tainted by a non-CORS image — keep it as-is
-        }
-      }
-
+      // ---- 3. Set up the PDF page ----
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
       const pageW = pdf.internal.pageSize.getWidth()
       const pageH = pdf.internal.pageSize.getHeight()
-      const margin = 18
+      const margin = 20
       const contentW = pageW - margin * 2
-      const footerH = 26 // reserved strip for the "Made with Creasume" line
+      const footerH = 24
 
-      // Small Creasume mark, stamped in the top-left of every page (the on-page
-      // logo is excluded from the capture — see data-pdf-hide on it).
+      // Small Creasume mark for the top-left of every page.
       const brand = await new Promise((resolve) => {
         const img = new Image()
         img.crossOrigin = 'anonymous'
@@ -546,89 +463,57 @@ export default function ProfileHero() {
         img.onerror = () => resolve(null)
         img.src = '/creasumelogo.png'
       })
-      const brandW = 62
+      const brandW = 58
       const brandH = brand ? brandW * brand.ratio : 0
 
-      // Content sits between the logo strip (top) and the footer line (bottom).
-      const contentTop = margin + (brand ? brandH + 10 : 0)
+      const contentTop = margin + (brand ? brandH + 8 : 0)
       const contentBottom = pageH - margin - footerH
       const maxH = contentBottom - contentTop
 
-      // How many SOURCE pixels fit on one PDF page (blocks are ~full card width).
-      const elW = el.clientWidth || 1
-      const pxPerPage = (maxH * elW) / contentW
-
-      // Build the list of blocks to lay out. If a block eats a big chunk of a
-      // page we descend into its children instead of treating it as one unit —
-      // otherwise a tall section that doesn't fit gets pushed WHOLE to the next
-      // page and leaves half the previous page empty. Smaller units pack tightly
-      // while still never being cut in half.
-      const collect = (node, depth) => {
-        const out = []
-        for (const child of Array.from(node.children)) {
-          if (skip(child) || !hasContent(child)) continue
-          // Absolutely-positioned children (logo, glows, decorative ellipses) are
-          // part of their PARENT's composition, not standalone content. Promoting
-          // one to its own block scaled it to full page width (the giant logo
-          // page). They're still captured when the parent is captured whole.
-          const pos = getComputedStyle(child).position
-          if (pos === 'absolute' || pos === 'fixed') continue
-          const h = child.getBoundingClientRect().height
-          if (h < 20) continue
-          if (depth < 2 && h > pxPerPage * 0.45 && child.children.length > 1) {
-            const sub = collect(child, depth + 1)
-            if (sub.length > 1) { out.push(...sub); continue }
-          }
-          out.push(child)
-        }
-        return out
-      }
-      const blocks = collect(el, 0)
-
-      // Paint the page background (so gaps between blocks aren't white), stamp the
-      // logo top-left and the Creasume line along the bottom.
+      // Dark page + logo top-left + "Made with Creasume" footer.
       const paintPage = () => {
         pdf.setFillColor(7, 7, 11)
         pdf.rect(0, 0, pageW, pageH, 'F')
         if (brand) pdf.addImage(brand.data, 'PNG', margin, 12, brandW, brandH)
-
-        // Footer — "Made with Creasume · creasume.com"
         pdf.setFontSize(8)
-        pdf.setTextColor(150, 150, 165)
-        pdf.text('Made with Creasume', margin, pageH - 14)
-        pdf.setTextColor(120, 120, 140)
-        pdf.text('creasume.com', pageW - margin, pageH - 14, { align: 'right' })
+        pdf.setTextColor(140, 140, 158)
+        pdf.text('Made with Creasume', margin, pageH - 13)
+        pdf.text('creasume.com', pageW - margin, pageH - 13, { align: 'right' })
       }
       paintPage()
 
+      // ---- 4. Capture each block and lay it out ----
+      const blocks = Array.from(host.querySelectorAll('[data-pdf-block]'))
       let cursorY = contentTop
+
       for (const block of blocks) {
-        const raw = await html2canvas(block, shotOpts)
-        const c = trimEmpty(raw) // drop the dead space (see trimEmpty above)
-        if (!c.width || !c.height) continue
+        const canvas = await html2canvas(block, {
+          scale: 2,
+          backgroundColor: '#07070b',
+          useCORS: true,
+          logging: false,
+        })
+        if (!canvas.width || !canvas.height) continue
 
         let w = contentW
-        let h = (c.height * w) / c.width
-        if (h > maxH) { // a block taller than one page → scale it down to fit
+        let h = (canvas.height * w) / canvas.width
+        if (h > maxH) { // taller than a page → scale to fit one
           h = maxH
-          w = (c.width * h) / c.height
+          w = (canvas.width * h) / canvas.height
         }
 
-        // Doesn't fit above the footer → start a fresh page (below the logo).
+        // Doesn't fit above the footer → new page. Blocks are never split.
         if (cursorY + h > contentBottom) {
           pdf.addPage()
           paintPage()
           cursorY = contentTop
         }
 
-        const x = margin + (contentW - w) / 2 // centre narrower blocks
-        pdf.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', x, cursorY, w, h)
-        cursorY += h + 12
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.94), 'JPEG', margin + (contentW - w) / 2, cursorY, w, h)
+        cursorY += h + 8
       }
 
-      window.scrollTo(0, startY)
-
-      const name = String(CREATOR?.handle || CREATOR?.name || 'creasume')
+      const name = String(CREATOR?.username || CREATOR?.handle || CREATOR?.name || 'creasume')
         .replace(/^@/, '')
         .replace(/[^\w.-]+/g, '-')
       pdf.save(`${name}-media-kit.pdf`)
@@ -636,9 +521,9 @@ export default function ProfileHero() {
       console.error('PDF export failed', err)
       alert('Could not generate the PDF: ' + (err?.message || err))
     } finally {
-      // Always leave export mode, even if the capture threw — otherwise the live
-      // page would be stuck with its marquee animations frozen.
-      document.documentElement.classList.remove('pdf-exporting')
+      // Always tear the off-screen document down.
+      try { root?.unmount() } catch { /* already gone */ }
+      if (host?.parentNode) host.parentNode.removeChild(host)
       setPdfing(false)
     }
   }
