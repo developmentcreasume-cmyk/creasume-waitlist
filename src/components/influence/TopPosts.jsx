@@ -26,10 +26,12 @@ function MarqueeRow({ text, progress, reverse = false, hollow = false, className
     ? { color: '#000000', textShadow: HOLLOW_SHADOW }
     : { color: 'rgba(255,255,255,0.75)', textShadow: 'none' }
   return (
-    // data-pdf-hide: purely decorative scroll-driven band. Its transform is tied
-    // to scroll position, which the PDF exporter can't reproduce — it rasterised
-    // as giant misplaced text. Skip it in the export.
-    <div data-pdf-hide className="overflow-hidden w-full">
+    // data-pdf-static: this band IS the section heading, so it must appear in the
+    // PDF — but its translate is driven by scroll position, which the exporter
+    // can't reproduce (it rasterised as giant misplaced text). During export the
+    // `.pdf-exporting` class zeroes the transform so it renders as a clean static
+    // band. See index.css + handleDownloadPdf.
+    <div data-pdf-static className="overflow-hidden w-full">
       <motion.div
         className={`flex whitespace-nowrap ${className}`}
         style={{ width: 'max-content', x }}

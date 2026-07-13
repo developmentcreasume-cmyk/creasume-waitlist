@@ -435,6 +435,13 @@ export default function ProfileHero() {
       )
       try { await document.fonts.ready } catch { /* unsupported — fine */ }
 
+      // Export mode: zeroes the scroll-driven transform on the heading bands
+      // ([data-pdf-static]) so they rasterise as clean static bands instead of
+      // giant misplaced text. See the `.pdf-exporting` rules in index.css.
+      document.documentElement.classList.add('pdf-exporting')
+      // Let the style change actually apply before we start capturing.
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+
       // 3) Capture SECTION BY SECTION rather than one giant image of the page.
       //    Slicing a single tall capture at fixed page heights cut cards clean in
       //    half across the page break. Capturing each block separately lets us
@@ -617,6 +624,9 @@ export default function ProfileHero() {
       console.error('PDF export failed', err)
       alert('Could not generate the PDF: ' + (err?.message || err))
     } finally {
+      // Always leave export mode, even if the capture threw — otherwise the live
+      // page would be stuck with its marquee animations frozen.
+      document.documentElement.classList.remove('pdf-exporting')
       setPdfing(false)
     }
   }

@@ -573,6 +573,23 @@ body::-webkit-scrollbar {
   }
 }
 
+/* ===== PDF export mode =====
+   `.pdf-exporting` is put on <html> only while the Influence Card is being
+   rasterised for the PDF (see handleDownloadPdf in ProfileHero.jsx).
+
+   The big "TOP POSTS • INFLUENCE" heading bands are marquees translated by
+   SCROLL position (framer-motion writes an inline transform). The exporter can't
+   reproduce that scroll state, so they came out as giant misplaced text. Zeroing
+   the transform here makes them render as clean, static bands — so the section
+   headings still appear in the PDF instead of being dropped. `!important` is
+   required to beat framer-motion's inline style. */
+.pdf-exporting [data-pdf-static],
+.pdf-exporting [data-pdf-static] * {
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+
 /* ===== Hover shiny border =====
    An animated conic-gradient ring (same mask trick as .shine-border) that stays
    hidden until the element is hovered, then fades in and rotates. */
