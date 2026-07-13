@@ -478,7 +478,30 @@ export default function ProfileHero() {
       const pageH = pdf.internal.pageSize.getHeight()
       const margin = 18
       const contentW = pageW - margin * 2
-      const maxH = pageH - margin * 2
+
+      // Small Creasume mark, stamped in the top-left of every page (the on-page
+      // logo is excluded from the capture — see data-pdf-hide on it).
+      const brand = await new Promise((resolve) => {
+        const img = new Image()
+        img.crossOrigin = 'anonymous'
+        img.onload = () => {
+          try {
+            const c = document.createElement('canvas')
+            c.width = img.naturalWidth
+            c.height = img.naturalHeight
+            c.getContext('2d').drawImage(img, 0, 0)
+            resolve({ data: c.toDataURL('image/png'), ratio: img.naturalHeight / img.naturalWidth })
+          } catch { resolve(null) }
+        }
+        img.onerror = () => resolve(null)
+        img.src = '/creasumelogo.png'
+      })
+      const brandW = 62
+      const brandH = brand ? brandW * brand.ratio : 0
+
+      // Content starts below the logo strip; that's the usable height per page.
+      const contentTop = margin + (brand ? brandH + 10 : 0)
+      const maxH = pageH - contentTop - margin
 
       // How many SOURCE pixels fit on one PDF page (blocks are ~full card width).
       const elW = el.clientWidth || 1
@@ -493,6 +516,12 @@ export default function ProfileHero() {
         const out = []
         for (const child of Array.from(node.children)) {
           if (skip(child) || !hasContent(child)) continue
+          // Absolutely-positioned children (logo, glows, decorative ellipses) are
+          // part of their PARENT's composition, not standalone content. Promoting
+          // one to its own block scaled it to full page width (the giant logo
+          // page). They're still captured when the parent is captured whole.
+          const pos = getComputedStyle(child).position
+          if (pos === 'absolute' || pos === 'fixed') continue
           const h = child.getBoundingClientRect().height
           if (h < 20) continue
           if (depth < 2 && h > pxPerPage * 0.45 && child.children.length > 1) {
@@ -505,14 +534,15 @@ export default function ProfileHero() {
       }
       const blocks = collect(el, 0)
 
-      // Paint the page background so the gaps between blocks aren't white.
+      // Paint the page background (so gaps between blocks aren't white) and brand it.
       const paintPage = () => {
         pdf.setFillColor(7, 7, 11)
         pdf.rect(0, 0, pageW, pageH, 'F')
+        if (brand) pdf.addImage(brand.data, 'PNG', margin, 12, brandW, brandH)
       }
       paintPage()
 
-      let cursorY = margin
+      let cursorY = contentTop
       for (const block of blocks) {
         const c = await html2canvas(block, shotOpts)
         if (!c.width || !c.height) continue
@@ -524,11 +554,11 @@ export default function ProfileHero() {
           w = (c.width * h) / c.height
         }
 
-        // Doesn't fit in what's left of this page → start a fresh one.
+        // Doesn't fit in what's left of this page → start a fresh one (below the logo).
         if (cursorY + h > pageH - margin) {
           pdf.addPage()
           paintPage()
-          cursorY = margin
+          cursorY = contentTop
         }
 
         const x = margin + (contentW - w) / 2 // centre narrower blocks
@@ -553,8 +583,12 @@ export default function ProfileHero() {
     <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 pt-24 pb-12 md:pt-32 md:pb-16 overflow-hidden">
       {/* Creasume wordmark — top-left corner. Clicking it returns to the
           home / waitlist page. */}
+      {/* data-pdf-hide: it's an out-of-flow overlay, so the PDF exporter would
+          treat it as its own block and blow it up to full page width. The PDF
+          draws its own small Creasume mark in each page's top-left instead. */}
       <button
         type="button"
+        data-pdf-hide
         onClick={() => goToPath('/')}
         aria-label="Go to Creasume home"
         className="absolute top-6 left-6 md:top-4 md:left-4 z-20 cursor-pointer"
