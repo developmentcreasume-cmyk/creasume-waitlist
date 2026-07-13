@@ -8,21 +8,20 @@
 // rasterising the live DOM gave mirrored card-backs, giant misplaced band text,
 // near-empty carousel pages and washed-out grey glass.
 //
-// So this renders the SAME DESIGN — same palette, same #10133C tiles, same
-// gradient avatar ring, same package cards — but as a plain STATIC document:
+// This renders the SAME DESIGN — same palette, same hero, same #10133C tiles,
+// same charts, same audience panel, same package cards, same wordmark — but as a
+// plain STATIC document:
 //   • no animation / transforms / flip cards / carousels / marquees
 //   • no backdrop-filter — solid fills only
 //   • every section is a self-contained [data-pdf-block] shorter than a page,
 //     so pagination can never cut content in half
-//   • ALL top posts / collabs / packages shown at once (grids, not carousels)
+//   • ALL top posts / packages shown at once (grids, not carousels)
 //
-// ⚠️ NO GRADIENT TEXT. The card styles its labels with `background-clip: text`
-// + `-webkit-text-fill-color: transparent`. html2canvas can't do that — the text
-// would come out INVISIBLE. So the same labels use a solid colour here (ACCENT_2)
-// that matches the middle of the card's purple→pink gradient.
+// ⚠️ NO GRADIENT TEXT. The card styles labels with `background-clip: text` +
+// `-webkit-text-fill-color: transparent`. html2canvas can't do that — the text
+// would come out INVISIBLE. Those labels use a solid colour here instead.
 //
-// Mounted OFF-SCREEN, captured, then unmounted — the user never sees it.
-// Rendered at A4 width (794px @96dpi) so 1 document px ≈ 1 PDF px.
+// Mounted OFF-SCREEN, captured, then unmounted. A4 width (794px @96dpi).
 // ============================================================================
 
 const FONT = "'Outfit', sans-serif"
@@ -31,37 +30,29 @@ const MONO = "ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace"
 export const PDF_WIDTH = 794
 
 // ---- The card's palette ----
-const BG = '#08080f'
-const TILE = '#10133C' // the card's metric-tile fill
-const TILE_LINE = 'rgba(255,255,255,0.08)'
-const PANEL = '#0d1030'
+const BG = '#0a0b18'
+const TILE = '#10133C'
+const LINE = 'rgba(255,255,255,0.08)'
 const MUTED = 'rgba(255,255,255,0.55)'
-const ACCENT = '#8B5CF6'
-const ACCENT_2 = '#C04DCC' // solid stand-in for the purple→pink gradient text
-const RING = 'linear-gradient(135deg, #8B5CF6 0%, #C04DCC 50%, #EC4899 100%)'
+const PURPLE = '#8B5CF6'
+const LABEL = '#9B7BF0' // solid stand-in for the card's gradient label text
+const CYAN = '#5EEAD4'
+const GOLD = '#E8C55F'
 
-const tile = {
-  backgroundColor: TILE,
-  border: `1px solid ${TILE_LINE}`,
-  borderRadius: 16,
-}
+const tileBox = { backgroundColor: TILE, border: `1px solid ${LINE}`, borderRadius: 16 }
 
-// A page-safe section: captured and placed as one unit.
 function Block({ children, style }) {
-  return <section data-pdf-block style={{ padding: '20px 34px', ...style }}>{children}</section>
+  return <section data-pdf-block style={{ padding: '18px 34px', ...style }}>{children}</section>
 }
 
-// Section heading — mirrors the card's MONO gradient labels (solid here).
-function Heading({ children, sub }) {
+// Big centered section title, like the card's.
+function SectionTitle({ children, sub }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{
-        fontFamily: MONO, fontSize: 13, fontWeight: 700, color: ACCENT_2,
-        letterSpacing: '0.12em', textTransform: 'uppercase',
-      }}>
-        {children}
-      </div>
-      {sub && <p style={{ margin: '5px 0 0', fontSize: 11, color: MUTED, fontFamily: FONT }}>{sub}</p>}
+    <div style={{ textAlign: 'center', marginBottom: 16 }}>
+      <h2 style={{ margin: 0, fontSize: 27, fontWeight: 700, letterSpacing: '-0.01em' }}>{children}</h2>
+      {sub && (
+        <p style={{ margin: '6px 0 0', fontSize: 10.5, color: MUTED, fontFamily: MONO }}>{sub}</p>
+      )}
     </div>
   )
 }
@@ -78,40 +69,110 @@ const SEAL_PATH = (() => {
   return `${d}Z`
 })()
 
+// ---- Charts (plain SVG — the live ones are animated/framer-driven) ----
+function LineChart({ points, width = 330, height = 130 }) {
+  const vals = points.map((p) => p.followers)
+  if (vals.length < 2) return null
+  const min = Math.min(...vals)
+  const max = Math.max(...vals)
+  const span = max - min || 1
+  const pad = 4
+  const x = (i) => (i / (vals.length - 1)) * (width - pad * 2) + pad
+  const y = (v) => height - pad - ((v - min) / span) * (height - pad * 2)
+  const d = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ')
+  return (
+    <svg width={width} height={height} style={{ display: 'block' }}>
+      {[0, 0.25, 0.5, 0.75, 1].map((f) => (
+        <line key={f} x1={pad} x2={width - pad} y1={pad + f * (height - pad * 2)} y2={pad + f * (height - pad * 2)}
+          stroke="rgba(255,255,255,0.10)" strokeDasharray="3 4" strokeWidth="1" />
+      ))}
+      <path d={d} fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function BarChart({ points, width = 330, height = 130 }) {
+  const vals = points.map((p) => p.rate)
+  if (!vals.length) return null
+  const max = Math.max(...vals, 1)
+  const pad = 4
+  const n = Math.min(vals.length, 8)
+  const shown = vals.slice(-n)
+  const bw = (width - pad * 2) / n
+  return (
+    <svg width={width} height={height} style={{ display: 'block' }}>
+      {[0, 0.5, 1].map((f) => (
+        <line key={f} x1={pad} x2={width - pad} y1={pad + f * (height - pad * 2)} y2={pad + f * (height - pad * 2)}
+          stroke="rgba(255,255,255,0.10)" strokeDasharray="3 4" strokeWidth="1" />
+      ))}
+      {shown.map((v, i) => {
+        const h = Math.max(2, ((v / max) * (height - pad * 2)))
+        return (
+          <rect key={i} x={pad + i * bw + bw * 0.18} y={height - pad - h}
+            width={bw * 0.64} height={h} rx="4" fill={PURPLE} />
+        )
+      })}
+    </svg>
+  )
+}
+
 export default function CardPdfDocument({ data }) {
   const {
     CREATOR = {},
     TOP_POSTS = [],
     PACKAGES = [],
-    BRAND_DEALS = [],
     SOCIALS = [],
     AGE_GROUPS = [],
     TOP_COUNTRIES = [],
     TOP_LOCATIONS = [],
     GENDER_SPLIT = null,
+    GROWTH_POINTS = [],
+    ENG_POINTS = [],
   } = data || {}
 
   const tiles = (CREATOR.tiles || []).filter((t) => t && t.value != null && t.value !== '')
+  const pills = (CREATOR.pills || []).filter((p) => p && p.value != null && p.value !== '')
   const avatar = CREATOR.avatar || CREATOR.avatarRaw || ''
-  const handle = CREATOR.username ? `@${CREATOR.username}` : ''
 
   return (
-    <div
-      id="pdf-doc"
-      style={{
-        width: PDF_WIDTH,
-        background: BG,
-        color: '#fff',
-        fontFamily: FONT,
-      }}
-    >
-      {/* ===================== HERO ===================== */}
-      <Block style={{ paddingTop: 34, paddingBottom: 8 }}>
-        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-          {/* Avatar — 3px gradient ring, exactly like the card */}
+    <div id="pdf-doc" style={{ width: PDF_WIDTH, background: BG, color: '#fff', fontFamily: FONT }}>
+
+      {/* ============ HERO ============ */}
+      <Block style={{ paddingTop: 30 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <h1 style={{ margin: 0, fontSize: 40, fontWeight: 700, lineHeight: 1.05 }}>
+            {CREATOR.username || CREATOR.name}
+          </h1>
+          {CREATOR.isFoundingCreator && (
+            <span style={{
+              padding: '6px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+              color: GOLD, background: 'rgba(232,197,95,0.10)', border: `1px solid ${GOLD}`,
+              whiteSpace: 'nowrap',
+            }}>Founding Creator</span>
+          )}
+        </div>
+
+        {/* Stat pills */}
+        {pills.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
+            {pills.map((p) => (
+              <span key={p.label} style={{
+                display: 'inline-flex', alignItems: 'baseline', gap: 7,
+                padding: '10px 18px', borderRadius: 999,
+                background: TILE, border: `1px solid ${LINE}`,
+              }}>
+                <b style={{ fontSize: 17, fontWeight: 700, color: CYAN }}>{p.value}</b>
+                <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.85)' }}>{p.label}</span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Avatar + bio */}
+        <div style={{ display: 'flex', gap: 24, marginTop: 22, alignItems: 'flex-start' }}>
           <div style={{
-            width: 128, height: 128, borderRadius: '50%', padding: 3,
-            background: RING, flexShrink: 0, position: 'relative',
+            width: 120, height: 120, borderRadius: '50%', padding: 3, flexShrink: 0, position: 'relative',
+            background: 'linear-gradient(135deg, #8B5CF6 0%, #C04DCC 50%, #EC4899 100%)',
           }}>
             <div style={{
               width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden',
@@ -119,150 +180,169 @@ export default function CardPdfDocument({ data }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               {avatar ? (
-                <img
-                  src={avatar}
-                  alt=""
-                  crossOrigin="anonymous"
-                  referrerPolicy="no-referrer"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+                <img src={avatar} alt="" crossOrigin="anonymous" referrerPolicy="no-referrer"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <span style={{ fontSize: 48, fontWeight: 700 }}>{(CREATOR.name || '?').charAt(0)}</span>
+                <span style={{ fontSize: 46, fontWeight: 700 }}>{(CREATOR.name || '?').charAt(0)}</span>
               )}
             </div>
             {CREATOR.verified && (
-              <span style={{ position: 'absolute', bottom: 0, right: 0, lineHeight: 0 }}>
-                <svg width="34" height="34" viewBox="0 0 24 24">
+              <span style={{ position: 'absolute', bottom: 2, right: 2, lineHeight: 0 }}>
+                <svg width="32" height="32" viewBox="0 0 24 24">
                   <path d={SEAL_PATH} fill="#1D9BF0" stroke="#0b0b1e" strokeWidth="1.2" style={{ paintOrder: 'stroke' }} />
                   <path d="M7.3 12.1 10.4 15.2 16.8 8.4" fill="none" stroke="#fff" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
             )}
           </div>
-
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <h1 style={{ margin: 0, fontSize: 38, fontWeight: 700, lineHeight: 1.05 }}>{CREATOR.name}</h1>
-            {handle && (
-              <p style={{ margin: '6px 0 0', fontSize: 14, color: MUTED, fontFamily: MONO }}>{handle}</p>
-            )}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 11 }}>
-              {CREATOR.niche && <Pill>{CREATOR.niche}</Pill>}
-              {CREATOR.isFoundingCreator && <Pill accent>Founding Creator</Pill>}
-              {TOP_LOCATIONS[0] && <Pill>{TOP_LOCATIONS[0].short || TOP_LOCATIONS[0].full}</Pill>}
-            </div>
-          </div>
+          {CREATOR.bio && (
+            <p style={{
+              margin: 0, fontSize: 13.5, lineHeight: 1.75, whiteSpace: 'pre-line',
+              color: 'rgba(255,255,255,0.86)', paddingTop: 6,
+            }}>
+              {CREATOR.bio}
+            </p>
+          )}
         </div>
-
-        {CREATOR.bio && (
-          <p style={{
-            margin: '18px 0 0', fontSize: 13.5, lineHeight: 1.65,
-            color: 'rgba(255,255,255,0.8)', fontWeight: 200,
-          }}>
-            {CREATOR.bio}
-          </p>
-        )}
       </Block>
 
-      {/* ===================== METRIC TILES (card's 3-col grid) ===================== */}
+      {/* ============ METRIC TILES (3×3) ============ */}
       {tiles.length > 0 && (
-        <Block style={{ paddingTop: 10 }}>
+        <Block>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {tiles.map((t, i) => (
-              <div
-                key={`${t.label}-${i}`}
-                style={{
-                  ...tile,
-                  padding: '20px 14px',
-                  minHeight: 92,
-                  display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-                }}
-              >
+              <div key={`${t.label}-${i}`} style={{
+                ...tileBox, padding: '22px 12px', minHeight: 96,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+              }}>
                 <div style={{
-                  fontSize: String(t.value).length > 9 ? 20 : 27,
-                  fontWeight: 600, lineHeight: 1, color: t.color || '#fff',
+                  fontSize: String(t.value).length > 12 ? 15 : String(t.value).length > 7 ? 20 : 28,
+                  fontWeight: 700, lineHeight: 1.1, color: t.color || '#fff',
                 }}>
                   {t.value}
                 </div>
-                <div style={{
-                  marginTop: 8, fontFamily: MONO, fontSize: 11.5, fontWeight: 700,
-                  color: ACCENT_2, lineHeight: 1.2,
-                }}>
+                <div style={{ marginTop: 8, fontFamily: MONO, fontSize: 11, fontWeight: 700, color: LABEL }}>
                   {t.label}
                 </div>
+                {/* Impressions tile's likes / comments / shares mini-row */}
+                {Array.isArray(t.details) && t.details.length > 0 && (
+                  <div style={{ display: 'flex', gap: 12, marginTop: 8, color: 'rgba(255,255,255,0.65)', fontSize: 10 }}>
+                    {t.details.map((d) => <span key={d.icon}>{d.value}</span>)}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </Block>
       )}
 
-      {/* ===================== AUDIENCE ===================== */}
+      {/* ============ LIVE ANALYTICS ============ */}
+      {(GROWTH_POINTS.length > 1 || ENG_POINTS.length > 0) && (
+        <Block>
+          <SectionTitle>Live Analytics</SectionTitle>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {GROWTH_POINTS.length > 1 && (
+              <div style={{ ...tileBox, padding: 16 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 12 }}>Follower Growth</div>
+                <LineChart points={GROWTH_POINTS.slice(-14)} />
+              </div>
+            )}
+            {ENG_POINTS.length > 0 && (
+              <div style={{ ...tileBox, padding: 16 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 12 }}>Engagement Rate</div>
+                <BarChart points={ENG_POINTS} />
+              </div>
+            )}
+          </div>
+        </Block>
+      )}
+
+      {/* ============ AUDIENCE INSIGHTS ============ */}
       {(AGE_GROUPS.length > 0 || TOP_COUNTRIES.length > 0 || GENDER_SPLIT) && (
         <Block>
-          <Heading sub="Who actually sees this content.">Audience</Heading>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 12 }}>
             {AGE_GROUPS.length > 0 && (
-              <div style={{ ...tile, padding: 16 }}>
-                <SubLabel>Age</SubLabel>
+              <div style={{ ...tileBox, padding: 18 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 4 }}>Audience Insights</div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: '0.1em', margin: '10px 0 12px' }}>
+                  AGE DISTRIBUTION
+                </div>
                 {AGE_GROUPS.map((a) => (
-                  <div key={a.label} style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 8 }}>
-                    <span style={{ width: 46, fontSize: 11, color: 'rgba(255,255,255,0.75)' }}>{a.label}</span>
-                    <span style={{ flex: 1, height: 7, borderRadius: 4, background: 'rgba(255,255,255,0.09)' }}>
-                      <span style={{ display: 'block', width: `${a.value}%`, height: 7, borderRadius: 4, background: a.color || ACCENT }} />
-                    </span>
-                    <span style={{ width: 32, textAlign: 'right', fontSize: 11, fontWeight: 700 }}>{a.value}%</span>
+                  <div key={a.label} style={{ marginBottom: 11 }}>
+                    <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.75)', marginBottom: 5 }}>{a.label}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ flex: 1, height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.07)' }}>
+                        <span style={{ display: 'block', width: `${a.value}%`, height: 8, borderRadius: 4, background: a.color || PURPLE }} />
+                      </span>
+                      <span style={{ width: 32, textAlign: 'right', fontSize: 11, fontWeight: 600 }}>{a.value}%</span>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {GENDER_SPLIT && (
-                <div style={{ ...tile, padding: 16 }}>
-                  <SubLabel>Gender</SubLabel>
-                  <div style={{ display: 'flex', gap: 20 }}>
-                    <Stat value={`${GENDER_SPLIT.female}%`} label="Female" />
-                    <Stat value={`${GENDER_SPLIT.male}%`} label="Male" />
+
+            <div style={{ ...tileBox, padding: 18 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {TOP_LOCATIONS.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 10 }}>Top Cities</div>
+                    {TOP_LOCATIONS.map((l) => (
+                      <div key={l.full} style={{ fontSize: 11, fontWeight: 600, marginBottom: 9 }}>{l.full}</div>
+                    ))}
                   </div>
-                </div>
-              )}
-              {TOP_COUNTRIES.length > 0 && (
-                <div style={{ ...tile, padding: 16 }}>
-                  <SubLabel>Top Countries</SubLabel>
-                  {TOP_COUNTRIES.map((c) => (
-                    <div key={c.code} style={{ fontSize: 12.5, marginBottom: 5 }}>{c.name}</div>
-                  ))}
-                </div>
+                )}
+                {TOP_COUNTRIES.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 10 }}>Top Countries</div>
+                    {TOP_COUNTRIES.map((c) => (
+                      <div key={c.code} style={{ fontSize: 11, fontWeight: 600, marginBottom: 9 }}>{c.name}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {GENDER_SPLIT && (
+                <>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, margin: '16px 0 10px' }}>Gender Ratio</div>
+                  <div style={{ display: 'flex', borderRadius: 12, overflow: 'hidden' }}>
+                    <div style={{ flex: 1, background: PURPLE, padding: '14px 0', textAlign: 'center' }}>
+                      <div style={{ fontSize: 19, fontWeight: 700 }}>{GENDER_SPLIT.female}%</div>
+                      <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.1em' }}>FEMALE</div>
+                    </div>
+                    <div style={{ width: 1, background: 'rgba(255,255,255,0.25)' }} />
+                    <div style={{ flex: 1, background: PURPLE, padding: '14px 0', textAlign: 'center' }}>
+                      <div style={{ fontSize: 19, fontWeight: 700 }}>{GENDER_SPLIT.male}%</div>
+                      <div style={{ fontFamily: MONO, fontSize: 8, letterSpacing: '0.1em' }}>MALE</div>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>
         </Block>
       )}
 
-      {/* ===================== TOP POSTS (grid — all of them) ===================== */}
+      {/* ============ TOP POSTS ============ */}
       {TOP_POSTS.length > 0 && (
         <Block>
-          <Heading sub="Best-performing content, with per-post numbers.">Top Posts</Heading>
+          <SectionTitle>Top Posts</SectionTitle>
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(3, TOP_POSTS.length)}, 1fr)`, gap: 12 }}>
             {TOP_POSTS.map((p, i) => (
-              <div key={i} style={{ ...tile, overflow: 'hidden' }}>
+              <div key={i} style={{ ...tileBox, overflow: 'hidden' }}>
                 {p.photo && (
-                  <img
-                    src={p.photo}
-                    alt=""
-                    crossOrigin="anonymous"
-                    referrerPolicy="no-referrer"
-                    style={{ display: 'block', width: '100%', height: 180, objectFit: 'cover' }}
-                  />
+                  <img src={p.photo} alt="" crossOrigin="anonymous" referrerPolicy="no-referrer"
+                    style={{ display: 'block', width: '100%', height: 175, objectFit: 'cover' }} />
                 )}
-                <div style={{ padding: '11px 12px' }}>
-                  <div style={{ fontSize: 10, color: MUTED, marginBottom: 9, height: 26, overflow: 'hidden', lineHeight: 1.3 }}>
+                <div style={{ padding: '12px 12px 13px' }}>
+                  <div style={{ fontSize: 9.5, color: MUTED, marginBottom: 10, height: 24, overflow: 'hidden', lineHeight: 1.3 }}>
                     {p.caption}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    {[['Views', p.views], ['Likes', p.likes], ['Comm', p.comments]].map(([k, v]) => (
+                    {[['VIEWS', p.views], ['LIKES', p.likes], ['COMM', p.comments], ['SAVES', p.saves]].map(([k, v]) => (
                       <div key={k} style={{ textAlign: 'center', flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700 }}>{v}</div>
-                        <div style={{ fontSize: 8, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700 }}>{v}</div>
+                        <div style={{ fontFamily: MONO, fontSize: 7, color: MUTED, letterSpacing: '0.06em' }}>{k}</div>
                       </div>
                     ))}
                   </div>
@@ -273,68 +353,50 @@ export default function CardPdfDocument({ data }) {
         </Block>
       )}
 
-      {/* ===================== BRAND COLLABORATIONS ===================== */}
-      {BRAND_DEALS.length > 0 && (
+      {/* ============ PROFESSIONAL PRESENCE ============ */}
+      {SOCIALS.filter((s) => s && s.handle).length > 0 && (
         <Block>
-          <Heading sub="Previous partnerships and the reach they delivered.">Brand Collaborations</Heading>
-          <div style={{ ...tile, overflow: 'hidden' }}>
-            {BRAND_DEALS.map((b, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: 13, padding: '12px 15px',
-                borderTop: i === 0 ? 'none' : `1px solid ${TILE_LINE}`,
-              }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-                  background: PANEL, border: `1px solid ${TILE_LINE}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 15, fontWeight: 700, color: ACCENT_2,
-                }}>
-                  {(b.brand || '?').charAt(0).toUpperCase()}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 600 }}>{b.brand}</div>
-                  {b.campaign && <div style={{ fontSize: 10, color: MUTED, marginTop: 1 }}>{b.campaign}</div>}
-                </div>
-                {b.tag && <span style={{ fontSize: 9, color: MUTED, fontFamily: MONO, letterSpacing: '0.08em' }}>{b.tag}</span>}
-                {b.reach && <Stat value={b.reach} label="Reach" right />}
+          <SectionTitle>Professional Presence</SectionTitle>
+          <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12 }}>
+            {SOCIALS.filter((s) => s && s.handle).map((s, i) => (
+              <div key={i} style={{ ...tileBox, padding: '12px 18px', minWidth: 190 }}>
+                <div style={{ fontSize: 12, fontWeight: 700 }}>{s.name}</div>
+                <div style={{ fontFamily: MONO, fontSize: 9.5, color: MUTED, marginTop: 3 }}>{s.handle}</div>
               </div>
             ))}
           </div>
         </Block>
       )}
 
-      {/* ===================== PACKAGES ===================== */}
+      {/* ============ PACKAGES ============ */}
       {PACKAGES.length > 0 && (
         <Block>
-          <Heading sub="Standard services. Exact quotes provided after alignment.">Collaboration Packages</Heading>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(3, PACKAGES.length)}, 1fr)`, gap: 12 }}>
+          <SectionTitle sub="Standard services. Exact quotes provided after alignment.">
+            Collaboration Packages
+          </SectionTitle>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(3, PACKAGES.length)}, 1fr)`, gap: 12, paddingTop: 8 }}>
             {PACKAGES.map((p, i) => (
               <div key={`${p.tier}-${i}`} style={{
-                ...tile,
-                padding: 16,
-                position: 'relative',
-                borderColor: p.popular ? 'rgba(139,92,246,0.6)' : TILE_LINE,
-                background: p.popular ? '#171449' : TILE,
+                ...tileBox, padding: 18, position: 'relative',
+                borderColor: p.popular ? 'rgba(139,92,246,0.6)' : LINE,
+                background: p.popular ? '#141142' : TILE,
               }}>
                 {p.popular && (
                   <span style={{
-                    position: 'absolute', top: -9, left: '50%', transform: 'translateX(-50%)',
-                    background: ACCENT, color: '#fff', fontSize: 9, fontWeight: 700,
-                    padding: '3px 10px', borderRadius: 999, whiteSpace: 'nowrap',
-                  }}>
-                    Most Popular
-                  </span>
+                    position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
+                    background: '#3B2BE0', color: '#fff', fontSize: 9, fontWeight: 700,
+                    padding: '4px 11px', borderRadius: 999, whiteSpace: 'nowrap',
+                  }}>Most Popular</span>
                 )}
-                <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT_2, letterSpacing: '0.12em', fontWeight: 700 }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: LABEL, letterSpacing: '0.14em', fontWeight: 700 }}>
                   {p.tier}
                 </div>
-                <div style={{ fontSize: 26, fontWeight: 700, marginTop: 6 }}>{p.price}</div>
-                <div style={{ fontSize: 9.5, color: MUTED, marginTop: 3, fontFamily: MONO }}>{p.sub}</div>
+                <div style={{ fontSize: 27, fontWeight: 700, marginTop: 7 }}>{p.price}</div>
+                <div style={{ fontFamily: MONO, fontSize: 9.5, color: LABEL, marginTop: 3 }}>{p.sub}</div>
                 {Array.isArray(p.features) && p.features.length > 0 && (
-                  <ul style={{ margin: '13px 0 0', padding: 0, listStyle: 'none' }}>
+                  <ul style={{ margin: '14px 0 0', padding: 0, listStyle: 'none' }}>
                     {p.features.map((f, fi) => (
-                      <li key={fi} style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.82)', marginBottom: 6, paddingLeft: 13, position: 'relative', lineHeight: 1.35 }}>
-                        <span style={{ position: 'absolute', left: 0, color: ACCENT }}>•</span>
+                      <li key={fi} style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.85)', marginBottom: 6, lineHeight: 1.4 }}>
                         {f}
                       </li>
                     ))}
@@ -346,72 +408,42 @@ export default function CardPdfDocument({ data }) {
         </Block>
       )}
 
-      {/* ===================== CONTACT ===================== */}
+      {/* ============ WORK WITH ME ============ */}
       <Block>
-        <Heading sub="Looking for transparent, data-driven partnerships? Let's talk.">Work With Me</Heading>
-        <div style={{ ...tile, padding: 18, display: 'flex', flexWrap: 'wrap', gap: 26 }}>
-          {SOCIALS.filter((s) => s && s.handle).map((s, i) => (
-            <div key={i}>
-              <div style={{ fontFamily: MONO, fontSize: 9, color: ACCENT_2, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                {s.name}
+        <div style={{ ...tileBox, padding: 26, background: '#0f0f18' }}>
+          <h2 style={{ margin: 0, fontSize: 30, fontWeight: 700, lineHeight: 1.1 }}>Work With Me.</h2>
+          <p style={{ margin: '12px 0 0', fontSize: 12.5, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>
+            Looking for transparent, data-driven partnerships?<br />Drop your details and I&apos;ll get back to you.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 26, marginTop: 18 }}>
+            {SOCIALS.filter((s) => s && s.handle).map((s, i) => (
+              <div key={i}>
+                <div style={{ fontFamily: MONO, fontSize: 8.5, color: LABEL, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  {s.name}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginTop: 3 }}>{s.handle}</div>
               </div>
-              <div style={{ fontSize: 13.5, fontWeight: 600, marginTop: 3 }}>{s.handle}</div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </Block>
 
-      {/* ===================== CREASUME WORDMARK ===================== */}
-      <Block style={{ paddingTop: 4, paddingBottom: 30 }}>
+      {/* ============ CREASUME WORDMARK ============ */}
+      <Block style={{ paddingTop: 2, paddingBottom: 26 }}>
         <div style={{
-          textAlign: 'center',
-          fontSize: 74, fontWeight: 600, letterSpacing: '0.06em', lineHeight: 1,
-          color: BG,
-          // The card's outlined wordmark: fill matches the page, a 1px white
-          // shadow rings the merged silhouette. (No -webkit-text-stroke — the
-          // exporter renders text-shadow far more reliably.)
+          textAlign: 'center', fontSize: 78, fontWeight: 600,
+          letterSpacing: '0.06em', lineHeight: 1, color: BG,
+          // Outlined wordmark: fill matches the page, a 1px white shadow rings
+          // the merged silhouette (text-shadow rasterises far more reliably than
+          // -webkit-text-stroke).
           textShadow: `
-            1px 0 0 rgba(255,255,255,0.45), -1px 0 0 rgba(255,255,255,0.45),
-            0 1px 0 rgba(255,255,255,0.45), 0 -1px 0 rgba(255,255,255,0.45)
+            1px 0 0 rgba(255,255,255,0.5), -1px 0 0 rgba(255,255,255,0.5),
+            0 1px 0 rgba(255,255,255,0.5), 0 -1px 0 rgba(255,255,255,0.5)
           `,
         }}>
           CREASUME
         </div>
       </Block>
-    </div>
-  )
-}
-
-// ---- small shared bits ----
-function Pill({ children, accent }) {
-  return (
-    <span style={{
-      display: 'inline-block', padding: '5px 12px', borderRadius: 999, fontSize: 11, fontWeight: 600,
-      background: accent ? 'rgba(139,92,246,0.16)' : 'rgba(255,255,255,0.05)',
-      border: `1px solid ${accent ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.12)'}`,
-      color: accent ? '#C9BDFF' : 'rgba(255,255,255,0.8)',
-    }}>
-      {children}
-    </span>
-  )
-}
-
-function SubLabel({ children }) {
-  return (
-    <div style={{
-      fontFamily: MONO, fontSize: 10, color: ACCENT_2, marginBottom: 11,
-      textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700,
-    }}>
-      {children}
-    </div>
-  )
-}
-
-function Stat({ value, label, right }) {
-  return (
-    <div style={{ textAlign: right ? 'right' : 'left' }}>
-      <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
-      <div style={{ fontSize: 9, color: MUTED, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 2 }}>{label}</div>
     </div>
   )
 }
