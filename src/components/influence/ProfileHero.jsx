@@ -230,8 +230,12 @@ function StatsGrid({ includeScore = false, onLearnMore }) {
                 )}
               </div>
 
-              {/* BACK — where the data comes from */}
+              {/* BACK — where the data comes from.
+                  data-pdf-back: html2canvas can't do backface-visibility, so it
+                  would paint this rotated face (mirrored!) over the front in the
+                  PDF. The exporter skips anything tagged with this. */}
               <div
+                data-pdf-back
                 className="absolute inset-0 rounded-2xl px-4 py-4 md:px-5 md:py-4 flex flex-col justify-center items-center text-center overflow-hidden"
                 style={{ ...faceStyle, transform: 'rotateY(180deg)' }}
               >
@@ -431,49 +435,75 @@ export default function ProfileHero() {
       )
       try { await document.fonts.ready } catch { /* unsupported — fine */ }
 
-      // 3) Rasterise the card. useCORS lets it pull our cross-origin images
-      //    (the backend sends Access-Control-Allow-Origin: *); the interactive
-      //    chrome / starfield / giant wordmark are skipped.
-      const canvas = await html2canvas(el, {
+      // 3) Capture SECTION BY SECTION rather than one giant image of the page.
+      //    Slicing a single tall capture at fixed page heights cut cards clean in
+      //    half across the page break. Capturing each block separately lets us
+      //    keep it whole and start a new page when it doesn't fit.
+      //
+      //    Skipped (`ignoreElements`):
+      //      • data-pdf-back  — the rotateY(180deg) BACK of the flip cards.
+      //        html2canvas can't do backface-visibility, so it painted these
+      //        mirrored over the fronts.
+      //      • data-pdf-hide  — buttons + the scroll-driven marquee bands.
+      //      • starfield / giant-text — ambient decoration.
+      const skip = (node) =>
+        node.hasAttribute?.('data-pdf-back') ||
+        node.hasAttribute?.('data-pdf-hide') ||
+        node.classList?.contains?.('starfield') ||
+        node.classList?.contains?.('giant-text')
+
+      const shotOpts = {
         scale: Math.min(2, window.devicePixelRatio || 1.5),
         backgroundColor: '#07070b',
         useCORS: true,
         logging: false,
-        windowWidth: el.scrollWidth,
-        ignoreElements: (node) =>
-          node.hasAttribute?.('data-pdf-hide') ||
-          node.classList?.contains?.('starfield') ||
-          node.classList?.contains?.('giant-text'),
-      })
-      window.scrollTo(0, startY)
+        ignoreElements: skip,
+      }
 
-      // 4) Slice the (very tall) capture into A4 pages. Slicing per page — rather
-      //    than embedding one giant image offset on each page — keeps the file
-      //    size sane.
+      // The real content blocks of the card (skip the ambient/zero-height helpers).
+      const blocks = Array.from(el.children).filter(
+        (n) => !skip(n) && n.getBoundingClientRect().height > 20
+      )
+
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
       const pageW = pdf.internal.pageSize.getWidth()
       const pageH = pdf.internal.pageSize.getHeight()
-      const sliceHpx = Math.floor((canvas.width * pageH) / pageW) // source px per page
+      const margin = 18
+      const contentW = pageW - margin * 2
+      const maxH = pageH - margin * 2
 
-      const pageCanvas = document.createElement('canvas')
-      const ctx = pageCanvas.getContext('2d')
-
-      let y = 0
-      let first = true
-      while (y < canvas.height) {
-        const h = Math.min(sliceHpx, canvas.height - y)
-        pageCanvas.width = canvas.width
-        pageCanvas.height = h
-        ctx.fillStyle = '#07070b'
-        ctx.fillRect(0, 0, canvas.width, h)
-        ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h)
-
-        const img = pageCanvas.toDataURL('image/jpeg', 0.92)
-        if (!first) pdf.addPage()
-        pdf.addImage(img, 'JPEG', 0, 0, pageW, (h * pageW) / canvas.width)
-        first = false
-        y += h
+      // Paint the page background so the gaps between blocks aren't white.
+      const paintPage = () => {
+        pdf.setFillColor(7, 7, 11)
+        pdf.rect(0, 0, pageW, pageH, 'F')
       }
+      paintPage()
+
+      let cursorY = margin
+      for (const block of blocks) {
+        const c = await html2canvas(block, shotOpts)
+        if (!c.width || !c.height) continue
+
+        let w = contentW
+        let h = (c.height * w) / c.width
+        if (h > maxH) { // a block taller than one page → scale it down to fit
+          h = maxH
+          w = (c.width * h) / c.height
+        }
+
+        // Doesn't fit in what's left of this page → start a fresh one.
+        if (cursorY + h > pageH - margin) {
+          pdf.addPage()
+          paintPage()
+          cursorY = margin
+        }
+
+        const x = margin + (contentW - w) / 2 // centre narrower blocks
+        pdf.addImage(c.toDataURL('image/jpeg', 0.92), 'JPEG', x, cursorY, w, h)
+        cursorY += h + 12
+      }
+
+      window.scrollTo(0, startY)
 
       const name = String(CREATOR?.handle || CREATOR?.name || 'creasume')
         .replace(/^@/, '')
@@ -749,8 +779,9 @@ export default function ProfileHero() {
                   </div>
                 </div>
 
-                {/* BACK — description + Learn more */}
+                {/* BACK — description + Learn more (skipped in the PDF, see data-pdf-back above) */}
                 <div
+                  data-pdf-back
                   className="absolute inset-0 rounded-2xl px-5 py-3.5 flex flex-col justify-center text-left"
                   style={{ backgroundColor: '#10133C', border: '1px solid rgba(255,255,255,0.08)', backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                 >
