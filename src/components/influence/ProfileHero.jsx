@@ -460,17 +460,37 @@ export default function ProfileHero() {
         ignoreElements: skip,
       }
 
-      // The real content blocks of the card (skip the ambient/zero-height helpers).
-      const blocks = Array.from(el.children).filter(
-        (n) => !skip(n) && n.getBoundingClientRect().height > 20
-      )
-
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
       const pageW = pdf.internal.pageSize.getWidth()
       const pageH = pdf.internal.pageSize.getHeight()
       const margin = 18
       const contentW = pageW - margin * 2
       const maxH = pageH - margin * 2
+
+      // How many SOURCE pixels fit on one PDF page (blocks are ~full card width).
+      const elW = el.clientWidth || 1
+      const pxPerPage = (maxH * elW) / contentW
+
+      // Build the list of blocks to lay out. If a block eats a big chunk of a
+      // page we descend into its children instead of treating it as one unit —
+      // otherwise a tall section that doesn't fit gets pushed WHOLE to the next
+      // page and leaves half the previous page empty. Smaller units pack tightly
+      // while still never being cut in half.
+      const collect = (node, depth) => {
+        const out = []
+        for (const child of Array.from(node.children)) {
+          if (skip(child)) continue
+          const h = child.getBoundingClientRect().height
+          if (h < 20) continue
+          if (depth < 2 && h > pxPerPage * 0.45 && child.children.length > 1) {
+            const sub = collect(child, depth + 1)
+            if (sub.length > 1) { out.push(...sub); continue }
+          }
+          out.push(child)
+        }
+        return out
+      }
+      const blocks = collect(el, 0)
 
       // Paint the page background so the gaps between blocks aren't white.
       const paintPage = () => {
