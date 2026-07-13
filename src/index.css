@@ -530,6 +530,49 @@ body::-webkit-scrollbar {
   }
 }
 
+/* ===== Influence Card → PDF (print) =====
+   The PDF is produced in the BROWSER (Save as PDF) instead of by headless Chrome
+   on the server — the server route OOM-killed the small Render instance. These
+   rules turn the scrolling marketing layout into a clean document: keep the dark
+   backgrounds, drop the interactive-only chrome, and trim the huge full-viewport
+   paddings that would otherwise print as blank pages. Mirrors the CSS the old
+   server route injected. */
+@media print {
+  /* Backgrounds/gradients are decorative to browsers and are dropped by default. */
+  html,
+  body,
+  #influence-card-root,
+  #influence-card-root * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Interactive-only chrome — buttons, nav, the giant footer wordmark, starfield. */
+  [data-pdf-hide],
+  .giant-text,
+  .starfield {
+    display: none !important;
+  }
+
+  /* The card is a tall scroll; let it flow across pages instead of one huge page. */
+  #influence-card-root section {
+    padding-top: 28px !important;
+    padding-bottom: 28px !important;
+    break-inside: avoid-page;
+  }
+
+  /* Never carry animation end-states (opacity:0 from whileInView) into print. */
+  #influence-card-root * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  @page {
+    size: auto;
+    margin: 0;
+  }
+}
+
 /* ===== Hover shiny border =====
    An animated conic-gradient ring (same mask trick as .shine-border) that stays
    hidden until the element is hovered, then fades in and rotates. */

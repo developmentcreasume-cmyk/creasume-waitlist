@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence, useInView, useReducedMotion } from 'framer-motion'
 import { FONT, MONO, LABEL_GRADIENT } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
-import { shortenLocation, resolveUsername, API_BASE } from '../../services/influenceApi.js'
+import { shortenLocation } from '../../services/influenceApi.js'
 import { goToPath } from '../../router.js'
 import { RollUp } from '../../anim.jsx'
 
@@ -382,33 +382,48 @@ export default function ProfileHero() {
   // Mobile score badge flip state (front = score, back = description + learn more).
   const [scoreFlipped, setScoreFlipped] = useState(false)
 
-  // "Download PDF" — generated server-side by headless Chrome (backend renders
-  // the real page → faithful gradients/charts/glass) and streamed back as a
-  // file, so it downloads directly with no print dialog.
+  // "Download PDF" — produced in the BROWSER via its native Save-as-PDF.
+  //
+  // This used to POST to the backend, which rendered the page with headless
+  // Chrome. That needed far more RAM than the server has: Chrome got OOM-killed,
+  // which took the whole API down and made the button hang for ~30-60s. The
+  // browser is already rendering this exact card, so we just print it — it's
+  // instant, pixel-perfect (real gradients/glass/charts) and can't crash anything.
+  //
+  // The document styling lives in the `@media print` block in index.css.
   const [pdfing, setPdfing] = useState(false)
   const handleDownloadPdf = async () => {
     if (pdfing) return
-    const username = resolveUsername()
-    if (!username) {
-      alert('PDF export is available on a live creator page (/<username>).')
-      return
-    }
     setPdfing(true)
     try {
-      const res = await fetch(`${API_BASE}/public/${encodeURIComponent(username)}/pdf`)
-      if (!res.ok) throw new Error(`Server returned ${res.status}`)
-      const blob = await res.blob()
-      const href = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = href
-      a.download = `${username}-media-kit.pdf`
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      URL.revokeObjectURL(href)
+      // 1) The card animates sections in with framer-motion `whileInView`. Anything
+      //    never scrolled into view is still at opacity:0 and would print BLANK, so
+      //    scroll the whole page once to trigger every entrance.
+      const startY = window.scrollY
+      await new Promise((resolve) => {
+        let y = 0
+        const step = () => {
+          window.scrollTo(0, y)
+          y += 800
+          if (y < document.body.scrollHeight) setTimeout(step, 40)
+          else { window.scrollTo(0, startY); setTimeout(resolve, 350) }
+        }
+        step()
+      })
+
+      // 2) Make sure images + fonts are actually decoded, or they print missing.
+      await Promise.all(
+        Array.from(document.images)
+          .filter((img) => !img.complete)
+          .map((img) => new Promise((resolve) => { img.onload = img.onerror = resolve }))
+      )
+      try { await document.fonts.ready } catch { /* not supported — fine */ }
+
+      // 3) Hand off to the browser's print → "Save as PDF".
+      window.print()
     } catch (err) {
-      console.error('PDF download failed', err)
-      alert('Could not download the PDF: ' + (err?.message || err))
+      console.error('PDF export failed', err)
+      alert('Could not prepare the PDF: ' + (err?.message || err))
     } finally {
       setPdfing(false)
     }
