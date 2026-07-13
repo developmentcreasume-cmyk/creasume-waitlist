@@ -525,6 +525,7 @@ export default function ProfileHero() {
       const pageH = pdf.internal.pageSize.getHeight()
       const margin = 18
       const contentW = pageW - margin * 2
+      const footerH = 26 // reserved strip for the "Made with Creasume" line
 
       // Small Creasume mark, stamped in the top-left of every page (the on-page
       // logo is excluded from the capture — see data-pdf-hide on it).
@@ -546,9 +547,10 @@ export default function ProfileHero() {
       const brandW = 62
       const brandH = brand ? brandW * brand.ratio : 0
 
-      // Content starts below the logo strip; that's the usable height per page.
+      // Content sits between the logo strip (top) and the footer line (bottom).
       const contentTop = margin + (brand ? brandH + 10 : 0)
-      const maxH = pageH - contentTop - margin
+      const contentBottom = pageH - margin - footerH
+      const maxH = contentBottom - contentTop
 
       // How many SOURCE pixels fit on one PDF page (blocks are ~full card width).
       const elW = el.clientWidth || 1
@@ -581,11 +583,19 @@ export default function ProfileHero() {
       }
       const blocks = collect(el, 0)
 
-      // Paint the page background (so gaps between blocks aren't white) and brand it.
+      // Paint the page background (so gaps between blocks aren't white), stamp the
+      // logo top-left and the Creasume line along the bottom.
       const paintPage = () => {
         pdf.setFillColor(7, 7, 11)
         pdf.rect(0, 0, pageW, pageH, 'F')
         if (brand) pdf.addImage(brand.data, 'PNG', margin, 12, brandW, brandH)
+
+        // Footer — "Made with Creasume · creasume.com"
+        pdf.setFontSize(8)
+        pdf.setTextColor(150, 150, 165)
+        pdf.text('Made with Creasume', margin, pageH - 14)
+        pdf.setTextColor(120, 120, 140)
+        pdf.text('creasume.com', pageW - margin, pageH - 14, { align: 'right' })
       }
       paintPage()
 
@@ -602,8 +612,8 @@ export default function ProfileHero() {
           w = (c.width * h) / c.height
         }
 
-        // Doesn't fit in what's left of this page → start a fresh one (below the logo).
-        if (cursorY + h > pageH - margin) {
+        // Doesn't fit above the footer → start a fresh page (below the logo).
+        if (cursorY + h > contentBottom) {
           pdf.addPage()
           paintPage()
           cursorY = contentTop

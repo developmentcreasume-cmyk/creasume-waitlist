@@ -118,7 +118,11 @@ export default function WorkWithMe() {
             </div>
           </div>
 
+          {/* data-pdf-hide: an interactive inquiry form. In the PDF it just
+              rasterises as a column of empty grey boxes — useless in a media kit.
+              The "Work With Me" heading + blurb (left column) still appear. */}
           <form
+            data-pdf-hide
             onSubmit={submit}
             className="flex flex-col justify-center gap-5 lg:h-full pt-2 pb-8 px-0 lg:pt-8 lg:px-9"
           >
