@@ -12,6 +12,7 @@ import { FONT, MONO } from '../influence/influenceData.js'
 import { goToPath } from '../../router.js'
 import EditProfileView from './EditProfileView.jsx'
 import ReferAndEarn from './ReferAndEarn.jsx'
+import SyncProgressBar from '../../shared/SyncProgressBar.jsx'
 import DashboardTour from './DashboardTour.jsx'
 import {
   fetchPublic,
@@ -874,6 +875,11 @@ export default function InfluenceDashboard({ username }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [me, setMe] = useState(null)        // GET /creator/me → the signed-in account
+  // What the signed-in creator's PLAN unlocks (from GET /creator/me). Drives the
+  // locked/upgrade states in the editor so a free creator sees a lock instead of
+  // hitting a 402 from the API.
+  const [features, setFeatures] = useState({})
+  const [myPlan, setMyPlan] = useState(null)
   const [pub, setPub] = useState(null)      // GET /public/:username → the URL creator
   const [stats, setStats] = useState(null)  // GET /creator/dashboard-stats (signed in)
   const [inquiries, setInquiries] = useState([])
@@ -912,52 +918,53 @@ export default function InfluenceDashboard({ username }) {
         return
       }
 
-      // Display data is keyed by the username IN THE URL — visiting
-      // /<username>/dashboard always shows that creator's dashboard.
-      const pubRes = await fetchPublic(username).catch(() => null)
-      setPub(pubRes)
-      // Seed the metric toggles from the saved visibility map.
-      setVisibility(pubRes?.creator?.metricVisibility || {})
+      // Load the signed-in creator FIRST — we need their publicId before we can
+      // ask for the public payload (see below).
+      const [meRes, statsRes, inqRes] = await Promise.all([
+        fetchMe().catch(() => null),
+        fetchDashboardStats().catch(() => null),
+        fetchMyInquiries().catch(() => ({ inquiries: [] })),
+      ])
+      const viewer = meRes?.creator || null
+      // Plan + feature flags travel with /creator/me.
+      setFeatures(meRes?.features || {})
+      setMyPlan(meRes?.plan || null)
 
-      // When signed in, also pull the creator's own account + private data
-      // (score breakdown, brand inquiries). The FULL dashboard always renders —
-      // Edit Profile and Settings are always available.
-      if (isLoggedIn()) {
-        const [meRes, statsRes, inqRes] = await Promise.all([
-          fetchMe().catch(() => null),
-          fetchDashboardStats().catch(() => null),
-          fetchMyInquiries().catch(() => ({ inquiries: [] })),
-        ])
-        const viewer = meRes?.creator || null
-
-        // The dashboard is the signed-in creator's OWN private control center —
-        // it always edits `me`, never the creator named in the URL. So if the URL
-        // handle belongs to a DIFFERENT creator (e.g. a stale link, or landing on
-        // someone else's /<handle>/dashboard), correct the address to this
-        // creator's own dashboard so the URL, header and editor all agree.
-        const myHandle = viewer?.publicId || viewer?.username || ''
-        const urlMatchesMe =
-          viewer &&
-          username &&
-          (username === viewer.publicId || username === viewer.username || username === viewer.slug)
-        if (myHandle && username && !urlMatchesMe) {
-          const parts = window.location.pathname.replace(/\/+$/, '').split('/').filter(Boolean)
-          parts[0] = encodeURIComponent(myHandle)
-          window.history.replaceState({}, '', '/' + parts.join('/'))
-          window.dispatchEvent(new PopStateEvent('popstate'))
-          return // load() re-runs for the corrected handle
-        }
-
-        setMe(viewer)
-        if (viewer?.metricVisibility) setVisibility(viewer.metricVisibility)
-        if (viewer?.username) setStoredUsername(viewer.username)
-        setStats(statsRes?.stats || null)
-        setInquiries((inqRes?.inquiries || []).map(mapInquiry))
-      } else {
-        setMe(null)
-        setStats(null)
-        setInquiries([])
+      // The dashboard is the signed-in creator's OWN private control center —
+      // it always edits `me`, never the creator named in the URL. So if the URL
+      // handle belongs to a DIFFERENT creator (e.g. a stale link, or landing on
+      // someone else's /<handle>/dashboard), correct the address to this
+      // creator's own dashboard so the URL, header and editor all agree.
+      const myHandle = viewer?.publicId || viewer?.username || ''
+      const urlMatchesMe =
+        viewer &&
+        username &&
+        (username === viewer.publicId || username === viewer.username || username === viewer.slug)
+      if (myHandle && username && !urlMatchesMe) {
+        const parts = window.location.pathname.replace(/\/+$/, '').split('/').filter(Boolean)
+        parts[0] = encodeURIComponent(myHandle)
+        window.history.replaceState({}, '', '/' + parts.join('/'))
+        window.dispatchEvent(new PopStateEvent('popstate'))
+        return // load() re-runs for the corrected handle
       }
+
+      // The stats/posts/demographics shown here come from the PUBLIC payload —
+      // and the backend resolves that STRICTLY by publicId (the card is private,
+      // so a @username deliberately does NOT resolve).
+      //
+      // This used to pass the URL segment. That silently broke the dashboard
+      // whenever it sat at /<username>/dashboard: GET /public/<username> 404s →
+      // pub = null → every Instagram metric rendered 0. Always key it off the
+      // signed-in creator's own publicId.
+      const pubRes = await fetchPublic(viewer?.publicId || username).catch(() => null)
+      setPub(pubRes)
+
+      setMe(viewer)
+      // Seed the metric toggles from the saved visibility map.
+      setVisibility(viewer?.metricVisibility || pubRes?.creator?.metricVisibility || {})
+      if (viewer?.username) setStoredUsername(viewer.username)
+      setStats(statsRes?.stats || null)
+      setInquiries((inqRes?.inquiries || []).map(mapInquiry))
     } catch (e) {
       // A 401 just means we're signed out (token cleared / expired). That's an
       // expected state — the sidebar shows "Sign in to manage", so don't surface
@@ -1033,10 +1040,11 @@ export default function InfluenceDashboard({ username }) {
 
   if (loading && !pub && !me) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4" style={{ background: '#05060f' }}>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5" style={{ background: '#05060f' }}>
         {/* Same loader mark as the public Influence Card (/loading.png). */}
         <img src="/loading.png" alt="Loading…" className="w-24 h-24 animate-pulse select-none" style={{ objectFit: 'contain' }} />
-        <p className="text-white/60 text-[14px] tracking-wide animate-pulse" style={{ fontFamily: FONT }}>Syncing data…</p>
+        <p className="text-white/60 text-[14px] tracking-wide" style={{ fontFamily: FONT }}>Syncing data…</p>
+        <SyncProgressBar />
       </div>
     )
   }
@@ -1323,7 +1331,7 @@ export default function InfluenceDashboard({ username }) {
             </div>
           </aside>
 
-          {view === 'settings' ? <SettingsView creator={creator} /> : view === 'refer' ? <div className="px-5 sm:px-8 md:px-24 py-10"><ReferAndEarn /></div> : view === 'edit' ? <EditProfileView creator={creator} username={handle} onSaved={load} saveSignal={editSaveSignal} /> : (
+          {view === 'settings' ? <SettingsView creator={creator} /> : view === 'refer' ? <div className="px-5 sm:px-8 md:px-24 py-10"><ReferAndEarn /></div> : view === 'edit' ? <EditProfileView creator={creator} username={handle} features={features} plan={myPlan} onSaved={load} saveSignal={editSaveSignal} /> : (
           <>
           {/* Header band */}
           <header
