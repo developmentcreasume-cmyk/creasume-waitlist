@@ -382,22 +382,29 @@ export default function ProfileHero() {
   // Mobile score badge flip state (front = score, back = description + learn more).
   const [scoreFlipped, setScoreFlipped] = useState(false)
 
-  // "Download PDF" — produced in the BROWSER via its native Save-as-PDF.
+  // "Download PDF" — builds a real .pdf FILE in the browser with html2canvas
+  // (rasterise the card) + jsPDF (assemble the pages), so it downloads directly
+  // with no print dialog.
   //
-  // This used to POST to the backend, which rendered the page with headless
-  // Chrome. That needed far more RAM than the server has: Chrome got OOM-killed,
-  // which took the whole API down and made the button hang for ~30-60s. The
-  // browser is already rendering this exact card, so we just print it — it's
-  // instant, pixel-perfect (real gradients/glass/charts) and can't crash anything.
-  //
-  // The document styling lives in the `@media print` block in index.css.
+  // This replaced a server-side headless-Chrome route: Chrome needs far more RAM
+  // than the instance has, so it got OOM-killed and took the whole API down.
+  // Doing it client-side is instant and can't crash anything.
   const [pdfing, setPdfing] = useState(false)
   const handleDownloadPdf = async () => {
     if (pdfing) return
+    const el = document.getElementById('influence-card-root')
+    if (!el) return
     setPdfing(true)
     try {
-      // 1) The card animates sections in with framer-motion `whileInView`. Anything
-      //    never scrolled into view is still at opacity:0 and would print BLANK, so
+      // Load the heavy libs only when the button is actually clicked, so they
+      // never bloat the card's initial bundle.
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ])
+
+      // 1) Sections animate in with framer-motion `whileInView`. Anything never
+      //    scrolled into view is still opacity:0 and would capture BLANK — so
       //    scroll the whole page once to trigger every entrance.
       const startY = window.scrollY
       await new Promise((resolve) => {
@@ -406,24 +413,70 @@ export default function ProfileHero() {
           window.scrollTo(0, y)
           y += 800
           if (y < document.body.scrollHeight) setTimeout(step, 40)
-          else { window.scrollTo(0, startY); setTimeout(resolve, 350) }
+          else { window.scrollTo(0, 0); setTimeout(resolve, 400) }
         }
         step()
       })
 
-      // 2) Make sure images + fonts are actually decoded, or they print missing.
+      // 2) Wait for images + fonts, or they rasterise missing.
       await Promise.all(
         Array.from(document.images)
           .filter((img) => !img.complete)
           .map((img) => new Promise((resolve) => { img.onload = img.onerror = resolve }))
       )
-      try { await document.fonts.ready } catch { /* not supported — fine */ }
+      try { await document.fonts.ready } catch { /* unsupported — fine */ }
 
-      // 3) Hand off to the browser's print → "Save as PDF".
-      window.print()
+      // 3) Rasterise the card. useCORS lets it pull our cross-origin images
+      //    (the backend sends Access-Control-Allow-Origin: *); the interactive
+      //    chrome / starfield / giant wordmark are skipped.
+      const canvas = await html2canvas(el, {
+        scale: Math.min(2, window.devicePixelRatio || 1.5),
+        backgroundColor: '#07070b',
+        useCORS: true,
+        logging: false,
+        windowWidth: el.scrollWidth,
+        ignoreElements: (node) =>
+          node.hasAttribute?.('data-pdf-hide') ||
+          node.classList?.contains?.('starfield') ||
+          node.classList?.contains?.('giant-text'),
+      })
+      window.scrollTo(0, startY)
+
+      // 4) Slice the (very tall) capture into A4 pages. Slicing per page — rather
+      //    than embedding one giant image offset on each page — keeps the file
+      //    size sane.
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
+      const pageW = pdf.internal.pageSize.getWidth()
+      const pageH = pdf.internal.pageSize.getHeight()
+      const sliceHpx = Math.floor((canvas.width * pageH) / pageW) // source px per page
+
+      const pageCanvas = document.createElement('canvas')
+      const ctx = pageCanvas.getContext('2d')
+
+      let y = 0
+      let first = true
+      while (y < canvas.height) {
+        const h = Math.min(sliceHpx, canvas.height - y)
+        pageCanvas.width = canvas.width
+        pageCanvas.height = h
+        ctx.fillStyle = '#07070b'
+        ctx.fillRect(0, 0, canvas.width, h)
+        ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h)
+
+        const img = pageCanvas.toDataURL('image/jpeg', 0.92)
+        if (!first) pdf.addPage()
+        pdf.addImage(img, 'JPEG', 0, 0, pageW, (h * pageW) / canvas.width)
+        first = false
+        y += h
+      }
+
+      const name = String(CREATOR?.handle || CREATOR?.name || 'creasume')
+        .replace(/^@/, '')
+        .replace(/[^\w.-]+/g, '-')
+      pdf.save(`${name}-media-kit.pdf`)
     } catch (err) {
       console.error('PDF export failed', err)
-      alert('Could not prepare the PDF: ' + (err?.message || err))
+      alert('Could not generate the PDF: ' + (err?.message || err))
     } finally {
       setPdfing(false)
     }
