@@ -451,15 +451,17 @@ export default function ProfileHero() {
       //      • data-pdf-back  — the rotateY(180deg) BACK of the flip cards.
       //        html2canvas can't do backface-visibility, so it painted these
       //        mirrored over the fronts.
-      //      • data-pdf-hide  — buttons + the scroll-driven marquee bands.
-      //      • starfield / giant-text — ambient decoration.
+      //      • data-pdf-hide  — interactive-only chrome (buttons/FABs).
+      //      • starfield      — ambient decoration.
+      // NOTE: the giant CREASUME wordmark (.giant-text) is deliberately NOT
+      // skipped — it's the branding that closes out the card, so it belongs at
+      // the bottom of the PDF too.
       const skip = (node) => {
         if (!node.hasAttribute) return true
         if (
           node.hasAttribute('data-pdf-back') ||
           node.hasAttribute('data-pdf-hide') ||
-          node.classList?.contains?.('starfield') ||
-          node.classList?.contains?.('giant-text')
+          node.classList?.contains?.('starfield')
         ) return true
         // Out-of-flow overlays (fixed FABs, animation layers) aren't document
         // content — capturing them produced giant BLANK blocks / blank pages.

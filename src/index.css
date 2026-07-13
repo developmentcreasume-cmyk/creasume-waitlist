@@ -590,6 +590,21 @@ body::-webkit-scrollbar {
   transition: none !important;
 }
 
+/* The exporter can't render backdrop-filter. A glass panel (translucent fill +
+   blur + white inset highlight) therefore rasterised as a washed-out GREY box
+   with a white edge — the "white shadow". Kill the blur everywhere, and give
+   tagged panels a solid dark fill with no highlight so they come out clean. */
+.pdf-exporting * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.pdf-exporting [data-pdf-solid] {
+  background: #0e0e16 !important;
+  box-shadow: none !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
 /* ===== Hover shiny border =====
    An animated conic-gradient ring (same mask trick as .shine-border) that stays
    hidden until the element is hovered, then fades in and rotates. */
