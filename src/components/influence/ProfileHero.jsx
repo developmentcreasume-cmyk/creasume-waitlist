@@ -473,6 +473,46 @@ export default function ProfileHero() {
         ignoreElements: skip,
       }
 
+      // Crop empty background off the top/bottom of a capture.
+      //
+      // Scroll-driven sections (Top Posts is a sticky carousel) are deliberately
+      // VERY tall to give the scroll room, while only a small card is actually
+      // visible — capturing them produced a page that was 90% dead space. This
+      // scans for the first/last row containing a non-background pixel and crops
+      // to that, so a block only takes the space it actually fills.
+      const trimEmpty = (c) => {
+        try {
+          const ctx = c.getContext('2d')
+          const { width, height } = c
+          if (!width || !height) return c
+          const { data } = ctx.getImageData(0, 0, width, height)
+          // Page bg is ~#07070b — treat near-black pixels as "empty".
+          const rowHasInk = (y) => {
+            for (let x = 0; x < width; x += 3) { // sample every 3rd px for speed
+              const i = (y * width + x) * 4
+              if (data[i] > 24 || data[i + 1] > 24 || data[i + 2] > 28) return true
+            }
+            return false
+          }
+          let top = 0
+          let bottom = height - 1
+          while (top < bottom && !rowHasInk(top)) top++
+          while (bottom > top && !rowHasInk(bottom)) bottom--
+          const pad = Math.round(10 * (shotOpts.scale || 1))
+          top = Math.max(0, top - pad)
+          bottom = Math.min(height - 1, bottom + pad)
+          const h = bottom - top + 1
+          if (h < 8 || h >= height - 4) return c // nothing meaningful to trim
+          const out = document.createElement('canvas')
+          out.width = width
+          out.height = h
+          out.getContext('2d').drawImage(c, 0, top, width, h, 0, 0, width, h)
+          return out
+        } catch {
+          return c // canvas tainted by a non-CORS image — keep it as-is
+        }
+      }
+
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
       const pageW = pdf.internal.pageSize.getWidth()
       const pageH = pdf.internal.pageSize.getHeight()
@@ -544,7 +584,8 @@ export default function ProfileHero() {
 
       let cursorY = contentTop
       for (const block of blocks) {
-        const c = await html2canvas(block, shotOpts)
+        const raw = await html2canvas(block, shotOpts)
+        const c = trimEmpty(raw) // drop the dead space (see trimEmpty above)
         if (!c.width || !c.height) continue
 
         let w = contentW
