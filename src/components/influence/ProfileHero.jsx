@@ -446,11 +446,24 @@ export default function ProfileHero() {
       //        mirrored over the fronts.
       //      • data-pdf-hide  — buttons + the scroll-driven marquee bands.
       //      • starfield / giant-text — ambient decoration.
-      const skip = (node) =>
-        node.hasAttribute?.('data-pdf-back') ||
-        node.hasAttribute?.('data-pdf-hide') ||
-        node.classList?.contains?.('starfield') ||
-        node.classList?.contains?.('giant-text')
+      const skip = (node) => {
+        if (!node.hasAttribute) return true
+        if (
+          node.hasAttribute('data-pdf-back') ||
+          node.hasAttribute('data-pdf-hide') ||
+          node.classList?.contains?.('starfield') ||
+          node.classList?.contains?.('giant-text')
+        ) return true
+        // Out-of-flow overlays (fixed FABs, animation layers) aren't document
+        // content — capturing them produced giant BLANK blocks / blank pages.
+        if (getComputedStyle(node).position === 'fixed') return true
+        return false
+      }
+
+      // A block worth putting on a page: it must actually show something.
+      // (An empty wrapper would otherwise consume a whole page of nothing.)
+      const hasContent = (node) =>
+        Boolean(node.innerText?.trim()) || Boolean(node.querySelector('img, svg, canvas, video'))
 
       const shotOpts = {
         scale: Math.min(2, window.devicePixelRatio || 1.5),
@@ -479,7 +492,7 @@ export default function ProfileHero() {
       const collect = (node, depth) => {
         const out = []
         for (const child of Array.from(node.children)) {
-          if (skip(child)) continue
+          if (skip(child) || !hasContent(child)) continue
           const h = child.getBoundingClientRect().height
           if (h < 20) continue
           if (depth < 2 && h > pxPerPage * 0.45 && child.children.length > 1) {

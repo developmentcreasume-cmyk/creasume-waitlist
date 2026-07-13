@@ -185,8 +185,11 @@ export default function PaperPlaneFlight() {
   if (!flight) return null
 
   return (
+    // data-pdf-hide: this is a page-tall, EMPTY animation overlay. Without this
+    // the PDF exporter captured it as a giant blank block → blank leading pages.
     <div
       aria-hidden="true"
+      data-pdf-hide
       className="absolute top-0 left-0 w-full pointer-events-none"
       style={{ height: flight.height, zIndex: 120 }}
     >
