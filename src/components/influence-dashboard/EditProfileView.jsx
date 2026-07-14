@@ -9,7 +9,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { FONT, MONO } from '../influence/influenceData.js'
 import DashboardTour from './DashboardTour.jsx'
-import { showUpgrade } from './UpgradeModal.jsx'
+import { showUpgrade } from './upgradePrompt.js'
 import {
   API_BASE,
   isLoggedIn,

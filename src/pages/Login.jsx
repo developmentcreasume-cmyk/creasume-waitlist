@@ -52,6 +52,16 @@ export default function Login() {
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
+  // Landed here from a completed password reset (/login?reset=1) — confirm it
+  // worked, so the redirect doesn't look like the reset silently failed.
+  const [notice, setNotice] = useState('')
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    if (p.get('reset') === '1') {
+      setNotice('Password updated — sign in with your new password.')
+    }
+  }, [])
+
   // Preload the MSG91 widget when the user switches to phone sign-in.
   useEffect(() => {
     if (method === 'phone') loadMsg91Widget().catch((e) => setErr(e.message))
@@ -416,6 +426,10 @@ export default function Login() {
                     style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.14)' }}
                   />
                 </div>
+              )}
+
+              {notice && !err && (
+                <p className="text-[13px] font-medium -mt-1" style={{ fontFamily: FONT, color: '#4ADE80' }}>{notice}</p>
               )}
 
               {err && (

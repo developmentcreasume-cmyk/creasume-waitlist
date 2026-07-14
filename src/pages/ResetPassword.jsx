@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
-import { resetPassword } from '../services/dashboardApi.js'
+import { resetPassword, clearAuth } from '../services/dashboardApi.js'
 import { goToPath } from '../router.js'
 
-// /reset-password?token=… — set a new password from the emailed link, then
-// (on success) the user is signed in and sent to Connect Instagram.
+// /reset-password?token=… — set a new password from the emailed link, then send
+// the user to /login to sign in with it.
+//
+// The backend's /auth/reset-password also returns a JWT (it signs you straight
+// in), which dashboardApi stores. Since we want them to log in again, we DROP
+// that token before redirecting — otherwise they'd sit on the login page while
+// already authenticated.
 const FONT = "'Outfit', sans-serif"
 
 const inputStyle = {
@@ -34,9 +39,11 @@ export default function ResetPassword() {
     if (pw !== confirm) { setErr('Passwords don’t match.'); return }
     setBusy(true)
     try {
-      // resetPassword signs the user in (stores the JWT) on success.
       await resetPassword({ token, password: pw })
-      goToPath('/connect')
+      // Password changed. Drop the auto-issued JWT so they genuinely sign in
+      // again with the new password, then send them to the login page.
+      clearAuth()
+      goToPath('/login?reset=1')
     } catch (e2) {
       setErr(e2.message || 'Could not reset password. The link may have expired.')
     } finally {

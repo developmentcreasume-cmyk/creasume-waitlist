@@ -10,6 +10,7 @@
 // shows up on the card on its next load (the card refetches on window focus).
 
 import { API_BASE, formatCount, shortenLocation } from './influenceApi.js'
+import { showUpgrade } from '../components/influence-dashboard/upgradePrompt.js'
 
 const TOKEN_KEY = 'creasume_token'
 const USERNAME_KEY = 'creasume_username'
@@ -189,11 +190,7 @@ async function request(path, options = {}) {
     err.status = 402
     err.requiredFeature = data.requiredFeature || ''
     err.currentPlan = data.currentPlan || ''
-    try {
-      window.dispatchEvent(new CustomEvent('creasume:upgrade', {
-        detail: { feature: err.requiredFeature, message: err.message, plan: err.currentPlan },
-      }))
-    } catch { /* no window */ }
+    showUpgrade(err.requiredFeature, err.message, err.currentPlan)
     throw err
   }
   if (!res.ok || data.success === false) {

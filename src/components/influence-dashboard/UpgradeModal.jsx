@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react'
 import { goToPath } from '../../router.js'
 import { dashboardUsername, dashboardBase } from '../../services/dashboardApi.js'
+import { UPGRADE_EVENT } from './upgradePrompt.js'
 
 const FONT = "'Outfit', sans-serif"
 
@@ -55,16 +56,6 @@ const FEATURE_COPY = {
   },
 }
 
-// Fire the prompt from anywhere (for controls that are locked in the UI and
-// never hit the API).
-export function showUpgrade(feature, message) {
-  try {
-    window.dispatchEvent(
-      new CustomEvent('creasume:upgrade', { detail: { feature, message } })
-    )
-  } catch { /* no window (SSR) */ }
-}
-
 export default function UpgradeModal() {
   const [open, setOpen] = useState(false)
   const [detail, setDetail] = useState(null)
@@ -74,8 +65,8 @@ export default function UpgradeModal() {
       setDetail(e.detail || {})
       setOpen(true)
     }
-    window.addEventListener('creasume:upgrade', onUpgrade)
-    return () => window.removeEventListener('creasume:upgrade', onUpgrade)
+    window.addEventListener(UPGRADE_EVENT, onUpgrade)
+    return () => window.removeEventListener(UPGRADE_EVENT, onUpgrade)
   }, [])
 
   // Close on Escape, and lock the page behind the modal.

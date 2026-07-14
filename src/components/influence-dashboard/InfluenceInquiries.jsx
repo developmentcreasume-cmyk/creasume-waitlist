@@ -4,7 +4,8 @@
 import { useState, useEffect } from 'react'
 import { FONT, MONO } from '../influence/influenceData.js'
 import { goToPath } from '../../router.js'
-import UpgradeModal, { showUpgrade } from './UpgradeModal.jsx'
+import UpgradeModal from './UpgradeModal.jsx'
+import { showUpgrade } from './upgradePrompt.js'
 import {
   fetchMyInquiries,
   mapInquiry,
