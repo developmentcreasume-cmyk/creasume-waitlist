@@ -12,6 +12,7 @@ import { FONT, MONO } from '../influence/influenceData.js'
 import { goToPath } from '../../router.js'
 import EditProfileView from './EditProfileView.jsx'
 import ReferAndEarn from './ReferAndEarn.jsx'
+import UpgradeModal from './UpgradeModal.jsx'
 import SyncProgressBar from '../../shared/SyncProgressBar.jsx'
 import DashboardTour from './DashboardTour.jsx'
 import {
@@ -553,6 +554,8 @@ function BillingPanel() {
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
   const [err, setErr] = useState('')
+  // Cancel confirmation card (replaces the native window.confirm).
+  const [confirmCancel, setConfirmCancel] = useState(false)
 
   // Refer & Earn coupon at checkout.
   const [coupon, setCoupon] = useState('')
@@ -703,14 +706,23 @@ function BillingPanel() {
     } finally { setBusy('') }
   }
 
-  async function cancel() {
+  // Runs only after the creator confirms in the cancel card. One-time plans end
+  // access immediately (forfeited days, no refund); recurring ones stop renewing.
+  async function doCancel() {
     setErr(''); setBusy('cancel')
     try {
-      await cancelSubscription()
-      setMsg('Your plan will not renew. Access continues until it ends.')
+      const res = await cancelSubscription()
+      setConfirmCancel(false)
+      setMsg(
+        res?.message ||
+          (isOneTime
+            ? 'Plan cancelled — your card is back on the Free plan.'
+            : 'Your plan will not renew. Access continues until it ends.')
+      )
       load()
     } catch (e) {
       setErr(e.message || 'Could not cancel.')
+      setConfirmCancel(false)
     } finally { setBusy('') }
   }
 
@@ -778,11 +790,11 @@ function BillingPanel() {
                   : `Renew — ₹${discountedInr(currentFull) ?? currentFull.priceInr}`}
               </button>
             )}
-            {/* Cancel only makes sense for a real recurring subscription — for a
-                one-time plan there is nothing to cancel (it just lapses), and
-                /billing/cancel would error. */}
-            {!isFree && !isOneTime && state === 'active' && (
-              <button type="button" onClick={cancel} disabled={busy === 'cancel'} className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/10" style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>
+            {/* Cancel. Recurring → stops the next charge, access runs to period
+                end. One-time → ends access IMMEDIATELY with no refund (cancel()
+                warns about the forfeited days before calling the API). */}
+            {!isFree && state === 'active' && (
+              <button type="button" onClick={() => { setErr(''); setConfirmCancel(true) }} disabled={busy === 'cancel'} className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/10" style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>
                 {busy === 'cancel' ? 'Cancelling…' : 'Cancel plan'}
               </button>
             )}
@@ -978,6 +990,83 @@ function BillingPanel() {
           </div>
         </>
       )}
+
+      {/* Cancel confirmation card. Replaces the native window.confirm so the
+          warning reads as part of the product. For a ONE-TIME plan this action
+          is destructive (access ends now, paid days forfeited, no refund), so
+          the consequences are listed explicitly and the destructive button is
+          red — "Keep my plan" is the safe default. */}
+      {confirmCancel && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.7)' }}
+          onClick={() => busy !== 'cancel' && setConfirmCancel(false)}
+        >
+          <div
+            className="w-full max-w-[460px] rounded-2xl p-7"
+            style={{ background: '#15171f', border: '1px solid rgba(255,255,255,0.1)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-xl font-bold text-white mb-2" style={{ fontFamily: FONT }}>
+              Cancel {current?.name || 'your plan'}?
+            </h3>
+
+            {isOneTime ? (
+              <>
+                <p className="text-white/70 text-[14px] leading-relaxed mb-4" style={{ fontFamily: FONT }}>
+                  This ends your plan right away. Here's exactly what happens:
+                </p>
+                <div className="flex flex-col gap-2 mb-5">
+                  {[
+                    'Your paid card sections switch OFF immediately',
+                    `You lose the ${daysLeft ?? 0} day${daysLeft === 1 ? '' : 's'} you've already paid for`,
+                    'No refund is issued',
+                  ].map((line) => (
+                    <div
+                      key={line}
+                      className="flex items-start gap-2.5 rounded-xl px-4 py-3"
+                      style={{ background: 'rgba(244,96,122,0.08)', border: '1px solid rgba(244,96,122,0.25)' }}
+                    >
+                      <span className="text-[13px] leading-5" style={{ color: '#F4607A' }}>✕</span>
+                      <span className="text-white/85 text-[13.5px] leading-5" style={{ fontFamily: FONT }}>{line}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-white/45 text-[12.5px] mb-6" style={{ fontFamily: FONT }}>
+                  This can't be undone — you'd have to buy the plan again.
+                </p>
+              </>
+            ) : (
+              <p className="text-white/70 text-[14px] leading-relaxed mb-6" style={{ fontFamily: FONT }}>
+                Your plan will stop renewing. You keep full access until{' '}
+                <strong className="text-white">{endLabel || 'the period ends'}</strong>, then your card
+                returns to the Free plan.
+              </p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmCancel(false)}
+                disabled={busy === 'cancel'}
+                className="flex-1 rounded-xl py-3 text-[14px] font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-60"
+                style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)' }}
+              >
+                Keep my plan
+              </button>
+              <button
+                type="button"
+                onClick={doCancel}
+                disabled={busy === 'cancel'}
+                className="flex-1 rounded-xl py-3 text-[14px] font-semibold text-white transition-opacity hover:opacity-95 disabled:opacity-60"
+                style={{ fontFamily: FONT, background: '#E11D48' }}
+              >
+                {busy === 'cancel' ? 'Cancelling…' : isOneTime ? 'Cancel now' : 'Cancel plan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1099,6 +1188,9 @@ export default function InfluenceDashboard({ username }) {
   const [pub, setPub] = useState(null)      // GET /public/:username → the URL creator
   const [stats, setStats] = useState(null)  // GET /creator/dashboard-stats (signed in)
   const [inquiries, setInquiries] = useState([])
+  // Reading inquiries is a paid feature. Brands can always SEND them (the card's
+  // form is never gated), so the count is real even when the content is locked.
+  const [inquiriesLocked, setInquiriesLocked] = useState(false)
   const [showTour, setShowTour] = useState(false)
   // Per-metric "show on Influence Card" toggles. key → boolean (default on).
   const [visibility, setVisibility] = useState({})
@@ -1181,6 +1273,7 @@ export default function InfluenceDashboard({ username }) {
       if (viewer?.username) setStoredUsername(viewer.username)
       setStats(statsRes?.stats || null)
       setInquiries((inqRes?.inquiries || []).map(mapInquiry))
+      setInquiriesLocked(Boolean(inqRes?.locked))
     } catch (e) {
       // A 401 just means we're signed out (token cleared / expired). That's an
       // expected state — the sidebar shows "Sign in to manage", so don't surface
@@ -1373,6 +1466,11 @@ export default function InfluenceDashboard({ username }) {
         </div>
       )}
       {showTour && view === 'dashboard' && <DashboardTour steps={tourSteps} onDone={finishTour} />}
+
+      {/* Plan-gate prompt. Mounted once here so ANY 402 raised anywhere in the
+          dashboard (packages, collab-logo cap, design control, inquiries…) pops
+          the upgrade modal — see the 402 handler in services/dashboardApi.js. */}
+      <UpgradeModal />
       <div className="flex min-h-screen">
         {/* ===== Sidebar ===== */}
         <aside
@@ -1786,7 +1884,31 @@ export default function InfluenceDashboard({ username }) {
                 <h3 className="text-white font-semibold text-lg" style={{ fontFamily: FONT }}>Recent Brand Inquiries</h3>
                 <button type="button" onClick={() => goToPath(inquiriesPath(handle))} className="text-sm font-medium" style={{ fontFamily: FONT, color: '#9C7CF0' }}>View All</button>
               </div>
-              {recentInquiries.length === 0 ? (
+              {inquiriesLocked ? (
+                /* The inquiries are real and still arriving — this plan just
+                   can't read them. Never say "none" when there are some. */
+                <div className="rounded-xl grid place-items-center px-6 py-10 text-center" style={{ fontFamily: FONT, background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.25)' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="1.8" strokeLinecap="round" className="mb-2.5">
+                    <rect x="4" y="10.5" width="16" height="10" rx="2" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+                  </svg>
+                  <div className="text-white font-semibold text-[15px] mb-1">
+                    {inquiryCount > 0
+                      ? `${inquiryCount} brand ${inquiryCount === 1 ? 'inquiry is' : 'inquiries are'} waiting`
+                      : 'Brand inquiries are a paid feature'}
+                  </div>
+                  <div className="text-white/55 text-[13px] mb-4 max-w-xs">
+                    Your card keeps collecting them — upgrade to read and reply.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setView('settings')}
+                    className="rounded-lg px-4 py-2 text-[13px] font-semibold"
+                    style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg, #C9C4F0 0%, #A79FE6 100%)' }}
+                  >
+                    Upgrade to unlock
+                  </button>
+                </div>
+              ) : recentInquiries.length === 0 ? (
                 <div className="rounded-xl grid place-items-center text-white/40 text-[15px] px-6 py-10 text-center" style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                   No brand inquiries yet. Share your card to start receiving them.
                 </div>

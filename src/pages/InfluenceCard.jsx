@@ -83,7 +83,7 @@ function NotAvailable() {
 
 // Inner page — reads `ready` from the provider and waits for it before painting.
 function InfluenceCardInner() {
-  const { ready, notFound, THEME, FEATURES } = useInfluence()
+  const { ready, notFound, THEME } = useInfluence()
   if (!ready) return <Loader />
   if (notFound) return <NotAvailable />
   // Apply the creator's chosen palette + font + background as CSS variables /
@@ -152,10 +152,10 @@ function InfluenceCardInner() {
         <ProfessionalPresence />
         <CampaignShowcase />
         <Packages />
-        {/* (27) Direct Brand Inquiry Button — a paid unlock. When the creator's
-            plan doesn't include it, the whole "Work With Me" section is hidden
-            (the backend also rejects the inquiry endpoint for these creators). */}
-        {FEATURES?.brandInquiryButton && <WorkWithMe />}
+        {/* (27) Brand inquiries are NEVER gated on the card — every creator keeps
+            the "Work With Me" form so a brand can always reach out and no lead is
+            lost. The plan gates READING them in the dashboard, not receiving them. */}
+        <WorkWithMe />
       </div>
     </MotionConfig>
   )

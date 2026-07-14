@@ -9,6 +9,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { FONT, MONO } from '../influence/influenceData.js'
 import DashboardTour from './DashboardTour.jsx'
+import { showUpgrade } from './UpgradeModal.jsx'
 import {
   API_BASE,
   isLoggedIn,
@@ -659,7 +660,9 @@ function Toggle({ on, onClick, label }) {
 
 // Shown in place of an editor the creator's PLAN doesn't include, so they get a
 // clear upgrade path instead of a 402 from the API when they try to save.
-function PlanLock({ title, blurb, plan }) {
+// `feature` opens the shared upgrade modal (same prompt any blocked API call
+// raises), so the whole dashboard nudges upgrades the same way.
+function PlanLock({ title, blurb, plan, feature }) {
   return (
     <div className="max-w-lg mx-auto text-center py-16 px-6">
       <div
@@ -675,13 +678,14 @@ function PlanLock({ title, blurb, plan }) {
       <p className="text-white/35 text-[12px] mb-5" style={{ fontFamily: FONT }}>
         You're on the {plan?.name || 'Free'} plan.
       </p>
-      <a
-        href="/pricing"
-        className="inline-block rounded-xl px-6 py-3 font-semibold text-[14px] no-underline transition-transform hover:scale-[1.02]"
+      <button
+        type="button"
+        onClick={() => showUpgrade(feature)}
+        className="inline-block rounded-xl px-6 py-3 font-semibold text-[14px] transition-transform hover:scale-[1.02]"
         style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg, #C9C4F0 0%, #A79FE6 100%)' }}
       >
         Upgrade to unlock
-      </a>
+      </button>
     </div>
   )
 }
@@ -1237,6 +1241,7 @@ export default function EditProfileView({ creator = {}, username = '', features 
                 ? <PackagesPanel pkgs={pkgs} setPkgs={setPkgs} onRemove={removePkg} onSave={savePackagesAndPreview} />
                 : <PlanLock
                     plan={plan}
+                    feature="packagesSection"
                     title="Packages & Pricing is a paid feature"
                     blurb="Show brands exactly what you offer and what it costs, right on your card. Upgrade to add your packages and rates."
                   />
@@ -1247,6 +1252,7 @@ export default function EditProfileView({ creator = {}, username = '', features 
                 ? <DesignPanel theme={theme} setTheme={setTheme} />
                 : <PlanLock
                     plan={plan}
+                    feature="fullDesignControl"
                     title="Design control is a paid feature"
                     blurb="Pick your own accent colours, gradients and fonts to make the card yours. Free cards use the default theme."
                   />

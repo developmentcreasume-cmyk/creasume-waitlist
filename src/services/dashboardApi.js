@@ -178,6 +178,24 @@ async function request(path, options = {}) {
     err.status = 401
     throw err
   }
+  // 402 = the creator's PLAN doesn't include this. Every backend plan gate
+  // answers this way ({ requiredFeature, currentPlan }), so raising the upgrade
+  // prompt here means ANY blocked action — creating a package, a 6th collab
+  // logo, saving a custom theme, opening a brand inquiry — pops the same modal
+  // without each caller needing to know anything about plans.
+  // (components/influence-dashboard/UpgradeModal.jsx listens for this.)
+  if (res.status === 402) {
+    const err = new Error(data.error || 'Upgrade your plan to use this feature.')
+    err.status = 402
+    err.requiredFeature = data.requiredFeature || ''
+    err.currentPlan = data.currentPlan || ''
+    try {
+      window.dispatchEvent(new CustomEvent('creasume:upgrade', {
+        detail: { feature: err.requiredFeature, message: err.message, plan: err.currentPlan },
+      }))
+    } catch { /* no window */ }
+    throw err
+  }
   if (!res.ok || data.success === false) {
     throw new Error(data.error || `Request failed (${res.status})`)
   }
