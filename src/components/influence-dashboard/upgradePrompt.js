@@ -12,6 +12,22 @@
 
 export const UPGRADE_EVENT = 'creasume:upgrade'
 
+// Open the dashboard's Settings → Plan & Billing panel.
+//
+// Navigating with ?view=settings&tab=billing only works on a FRESH mount (e.g.
+// coming from the Inquiries route or an email link) — the dashboard reads those
+// params once, on mount. When the creator is already ON the dashboard the route
+// doesn't change, so nothing remounts and the view would never switch. So we
+// also fire this event, which InfluenceDashboard listens for and uses to flip
+// the view directly. Between the two, the button works from anywhere.
+export const OPEN_BILLING_EVENT = 'creasume:open-billing'
+
+export function openBilling() {
+  try {
+    window.dispatchEvent(new CustomEvent(OPEN_BILLING_EVENT))
+  } catch { /* no window (SSR) */ }
+}
+
 /**
  * Pop the upgrade modal.
  * @param {string} feature - a key from backend config/planFeatures.js
