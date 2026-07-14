@@ -83,7 +83,7 @@ function NotAvailable() {
 
 // Inner page — reads `ready` from the provider and waits for it before painting.
 function InfluenceCardInner() {
-  const { ready, notFound, THEME } = useInfluence()
+  const { ready, notFound, THEME, FEATURES } = useInfluence()
   if (!ready) return <Loader />
   if (notFound) return <NotAvailable />
   // Apply the creator's chosen palette + font + background as CSS variables /
@@ -152,7 +152,10 @@ function InfluenceCardInner() {
         <ProfessionalPresence />
         <CampaignShowcase />
         <Packages />
-        <WorkWithMe />
+        {/* (27) Direct Brand Inquiry Button — a paid unlock. When the creator's
+            plan doesn't include it, the whole "Work With Me" section is hidden
+            (the backend also rejects the inquiry endpoint for these creators). */}
+        {FEATURES?.brandInquiryButton && <WorkWithMe />}
       </div>
     </MotionConfig>
   )

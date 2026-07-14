@@ -36,6 +36,7 @@ import {
   fetchBillingStatus,
   buyPlan,
   cancelSubscription,
+  downgradePlan,
   validateReferralCode,
 } from '../../services/dashboardApi.js'
 
@@ -571,18 +572,17 @@ function BillingPanel() {
       setCheckingCoupon(false)
     }
   }
-  // Discounted rupee price for a plan when a valid coupon is applied (one-time
-  // plans only — recurring can't be discounted per-invoice). null = no discount.
-  const discountedInr = (p) => {
-    if (!couponInfo?.valid || p.billingType !== 'one_time') return null
-    return Math.max(1, Math.round(p.priceInr * (100 - couponInfo.discountPercent) / 100))
-  }
+  // Timestamp of the last status load. `daysLeft` is derived from THIS rather
+  // than Date.now() in the render body, so rendering stays pure (calling an
+  // impure clock during render gives unstable results across re-renders).
+  const [loadedAt, setLoadedAt] = useState(0)
 
   const load = () => {
     Promise.all([fetchBillingStatus().catch(() => null), fetchPlans().catch(() => null)])
       .then(([s, p]) => {
         if (s) setStatus(s)
         if (p) setPlans(p.plans || [])
+        setLoadedAt(Date.now())
       })
   }
   useEffect(load, [])
@@ -594,7 +594,82 @@ function BillingPanel() {
   // Upgrade targets = active PAID plans that aren't the current one.
   const upgradeTargets = plans.filter((p) => p.pricePaise > 0 && p.slug !== current?.slug)
 
-  async function buy(plan) {
+  // ---- Expiry / renewal ----
+  // The plans are ONE-TIME: nothing auto-charges, so the plan EXPIRES rather than
+  // renews, and the creator must re-buy it to keep their paid sections live.
+  const isOneTime = current?.billingType === 'one_time'
+  const endMs = status?.currentEnd ? new Date(status.currentEnd).getTime() : null
+  const daysLeft = endMs && loadedAt ? Math.max(0, Math.ceil((endMs - loadedAt) / 86400000)) : null
+  const expiringSoon = !isFree && isOneTime && daysLeft !== null && daysLeft <= 7
+  // `current` comes from /billing/status and has no plan id — grab the full plan
+  // from /billing/plans so Renew can go through the same buy() path.
+  const currentFull = plans.find((p) => p.slug === current?.slug) || null
+  const canRenew = !isFree && isOneTime && Boolean(currentFull?.id)
+
+  const fmtDate = (d) =>
+    d ? new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
+
+  // ---- What a plan actually costs this creator right now ----
+  // Mid-cycle UPGRADE (they're on a cheaper paid plan): they pay only the
+  // PRO-RATED difference for the days that remain, and the expiry does NOT move.
+  // Mirrors computePurchase() on the backend (the source of truth) — this is
+  // purely so the button can show the real number before they click it.
+  const isUpgradeTo = (p) =>
+    !isFree && isOneTime && daysLeft > 0 && p.pricePaise > (current?.pricePaise || 0)
+  const isDowngradeTo = (p) =>
+    !isFree && isOneTime && daysLeft > 0 && p.pricePaise < (current?.pricePaise || 0)
+
+  const proratedInr = (p) => {
+    const dur = p.durationDays || 30
+    const d = Math.min(dur, Math.max(1, daysLeft || 1))
+    const diff = p.priceInr - (current?.priceInr || 0)
+    return Math.max(1, Math.round((diff * d) / dur))
+  }
+
+  // Price before any referral coupon.
+  const baseInr = (p) => (isUpgradeTo(p) ? proratedInr(p) : p.priceInr)
+
+  // Coupon applies to the amount ACTUALLY charged — i.e. the pro-rated difference
+  // on an upgrade, not the plan's sticker price. null = no coupon.
+  const discountedInr = (p) => {
+    if (!couponInfo?.valid || p.billingType !== 'one_time') return null
+    return Math.max(1, Math.round((baseInr(p) * (100 - couponInfo.discountPercent)) / 100))
+  }
+  // Final amount the creator pays for plan p.
+  const payInr = (p) => discountedInr(p) ?? baseInr(p)
+
+  // Switch DOWN a tier. No charge (they already paid more) and no refund; the
+  // expiry is unchanged and the higher-tier features stop showing immediately.
+  async function downgrade(plan) {
+    const ok = window.confirm(
+      `Switch down to ${plan.name}?\n\n` +
+      `Your plan still ends on the same date, and you will NOT be refunded for the ` +
+      `unused ${current?.name} value. ${current?.name} features stop showing on your card immediately.`
+    )
+    if (!ok) return
+    setErr(''); setMsg(''); setBusy(plan.id)
+    try {
+      const res = await downgradePlan(plan.id)
+      setMsg(res.message || `Switched to ${plan.name}.`)
+      load()
+    } catch (e) {
+      setErr(e.message || 'Could not change plan.')
+    } finally { setBusy('') }
+  }
+
+  async function buy(plan, { renew = false } = {}) {
+    // Renewing RESTARTS the 30-day window from today — any remaining days are
+    // forfeited. Warn before taking their money if they still have time left.
+    if (renew && daysLeft > 3) {
+      const ok = window.confirm(
+        `You still have ${daysLeft} days left on ${plan.name}.\n\n` +
+        `Renewing now restarts your ${plan.durationDays || 30}-day window from today — ` +
+        `those ${daysLeft} days will be lost.\n\nRenew anyway?`
+      )
+      if (!ok) return
+    }
+
+    const prevEnd = endMs || 0
     setErr(''); setMsg(''); setBusy(plan.id)
     try {
       // Pass the coupon only when it validated (the backend re-checks anyway).
@@ -602,13 +677,26 @@ function BillingPanel() {
       // Access is granted by the Razorpay webhook (source of truth). Poll the
       // billing status a few times so the panel reflects it once it lands.
       setMsg('Payment received — activating your plan…')
-      let active = false
-      for (let i = 0; i < 6 && !active; i++) {
+      let landed = null
+      for (let i = 0; i < 6 && !landed; i++) {
         await new Promise((r) => setTimeout(r, 2000))
         const s = await fetchBillingStatus().catch(() => null)
-        if (s?.status === 'active' && s?.plan?.slug === plan.slug) active = true
+        // For a RENEW, status+slug are already 'active'+same BEFORE the webhook
+        // lands, so they prove nothing — the end date moving forward is the only
+        // real signal that the payment was actually processed.
+        const ok =
+          s?.status === 'active' &&
+          s?.plan?.slug === plan.slug &&
+          (!renew || (s.currentEnd && new Date(s.currentEnd).getTime() > prevEnd))
+        if (ok) landed = s
       }
-      setMsg(active ? `You're now on the ${plan.name} plan.` : 'Payment received. Your plan will activate shortly.')
+      setMsg(
+        landed
+          ? renew
+            ? `Renewed — your ${plan.name} plan now runs to ${fmtDate(landed.currentEnd)}.`
+            : `You're now on the ${plan.name} plan.`
+          : 'Payment received. Your plan will activate shortly.'
+      )
       load()
     } catch (e) {
       setErr(e.message || 'Payment could not be completed.')
@@ -653,18 +741,89 @@ function BillingPanel() {
               </span>
             </p>
             {endLabel && (
-              <p className="mt-1 text-white/45 text-[12px]" style={{ fontFamily: MONO }}>
-                {state === 'canceled' ? 'Access until' : 'Renews on'} {endLabel}
+              <p className="mt-1 text-white/45 text-[12px] flex items-center gap-2 flex-wrap" style={{ fontFamily: MONO }}>
+                {/* One-time plans EXPIRE — they never auto-renew. Say so. */}
+                <span>
+                  {isOneTime ? 'Expires on' : state === 'canceled' ? 'Access until' : 'Renews on'} {endLabel}
+                </span>
+                {expiringSoon && (
+                  <span
+                    className="rounded-full px-2 py-0.5 font-semibold"
+                    style={{
+                      fontFamily: FONT,
+                      color: daysLeft <= 1 ? '#FB7185' : '#FBBF24',
+                      background: daysLeft <= 1 ? 'rgba(244,96,122,0.15)' : 'rgba(251,191,36,0.12)',
+                      border: `1px solid ${daysLeft <= 1 ? 'rgba(244,96,122,0.45)' : 'rgba(251,191,36,0.35)'}`,
+                    }}
+                  >
+                    {daysLeft <= 0 ? 'Expires today' : daysLeft === 1 ? 'Expires tomorrow' : `${daysLeft} days left`}
+                  </span>
+                )}
               </p>
             )}
           </div>
-          {!isFree && state === 'active' && (
-            <button type="button" onClick={cancel} disabled={busy === 'cancel'} className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/10" style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>
-              {busy === 'cancel' ? 'Cancelling…' : 'Cancel plan'}
+
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            {/* Renew — the only way to re-buy the plan you're already on. */}
+            {canRenew && (
+              <button
+                type="button"
+                onClick={() => buy(currentFull, { renew: true })}
+                disabled={busy === currentFull.id}
+                className="rounded-xl px-4 py-2.5 text-[12px] font-semibold whitespace-nowrap transition-transform hover:scale-[1.02] disabled:opacity-60"
+                style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg, #C9C4F0 0%, #A79FE6 100%)' }}
+              >
+                {busy === currentFull.id
+                  ? 'Processing…'
+                  : `Renew — ₹${discountedInr(currentFull) ?? currentFull.priceInr}`}
+              </button>
+            )}
+            {/* Cancel only makes sense for a real recurring subscription — for a
+                one-time plan there is nothing to cancel (it just lapses), and
+                /billing/cancel would error. */}
+            {!isFree && !isOneTime && state === 'active' && (
+              <button type="button" onClick={cancel} disabled={busy === 'cancel'} className="rounded-xl px-4 py-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-white/10" style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                {busy === 'cancel' ? 'Cancelling…' : 'Cancel plan'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Expiry banner — what the reminder email's CTA lands on. */}
+      {expiringSoon && (
+        <div
+          className="mt-4 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3"
+          style={{
+            background: daysLeft <= 1 ? 'rgba(244,96,122,0.10)' : 'rgba(251,191,36,0.08)',
+            border: `1px solid ${daysLeft <= 1 ? 'rgba(244,96,122,0.35)' : 'rgba(251,191,36,0.30)'}`,
+          }}
+        >
+          <div>
+            <div className="text-white font-semibold text-[14px]" style={{ fontFamily: FONT }}>
+              {daysLeft <= 0
+                ? `Your ${current.name} plan expires today`
+                : daysLeft === 1
+                  ? `Your ${current.name} plan expires tomorrow`
+                  : `Your ${current.name} plan expires in ${daysLeft} days`}
+            </div>
+            <div className="text-white/60 text-[13px] mt-0.5" style={{ fontFamily: FONT }}>
+              Renew to keep your packages, analytics, media kit and inquiry button live on your card.
+            </div>
+          </div>
+          {canRenew && (
+            <button
+              type="button"
+              onClick={() => buy(currentFull, { renew: true })}
+              disabled={busy === currentFull.id}
+              className="rounded-xl px-5 py-2.5 text-[13px] font-semibold whitespace-nowrap transition-transform hover:scale-[1.02] disabled:opacity-60"
+              style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg, #C9C4F0 0%, #A79FE6 100%)' }}
+            >
+              {busy === currentFull.id ? 'Processing…' : `Renew — ₹${discountedInr(currentFull) ?? currentFull.priceInr}`}
             </button>
           )}
         </div>
-      </div>
+      )}
 
       {/* Current plan perks */}
       {(current?.perks || []).length > 0 && (
@@ -735,16 +894,27 @@ function BillingPanel() {
                     )}
                   </div>
                   <div className="text-right">
-                    {discountedInr(p) != null ? (
+                    {/* Upgrading mid-cycle → they only pay the pro-rated difference,
+                        so show that, with the sticker price struck through. */}
+                    {isUpgradeTo(p) ? (
                       <div className="flex items-baseline gap-1.5 justify-end">
                         <span className="text-white/40 text-base line-through" style={{ fontFamily: FONT }}>₹{p.priceInr}</span>
-                        <span className="text-white font-bold text-2xl leading-none" style={{ fontFamily: FONT, color: '#4DE0B0' }}>₹{discountedInr(p)}</span>
+                        <span className="text-white font-bold text-2xl leading-none" style={{ fontFamily: FONT, color: '#4DE0B0' }}>₹{payInr(p)}</span>
+                      </div>
+                    ) : discountedInr(p) != null ? (
+                      <div className="flex items-baseline gap-1.5 justify-end">
+                        <span className="text-white/40 text-base line-through" style={{ fontFamily: FONT }}>₹{p.priceInr}</span>
+                        <span className="text-white font-bold text-2xl leading-none" style={{ fontFamily: FONT, color: '#4DE0B0' }}>₹{payInr(p)}</span>
                       </div>
                     ) : (
                       <div className="text-white font-bold text-2xl leading-none" style={{ fontFamily: FONT }}>₹{p.priceInr}</div>
                     )}
                     <div className="text-white/45 text-[11px] mt-0.5" style={{ fontFamily: MONO }}>
-                      {p.billingType === 'recurring' ? 'per month' : `for ${p.durationDays} days`}
+                      {isUpgradeTo(p)
+                        ? `upgrade · ${daysLeft} days left`
+                        : isDowngradeTo(p)
+                          ? 'switch down'
+                          : p.billingType === 'recurring' ? 'per month' : `for ${p.durationDays} days`}
                     </div>
                   </div>
                 </div>
@@ -765,15 +935,44 @@ function BillingPanel() {
                   </ul>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => buy(p)}
-                  disabled={busy === p.id}
-                  className="mt-5 w-full rounded-xl py-3 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-95 disabled:opacity-60"
-                  style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#7C5CFF 0%,#C04DCC 55%,#EC4899 100%)' }}
-                >
-                  {busy === p.id ? 'Processing…' : `Get ${p.name} — ₹${discountedInr(p) ?? p.priceInr}`}
-                </button>
+                {/* Upgrading keeps the SAME expiry — say so, it's the whole point
+                    of only charging the difference. */}
+                {isUpgradeTo(p) && (
+                  <p className="mt-3 text-[12px]" style={{ fontFamily: FONT, color: '#4DE0B0' }}>
+                    You only pay the difference for your remaining {daysLeft} days — your plan still ends {fmtDate(status?.currentEnd)}.
+                  </p>
+                )}
+                {isDowngradeTo(p) && (
+                  <p className="mt-3 text-[12px] text-white/45" style={{ fontFamily: FONT }}>
+                    Ends on the same date. No refund for the unused {current?.name} value.
+                  </p>
+                )}
+
+                {isDowngradeTo(p) ? (
+                  <button
+                    type="button"
+                    onClick={() => downgrade(p)}
+                    disabled={busy === p.id}
+                    className="mt-4 w-full rounded-xl py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-60"
+                    style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.14)' }}
+                  >
+                    {busy === p.id ? 'Switching…' : `Switch to ${p.name}`}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => buy(p)}
+                    disabled={busy === p.id}
+                    className="mt-4 w-full rounded-xl py-3 text-[14.5px] font-semibold text-white transition-opacity hover:opacity-95 disabled:opacity-60"
+                    style={{ fontFamily: FONT, background: 'linear-gradient(90deg,#7C5CFF 0%,#C04DCC 55%,#EC4899 100%)' }}
+                  >
+                    {busy === p.id
+                      ? 'Processing…'
+                      : isUpgradeTo(p)
+                        ? `Upgrade to ${p.name} — ₹${payInr(p)}`
+                        : `Get ${p.name} — ₹${payInr(p)}`}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -824,8 +1023,13 @@ function NotificationsPanel({ creator }) {
   )
 }
 
-function SettingsView({ creator }) {
-  const [tab, setTab] = useState('account')
+function SettingsView({ creator, initialTab }) {
+  // `initialTab` comes from ?tab= (e.g. the expiry email's "Renew" CTA deep-links
+  // to ?view=settings&tab=billing). Validated against SUBNAV so a junk value
+  // can't blank the panel.
+  const [tab, setTab] = useState(() =>
+    SUBNAV.some((s) => s.key === initialTab) ? initialTab : 'account'
+  )
   return (
     <>
       {/* Header band — blue gradient like the mockup */}
@@ -867,7 +1071,19 @@ function SettingsView({ creator }) {
 }
 
 export default function InfluenceDashboard({ username }) {
-  const [view, setView] = useState('dashboard')
+  // Open straight onto a panel when deep-linked with ?view= (the plan-expiry
+  // email points at ?view=settings&tab=billing so its CTA lands on Renew).
+  // Validated against NAV so an unknown value just falls back to the dashboard.
+  const [view, setView] = useState(() => {
+    if (typeof window === 'undefined') return 'dashboard'
+    const v = new URLSearchParams(window.location.search).get('view')
+    return NAV.some((n) => n.key === v) ? v : 'dashboard'
+  })
+  // Read once at mount — the URL params get stripped below, so we can't re-read.
+  const [initialTab] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    return new URLSearchParams(window.location.search).get('tab') || ''
+  })
   const [mobileNav, setMobileNav] = useState(false) // mobile menu open/closed
   // Bumped by the mobile top-bar "Save" button to trigger EditProfileView's save
   // (the save logic lives in that child, so we signal it via a counter prop).
@@ -1001,6 +1217,19 @@ export default function InfluenceDashboard({ username }) {
       const qs = p.toString()
       window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''))
     }
+  }, [])
+
+  // Drop ?view= / ?tab= from the address bar once they've been consumed (the
+  // lazy useState above already read them), so a later refresh doesn't keep
+  // re-pinning the creator onto the billing tab they deep-linked into once.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const p = new URLSearchParams(window.location.search)
+    if (!p.has('view') && !p.has('tab')) return
+    p.delete('view')
+    p.delete('tab')
+    const qs = p.toString()
+    window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''))
   }, [])
 
   // Guided tour — shown ONCE ever (first visit to the dashboard). The flag in
@@ -1331,7 +1560,7 @@ export default function InfluenceDashboard({ username }) {
             </div>
           </aside>
 
-          {view === 'settings' ? <SettingsView creator={creator} /> : view === 'refer' ? <div className="px-5 sm:px-8 md:px-24 py-10"><ReferAndEarn /></div> : view === 'edit' ? <EditProfileView creator={creator} username={handle} features={features} plan={myPlan} onSaved={load} saveSignal={editSaveSignal} /> : (
+          {view === 'settings' ? <SettingsView creator={creator} initialTab={initialTab} /> : view === 'refer' ? <div className="px-5 sm:px-8 md:px-24 py-10"><ReferAndEarn /></div> : view === 'edit' ? <EditProfileView creator={creator} username={handle} features={features} plan={myPlan} onSaved={load} saveSignal={editSaveSignal} /> : (
           <>
           {/* Header band */}
           <header

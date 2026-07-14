@@ -770,5 +770,10 @@ export function mapInfluenceData(api, d) {
     PHOTOS,
     TOP_POSTS,
     FEATURED,
+    // What the creator's PLAN unlocks (from the backend's plan gate). Data for
+    // locked features is already stripped server-side; these flags gate the
+    // things that aren't data — the media-kit button, the inquiry form, etc.
+    FEATURES: api.features || {},
+    PLAN_SLUG: api.planSlug || 'free',
   }
 }

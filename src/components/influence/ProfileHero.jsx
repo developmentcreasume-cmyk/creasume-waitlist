@@ -728,20 +728,24 @@ export default function ProfileHero() {
                 </svg>
                 Book a Collab
               </motion.a>
-              <motion.button
-                custom={5}
-                variants={flipIn}
-                type="button"
-                onClick={handleDownloadPdf}
-                disabled={pdfing}
-                className="inline-flex items-center whitespace-nowrap gap-2.5 rounded-full text-white font-semibold text-sm md:text-base px-4 md:px-7 py-3 md:py-3.5 transition-colors hover:bg-white/5 disabled:opacity-60"
-                style={{ fontFamily: FONT, border: '1px solid rgba(255,255,255,0.18)', transformOrigin: 'center' }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3v12" /><path d="m7 11 5 5 5-5" /><path d="M5 21h14" />
-                </svg>
-                {pdfing ? 'Preparing…' : 'Download PDF'}
-              </motion.button>
+              {/* (20) Auto-Generated Media Kit — a paid unlock. Hidden entirely
+                  on the Free plan (its contents are governed by the kit* flags). */}
+              {data?.FEATURES?.mediaKit && (
+                <motion.button
+                  custom={5}
+                  variants={flipIn}
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  disabled={pdfing}
+                  className="inline-flex items-center whitespace-nowrap gap-2.5 rounded-full text-white font-semibold text-sm md:text-base px-4 md:px-7 py-3 md:py-3.5 transition-colors hover:bg-white/5 disabled:opacity-60"
+                  style={{ fontFamily: FONT, border: '1px solid rgba(255,255,255,0.18)', transformOrigin: 'center' }}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 3v12" /><path d="m7 11 5 5 5-5" /><path d="M5 21h14" />
+                  </svg>
+                  {pdfing ? 'Preparing…' : 'Download PDF'}
+                </motion.button>
+              )}
             </motion.div>
 
             {/* Creasume Score badge — MOBILE ONLY (on desktop the score is a tile

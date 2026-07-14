@@ -657,6 +657,35 @@ function Toggle({ on, onClick, label }) {
   )
 }
 
+// Shown in place of an editor the creator's PLAN doesn't include, so they get a
+// clear upgrade path instead of a 402 from the API when they try to save.
+function PlanLock({ title, blurb, plan }) {
+  return (
+    <div className="max-w-lg mx-auto text-center py-16 px-6">
+      <div
+        className="mx-auto mb-5 grid place-items-center rounded-2xl"
+        style={{ width: 56, height: 56, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.35)' }}
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="1.8" strokeLinecap="round">
+          <rect x="4" y="10.5" width="16" height="10" rx="2" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+        </svg>
+      </div>
+      <h3 className="text-white font-semibold text-[20px] mb-2" style={{ fontFamily: FONT }}>{title}</h3>
+      <p className="text-white/55 text-[14px] mb-6" style={{ fontFamily: FONT }}>{blurb}</p>
+      <p className="text-white/35 text-[12px] mb-5" style={{ fontFamily: FONT }}>
+        You're on the {plan?.name || 'Free'} plan.
+      </p>
+      <a
+        href="/pricing"
+        className="inline-block rounded-xl px-6 py-3 font-semibold text-[14px] no-underline transition-transform hover:scale-[1.02]"
+        style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg, #C9C4F0 0%, #A79FE6 100%)' }}
+      >
+        Upgrade to unlock
+      </a>
+    </div>
+  )
+}
+
 function PackagesPanel({ pkgs, setPkgs, onRemove, onSave }) {
   const update = (id, k, v) => setPkgs((p) => p.map((x) => (x.id === id ? { ...x, [k]: v } : x)))
   const setPopular = (id) => setPkgs((p) => p.map((x) => ({ ...x, isPopular: x.id === id ? !x.isPopular : false })))
@@ -920,7 +949,7 @@ const mapCollab = (c) => c && {
   reach: c.reach || 0,
 }
 
-export default function EditProfileView({ creator = {}, username = '', onSaved, saveSignal = 0 }) {
+export default function EditProfileView({ creator = {}, username = '', features = {}, plan = null, onSaved, saveSignal = 0 }) {
   const [tab, setTab] = useState('Profile')
   const [device, setDevice] = useState('phone')
   const [saving, setSaving] = useState(false)
@@ -1202,8 +1231,26 @@ export default function EditProfileView({ creator = {}, username = '', onSaved, 
               />
             )}
             {tab === 'Portfolio' && <PortfolioPanel collabs={collabs} onAdd={addCollab} onRemove={removeCollab} />}
-            {tab === 'Packages' && <PackagesPanel pkgs={pkgs} setPkgs={setPkgs} onRemove={removePkg} onSave={savePackagesAndPreview} />}
-            {tab === 'Design' && <DesignPanel theme={theme} setTheme={setTheme} />}
+            {/* (10) Packages & Pricing Section — paid unlock. */}
+            {tab === 'Packages' && (
+              features.packagesSection
+                ? <PackagesPanel pkgs={pkgs} setPkgs={setPkgs} onRemove={removePkg} onSave={savePackagesAndPreview} />
+                : <PlanLock
+                    plan={plan}
+                    title="Packages & Pricing is a paid feature"
+                    blurb="Show brands exactly what you offer and what it costs, right on your card. Upgrade to add your packages and rates."
+                  />
+            )}
+            {/* (6) Full Design Control — paid unlock. Free stays on the default theme. */}
+            {tab === 'Design' && (
+              features.fullDesignControl
+                ? <DesignPanel theme={theme} setTheme={setTheme} />
+                : <PlanLock
+                    plan={plan}
+                    title="Design control is a paid feature"
+                    blurb="Pick your own accent colours, gradients and fonts to make the card yours. Free cards use the default theme."
+                  />
+            )}
           </div>
         </div>
       </div>

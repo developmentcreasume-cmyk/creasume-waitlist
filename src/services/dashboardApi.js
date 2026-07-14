@@ -250,6 +250,9 @@ export const deletePackage = (id) => dapi.del(`/packages/delete/${id}`)
 export const fetchPlans = () => dapi.get('/billing/plans')
 export const fetchBillingStatus = () => dapi.get('/billing/status')
 export const cancelSubscription = () => dapi.post('/billing/cancel', {})
+// Switch DOWN to a cheaper plan mid-cycle. No charge (they already paid more) and
+// no refund; the expiry date is unchanged, only the features drop.
+export const downgradePlan = (planId) => dapi.post('/billing/downgrade', { planId })
 // Check a typed referral code before checkout → { valid, discountPercent, reason }.
 export const validateReferralCode = (code) => dapi.post('/billing/referral/validate', { code })
 
