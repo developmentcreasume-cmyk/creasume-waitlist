@@ -1176,7 +1176,13 @@ export default function EditProfileView({ creator = {}, username = '', features 
   return (
     <>
       {showTour && <DashboardTour steps={tourSteps} onDone={finishEditTour} />}
-      <header className="px-4 sm:px-6 md:px-10 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      {/* Sticky on desktop so the tabs + Save Changes stay reachable while you
+          scroll a long editor. On mobile the dashboard already has its own
+          sticky top bar, so we don't pin this one there (they'd overlap). */}
+      <header
+        className="px-4 sm:px-6 md:px-10 py-4 md:sticky md:top-0 md:z-30"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: '#05060f' }}
+      >
         {/* ===== MOBILE (unchanged): row 1 = title + Preview; row 2 = tabs ===== */}
         <div className="md:hidden flex flex-col gap-3">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-wrap">
