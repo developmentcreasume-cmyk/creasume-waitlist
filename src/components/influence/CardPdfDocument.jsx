@@ -41,6 +41,48 @@ const GOLD = '#E8C55F'
 
 const tileBox = { backgroundColor: TILE, border: `1px solid ${LINE}`, borderRadius: 16 }
 
+// ---- Brand logos for the Professional Presence rows, matched by platform name.
+function PlatformLogo({ name, size = 24 }) {
+  const n = String(name || '').toLowerCase()
+  if (n.includes('insta')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+        <defs>
+          <linearGradient id="pdfIg" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#F58529" /><stop offset="0.35" stopColor="#DD2A7B" />
+            <stop offset="0.7" stopColor="#8134AF" /><stop offset="1" stopColor="#515BD4" />
+          </linearGradient>
+        </defs>
+        <rect x="2" y="2" width="20" height="20" rx="6" fill="url(#pdfIg)" />
+        <rect x="6.5" y="6.5" width="11" height="11" rx="3.5" fill="none" stroke="#fff" strokeWidth="1.6" />
+        <circle cx="17.2" cy="6.8" r="1.1" fill="#fff" />
+      </svg>
+    )
+  }
+  if (n.includes('you') || n.includes('yt')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+        <rect x="2" y="5" width="20" height="14" rx="4" fill="#FF0000" />
+        <path d="M10 8.5v7l6-3.5z" fill="#fff" />
+      </svg>
+    )
+  }
+  if (n.includes('tik')) {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+        <rect x="2" y="2" width="20" height="20" rx="5" fill="#111" />
+        <path d="M14 6c.4 1.7 1.6 2.8 3.2 3v2.1c-1.1 0-2.2-.35-3.1-1v4.3a3.9 3.9 0 1 1-3.9-3.9c.2 0 .4 0 .6.05v2.1a1.9 1.9 0 1 0 1.3 1.8V6z" fill="#25F4EE" />
+      </svg>
+    )
+  }
+  // Generic globe for any other platform (Website / LinkedIn / X …).
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#9B7BF0" strokeWidth="1.6" style={{ flexShrink: 0 }}>
+      <circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.5 3 14 0 18M12 3c-3 3.5-3 14 0 18" />
+    </svg>
+  )
+}
+
 // ---- Metric-tile icons — the SAME outline SVGs the live card uses (ProfileHero
 // ICONS), so each PDF tile shows its icon top-right. Rendered white. `score`
 // uses the Creasume logo, like the card. ----
@@ -58,8 +100,17 @@ const TILE_ICONS = {
   score: (<img src="/creasume-c.png" alt="" width="22" height="22" style={{ display: 'block', objectFit: 'contain' }} />),
 }
 
-function Block({ children, style }) {
-  return <section data-pdf-block style={{ padding: '18px 34px', ...style }}>{children}</section>
+// `newPage` tags a block so the exporter starts it on a fresh PDF page.
+function Block({ children, style, newPage }) {
+  return (
+    <section
+      data-pdf-block
+      {...(newPage ? { 'data-pdf-newpage': '1' } : {})}
+      style={{ padding: '18px 34px', ...style }}
+    >
+      {children}
+    </section>
+  )
 }
 
 // Big centered section title, like the card's.
@@ -421,9 +472,12 @@ export default function CardPdfDocument({ data }) {
           <SectionTitle>🌐 Professional Presence</SectionTitle>
           <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12 }}>
             {SOCIALS.filter((s) => s && s.handle).map((s, i) => (
-              <div key={i} style={{ ...tileBox, padding: '12px 18px', minWidth: 190 }}>
-                <div style={{ fontSize: 12, fontWeight: 700 }}>{s.name}</div>
-                <div style={{ fontFamily: MONO, fontSize: 9.5, color: MUTED, marginTop: 3 }}>{s.handle}</div>
+              <div key={i} style={{ ...tileBox, padding: '12px 18px', minWidth: 210, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <PlatformLogo name={s.name} size={26} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700 }}>{s.name}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 9.5, color: MUTED, marginTop: 3 }}>{s.handle}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -557,11 +611,11 @@ export default function CardPdfDocument({ data }) {
         </div>
       </Block>
 
-      {/* ============ CREASUME WORDMARK ============ */}
-      <Block style={{ paddingTop: 2, paddingBottom: 26 }}>
+      {/* ============ CREASUME WORDMARK (own final page) ============ */}
+      <Block newPage style={{ paddingTop: 2, paddingBottom: 26 }}>
         <div style={{
-          textAlign: 'center', fontSize: 78, fontWeight: 600,
-          letterSpacing: '0.06em', lineHeight: 1, color: BG,
+          textAlign: 'center', fontSize: 118, fontWeight: 600, whiteSpace: 'nowrap',
+          letterSpacing: '0.04em', lineHeight: 1, color: BG,
           // Outlined wordmark: fill matches the page, a 1px white shadow rings
           // the merged silhouette (text-shadow rasterises far more reliably than
           // -webkit-text-stroke).

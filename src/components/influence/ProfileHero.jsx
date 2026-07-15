@@ -502,8 +502,11 @@ export default function ProfileHero() {
           w = (canvas.width * h) / canvas.height
         }
 
-        // Doesn't fit above the footer → new page. Blocks are never split.
-        if (cursorY + h > contentBottom) {
+        // A block tagged data-pdf-newpage (e.g. the CREASUME wordmark) always
+        // starts on a fresh page — unless we're already at the top of one.
+        const wantsNewPage = block.hasAttribute('data-pdf-newpage') && cursorY > contentTop + 0.5
+        // Otherwise, page-break only when it wouldn't fit above the footer.
+        if (wantsNewPage || cursorY + h > contentBottom) {
           pdf.addPage()
           paintPage()
           cursorY = contentTop
