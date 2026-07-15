@@ -41,6 +41,23 @@ const GOLD = '#E8C55F'
 
 const tileBox = { backgroundColor: TILE, border: `1px solid ${LINE}`, borderRadius: 16 }
 
+// ---- Metric-tile icons — the SAME outline SVGs the live card uses (ProfileHero
+// ICONS), so each PDF tile shows its icon top-right. Rendered white. `score`
+// uses the Creasume logo, like the card. ----
+const IP = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: '#ffffff', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round' }
+const TILE_ICONS = {
+  chart: (<svg {...IP}><path d="M5 4v15h15" /><path d="M6.5 16l4.5-4.5 3 3 5-6" /><path d="M14.5 8.5H19V13" /></svg>),
+  eye: (<svg {...IP}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="2.5" /></svg>),
+  camera: (<svg {...IP}><path d="M3 8h3l1.5-2h9L18 8h3v11H3Z" /><circle cx="12" cy="13" r="3.2" /></svg>),
+  followers: (<svg {...IP}><circle cx="12" cy="10" r="2.6" /><path d="M7 17c0-2.5 2.2-4.2 5-4.2s5 1.7 5 4.2" /><circle cx="12" cy="12" r="9.5" strokeDasharray="2.5 3" /></svg>),
+  rocket: (<svg {...IP}><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91 0z" /><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" /><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" /><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /></svg>),
+  heart: (<svg {...IP}><path d="M12 20s-7-4.5-7-9.5A3.5 3.5 0 0 1 12 8a3.5 3.5 0 0 1 7 2.5C19 15.5 12 20 12 20Z" /></svg>),
+  share: (<svg {...IP}><circle cx="18" cy="5" r="2.6" /><circle cx="6" cy="12" r="2.6" /><circle cx="18" cy="19" r="2.6" /><path d="m8.3 13.3 7.4 4.3M15.7 6.4 8.3 10.7" /></svg>),
+  pin: (<svg {...IP}><path d="M12 15s3.6-2.9 3.6-6a3.6 3.6 0 0 0-7.2 0c0 3.1 3.6 6 3.6 6Z" /><circle cx="12" cy="8.9" r="1.35" /><path d="M7 15.4c-1.8.4-3 1.1-3 1.9 0 1.4 3.6 2.5 8 2.5s8-1.1 8-2.5c0-.8-1.2-1.5-3-1.9" /></svg>),
+  handshake: (<svg {...IP}><path d="m11 17 2 2a1 1 0 1 0 3-3" /><path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.88-3.88a3 3 0 0 0-4.24 0l-.88.88a1 1 0 1 1-3-3l2.81-2.81a5.79 5.79 0 0 1 7.06-.87l.47.28a2 2 0 0 0 1.42.25L21 4" /><path d="m21 3 1 11h-2" /><path d="M3 3 2 14l6.5 6.5a1 1 0 1 0 3-3" /><path d="M3 4h8" /></svg>),
+  score: (<img src="/creasume-c.png" alt="" width="22" height="22" style={{ display: 'block', objectFit: 'contain' }} />),
+}
+
 function Block({ children, style }) {
   return <section data-pdf-block style={{ padding: '18px 34px', ...style }}>{children}</section>
 }
@@ -212,10 +229,16 @@ export default function CardPdfDocument({ data }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {tiles.map((t, i) => (
               <div key={`${t.label}-${i}`} style={{
-                ...tileBox, padding: '22px 12px', minHeight: 96,
+                ...tileBox, padding: '22px 12px', minHeight: 96, position: 'relative',
                 display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', textAlign: 'center',
               }}>
+                {/* Metric icon — top-right, like the card */}
+                {TILE_ICONS[t.icon] && (
+                  <span style={{ position: 'absolute', top: 12, right: 12, opacity: 0.85, lineHeight: 0 }}>
+                    {TILE_ICONS[t.icon]}
+                  </span>
+                )}
                 <div style={{
                   fontSize: String(t.value).length > 12 ? 15 : String(t.value).length > 7 ? 20 : 28,
                   fontWeight: 700, lineHeight: 1.1, color: t.color || '#fff',
