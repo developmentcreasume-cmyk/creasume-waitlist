@@ -87,46 +87,85 @@ const SEAL_PATH = (() => {
 })()
 
 // ---- Charts (plain SVG — the live ones are animated/framer-driven) ----
-function LineChart({ points, width = 330, height = 130 }) {
+// Both leave a left GUTTER for the Y-axis numbers and a bottom STRIP for the
+// X-axis date labels, matching the card's Follower-Growth / Engagement charts.
+const AX = { fill: 'rgba(255,255,255,0.55)', fontSize: 8.5, fontFamily: MONO }
+const GUTTER = 34 // left space for Y labels
+const XAXIS = 16  // bottom space for X labels
+const fmtDate = (iso) => {
+  try { return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric' }) } catch { return '' }
+}
+const fmtY = (v) => (v >= 1000 ? `${Math.round(v / 100) / 10}K` : String(Math.round(v)))
+
+function LineChart({ points, width = 340, height = 140 }) {
   const vals = points.map((p) => p.followers)
   if (vals.length < 2) return null
   const min = Math.min(...vals)
   const max = Math.max(...vals)
   const span = max - min || 1
-  const pad = 4
-  const x = (i) => (i / (vals.length - 1)) * (width - pad * 2) + pad
-  const y = (v) => height - pad - ((v - min) / span) * (height - pad * 2)
+  const plotX0 = GUTTER
+  const plotX1 = width - 6
+  const plotY0 = 6
+  const plotY1 = height - XAXIS
+  const x = (i) => plotX0 + (i / (vals.length - 1)) * (plotX1 - plotX0)
+  const y = (v) => plotY1 - ((v - min) / span) * (plotY1 - plotY0)
   const d = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ')
+  const yTicks = [0, 0.25, 0.5, 0.75, 1]
+  // X labels: first, a couple in the middle, last (avoid crowding).
+  const xIdx = [0, Math.round((vals.length - 1) * 0.33), Math.round((vals.length - 1) * 0.66), vals.length - 1]
   return (
     <svg width={width} height={height} style={{ display: 'block' }}>
-      {[0, 0.25, 0.5, 0.75, 1].map((f) => (
-        <line key={f} x1={pad} x2={width - pad} y1={pad + f * (height - pad * 2)} y2={pad + f * (height - pad * 2)}
-          stroke="rgba(255,255,255,0.10)" strokeDasharray="3 4" strokeWidth="1" />
-      ))}
+      {yTicks.map((f) => {
+        const gy = plotY0 + f * (plotY1 - plotY0)
+        const val = max - f * span
+        return (
+          <g key={f}>
+            <line x1={plotX0} x2={plotX1} y1={gy} y2={gy} stroke="rgba(255,255,255,0.10)" strokeDasharray="3 4" strokeWidth="1" />
+            <text x={plotX0 - 6} y={gy + 3} textAnchor="end" {...AX}>{fmtY(val)}</text>
+          </g>
+        )
+      })}
       <path d={d} fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
+      {xIdx.map((idx, k) => (
+        <text key={k} x={x(idx)} y={height - 4} textAnchor={k === 0 ? 'start' : k === xIdx.length - 1 ? 'end' : 'middle'} {...AX}>
+          {fmtDate(points[idx]?.date)}
+        </text>
+      ))}
     </svg>
   )
 }
 
-function BarChart({ points, width = 330, height = 130 }) {
-  const vals = points.map((p) => p.rate)
+function BarChart({ points, width = 340, height = 140 }) {
+  const rows = points.slice(-Math.min(points.length, 6))
+  const vals = rows.map((p) => p.rate)
   if (!vals.length) return null
   const max = Math.max(...vals, 1)
-  const pad = 4
-  const n = Math.min(vals.length, 8)
-  const shown = vals.slice(-n)
-  const bw = (width - pad * 2) / n
+  const plotX0 = GUTTER
+  const plotX1 = width - 6
+  const plotY0 = 6
+  const plotY1 = height - XAXIS
+  const n = rows.length
+  const bw = (plotX1 - plotX0) / n
+  const yTicks = [0, 0.5, 1]
   return (
     <svg width={width} height={height} style={{ display: 'block' }}>
-      {[0, 0.5, 1].map((f) => (
-        <line key={f} x1={pad} x2={width - pad} y1={pad + f * (height - pad * 2)} y2={pad + f * (height - pad * 2)}
-          stroke="rgba(255,255,255,0.10)" strokeDasharray="3 4" strokeWidth="1" />
-      ))}
-      {shown.map((v, i) => {
-        const h = Math.max(2, ((v / max) * (height - pad * 2)))
+      {yTicks.map((f) => {
+        const gy = plotY0 + f * (plotY1 - plotY0)
+        const val = max - f * max
         return (
-          <rect key={i} x={pad + i * bw + bw * 0.18} y={height - pad - h}
-            width={bw * 0.64} height={h} rx="4" fill={PURPLE} />
+          <g key={f}>
+            <line x1={plotX0} x2={plotX1} y1={gy} y2={gy} stroke="rgba(255,255,255,0.10)" strokeDasharray="3 4" strokeWidth="1" />
+            <text x={plotX0 - 6} y={gy + 3} textAnchor="end" {...AX}>{`${Math.round(val)}%`}</text>
+          </g>
+        )
+      })}
+      {rows.map((p, i) => {
+        const h = Math.max(2, (p.rate / max) * (plotY1 - plotY0))
+        return (
+          <g key={i}>
+            <rect x={plotX0 + i * bw + bw * 0.18} y={plotY1 - h} width={bw * 0.64} height={h} rx="4" fill={PURPLE} />
+            <text x={plotX0 + i * bw + bw / 2} y={height - 4} textAnchor="middle" {...AX}>{fmtDate(p.date)}</text>
+          </g>
         )
       })}
     </svg>
