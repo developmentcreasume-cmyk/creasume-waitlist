@@ -441,14 +441,23 @@ export default function CardPdfDocument({ data }) {
 
       {/* ============ OPEN TO COLLABORATIONS ============ */}
       <Block style={{ paddingTop: 8, paddingBottom: 8 }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 26, fontWeight: 300 }}>Open to new Collaborations in 2026.</div>
-          <span style={{
-            display: 'inline-block', marginTop: 14, padding: '11px 26px', borderRadius: 999,
-            background: PURPLE, color: '#fff', fontSize: 12, fontWeight: 700, letterSpacing: '0.06em',
-          }}>
-            LET&apos;S WORK TOGETHER
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          {/* Paper plane, like the card */}
+          <img
+            src="/PLANE.png"
+            alt=""
+            crossOrigin="anonymous"
+            style={{ width: 150, height: 'auto', flexShrink: 0, display: 'block' }}
+          />
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: 26, fontWeight: 300 }}>Open to new Collaborations in 2026.</div>
+            <span style={{
+              display: 'inline-block', marginTop: 14, padding: '11px 26px', borderRadius: 999,
+              background: PURPLE, color: '#fff', fontSize: 12, fontWeight: 700, letterSpacing: '0.06em',
+            }}>
+              LET&apos;S WORK TOGETHER
+            </span>
+          </div>
         </div>
       </Block>
 
