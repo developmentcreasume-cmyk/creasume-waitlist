@@ -467,10 +467,14 @@ export default function CardPdfDocument({ data }) {
           <SectionTitle sub="Standard services. Exact quotes provided after alignment.">
             Collaboration Packages
           </SectionTitle>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(3, PACKAGES.length)}, 1fr)`, gap: 12, paddingTop: 8 }}>
+          {/* items-stretch (grid default) + each card a flex column, so all
+              cards are the SAME height and the Book Now button lines up. */}
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(3, PACKAGES.length)}, 1fr)`, gap: 12, paddingTop: 8, alignItems: 'stretch' }}>
             {PACKAGES.map((p, i) => (
               <div key={`${p.tier}-${i}`} style={{
                 ...tileBox, padding: 18, position: 'relative',
+                display: 'flex', flexDirection: 'column',
+                minHeight: 230,
                 borderColor: p.popular ? 'rgba(139,92,246,0.6)' : LINE,
                 background: p.popular ? '#141142' : TILE,
               }}>
@@ -495,6 +499,17 @@ export default function CardPdfDocument({ data }) {
                     ))}
                   </ul>
                 )}
+                {/* Book Now — pinned to the bottom (mt:auto), like the card. */}
+                <div style={{
+                  marginTop: 'auto', paddingTop: 16, textAlign: 'center',
+                }}>
+                  <span style={{
+                    display: 'block', padding: '10px 0', borderRadius: 999,
+                    background: PURPLE, color: '#fff', fontSize: 12, fontWeight: 700,
+                  }}>
+                    Book Now
+                  </span>
+                </div>
               </div>
             ))}
           </div>
