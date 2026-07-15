@@ -418,7 +418,7 @@ export default function CardPdfDocument({ data }) {
       {/* ============ PROFESSIONAL PRESENCE ============ */}
       {SOCIALS.filter((s) => s && s.handle).length > 0 && (
         <Block>
-          <SectionTitle>Professional Presence</SectionTitle>
+          <SectionTitle>🌐 Professional Presence</SectionTitle>
           <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 12 }}>
             {SOCIALS.filter((s) => s && s.handle).map((s, i) => (
               <div key={i} style={{ ...tileBox, padding: '12px 18px', minWidth: 190 }}>
@@ -427,8 +427,30 @@ export default function CardPdfDocument({ data }) {
               </div>
             ))}
           </div>
+          {/* "✦ Professional presence verified" badge, like the card */}
+          <div style={{
+            marginTop: 12, padding: '11px 0', textAlign: 'center', borderRadius: 12,
+            background: 'rgba(216,90,158,0.06)', border: '1px solid rgba(216,90,158,0.25)',
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#D85A9E' }}>
+              ✦ Professional presence verified across Instagram
+            </span>
+          </div>
         </Block>
       )}
+
+      {/* ============ OPEN TO COLLABORATIONS ============ */}
+      <Block style={{ paddingTop: 8, paddingBottom: 8 }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 26, fontWeight: 300 }}>Open to new Collaborations in 2026.</div>
+          <span style={{
+            display: 'inline-block', marginTop: 14, padding: '11px 26px', borderRadius: 999,
+            background: PURPLE, color: '#fff', fontSize: 12, fontWeight: 700, letterSpacing: '0.06em',
+          }}>
+            LET&apos;S WORK TOGETHER
+          </span>
+        </div>
+      </Block>
 
       {/* ============ PACKAGES ============ */}
       {PACKAGES.length > 0 && (
