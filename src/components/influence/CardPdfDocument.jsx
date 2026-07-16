@@ -565,8 +565,10 @@ export default function CardPdfDocument({ data, cardUrl }) {
       )}
 
 
-      {/* ============ CREASUME WORDMARK (own final page) ============ */}
-      <Block newPage style={{ paddingTop: 2, paddingBottom: 26 }}>
+      {/* ============ CREASUME WORDMARK ============ */}
+      {/* Flows right after the last section (no forced new page), so it sits
+          just below the content instead of being stranded on its own page. */}
+      <Block style={{ paddingTop: 10, paddingBottom: 24 }}>
         <div style={{
           textAlign: 'center', fontSize: 118, fontWeight: 600, whiteSpace: 'nowrap',
           letterSpacing: '0.04em', lineHeight: 1, color: BG,

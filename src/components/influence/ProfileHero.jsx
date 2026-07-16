@@ -426,9 +426,12 @@ export default function ProfileHero() {
       document.body.appendChild(host)
 
       root = createRoot(host)
-      // The live card URL — CTA buttons in the PDF link back here so a brand
-      // viewing the PDF can open the real, interactive card.
-      const cardUrl = `${window.location.origin}/${encodeURIComponent(CREATOR?.username || '')}${CREATOR?.publicId ? '/' + CREATOR.publicId : ''}`
+      // The live card URL that CTA buttons in the PDF link back to. Use the URL
+      // the user is CURRENTLY viewing — it already carries the unguessable
+      // publicId (/<username>/<publicId>). Reconstructing it from CREATOR.username
+      // dropped the publicId, so the link opened /<username> which the backend
+      // rejects (publicId-only) → "card not available".
+      const cardUrl = window.location.origin + window.location.pathname.replace(/\/+$/, '')
       root.render(<CardPdfDocument data={data} cardUrl={cardUrl} />)
 
       // Let React paint it.
