@@ -564,46 +564,6 @@ export default function CardPdfDocument({ data, cardUrl }) {
         </Block>
       )}
 
-      {/* ============ WORK WITH ME ============ */}
-      {/* Two-column glass panel like the card: heading + blurb (left), the inquiry
-          form (right). The form is a STATIC snapshot — the real interactive one
-          isn't useful in a PDF, but showing the fields tells brands how to reach out. */}
-      <Block>
-        <div style={{
-          ...tileBox, padding: 26, background: '#0f0f18',
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 26, alignItems: 'start',
-        }}>
-          {/* Left — heading + blurb (top-aligned) */}
-          <div>
-            <h2 style={{ margin: 0, fontSize: 32, fontWeight: 700, lineHeight: 1.05 }}>Work With Me.</h2>
-            <p style={{ margin: '14px 0 0', fontSize: 12.5, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>
-              Looking for transparent, data-driven partnerships?<br />Drop your details and I&apos;ll get back to you.
-            </p>
-          </div>
-
-          {/* Right — form fields */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-            {['Brand Name', 'Agency (Optional)', 'Your Professional Email', 'Campaign Type'].map((ph) => (
-              <div key={ph} style={{
-                height: 40, borderRadius: 10, display: 'flex', alignItems: 'center', padding: '0 14px',
-                background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)',
-                fontSize: 11.5, color: 'rgba(255,255,255,0.4)',
-              }}>{ph}</div>
-            ))}
-            <div style={{
-              height: 78, borderRadius: 10, padding: '11px 14px',
-              background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.1)',
-              fontSize: 11.5, color: 'rgba(255,255,255,0.4)',
-            }}>Campaign Brief or Goals</div>
-            <div style={{ textAlign: 'center', marginTop: 5 }}>
-              <span data-pdf-link={cardUrl || undefined} style={{
-                display: 'inline-block', padding: '11px 26px', borderRadius: 999,
-                background: PURPLE, color: '#fff', fontSize: 12, fontWeight: 700,
-              }}>Send Inquiry  →</span>
-            </div>
-          </div>
-        </div>
-      </Block>
 
       {/* ============ CREASUME WORDMARK (own final page) ============ */}
       <Block newPage style={{ paddingTop: 2, paddingBottom: 26 }}>
