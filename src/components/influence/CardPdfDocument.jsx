@@ -223,7 +223,7 @@ function BarChart({ points, width = 340, height = 140 }) {
   )
 }
 
-export default function CardPdfDocument({ data }) {
+export default function CardPdfDocument({ data, cardUrl }) {
   const {
     CREATOR = {},
     TOP_POSTS = [],
@@ -551,7 +551,7 @@ export default function CardPdfDocument({ data }) {
                 <div style={{
                   marginTop: 'auto', paddingTop: 16, textAlign: 'center',
                 }}>
-                  <span style={{
+                  <span data-pdf-link={cardUrl || undefined} style={{
                     display: 'block', padding: '10px 0', borderRadius: 999,
                     background: PURPLE, color: '#fff', fontSize: 12, fontWeight: 700,
                   }}>
@@ -596,7 +596,7 @@ export default function CardPdfDocument({ data }) {
               fontSize: 11.5, color: 'rgba(255,255,255,0.4)',
             }}>Campaign Brief or Goals</div>
             <div style={{ textAlign: 'center', marginTop: 5 }}>
-              <span style={{
+              <span data-pdf-link={cardUrl || undefined} style={{
                 display: 'inline-block', padding: '11px 26px', borderRadius: 999,
                 background: PURPLE, color: '#fff', fontSize: 12, fontWeight: 700,
               }}>Send Inquiry  →</span>

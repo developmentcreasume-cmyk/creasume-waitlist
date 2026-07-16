@@ -426,7 +426,10 @@ export default function ProfileHero() {
       document.body.appendChild(host)
 
       root = createRoot(host)
-      root.render(<CardPdfDocument data={data} />)
+      // The live card URL — CTA buttons in the PDF link back here so a brand
+      // viewing the PDF can open the real, interactive card.
+      const cardUrl = `${window.location.origin}/${encodeURIComponent(CREATOR?.username || '')}${CREATOR?.publicId ? '/' + CREATOR.publicId : ''}`
+      root.render(<CardPdfDocument data={data} cardUrl={cardUrl} />)
 
       // Let React paint it.
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
@@ -512,7 +515,27 @@ export default function ProfileHero() {
           cursorY = contentTop
         }
 
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.94), 'JPEG', margin + (contentW - w) / 2, cursorY, w, h)
+        const imgX = margin + (contentW - w) / 2
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.94), 'JPEG', imgX, cursorY, w, h)
+
+        // Make tagged elements (data-pdf-link) CLICKABLE: the page is a flat
+        // image, so we overlay an invisible jsPDF link annotation at each one's
+        // position (mapped from DOM px → PDF pt) that opens its URL.
+        const blockRect = block.getBoundingClientRect()
+        const sc = w / blockRect.width // DOM px → PDF pt for this block
+        block.querySelectorAll('[data-pdf-link]').forEach((node) => {
+          const url = node.getAttribute('data-pdf-link')
+          if (!url) return
+          const r = node.getBoundingClientRect()
+          pdf.link(
+            imgX + (r.left - blockRect.left) * sc,
+            cursorY + (r.top - blockRect.top) * sc,
+            r.width * sc,
+            r.height * sc,
+            { url }
+          )
+        })
+
         cursorY += h + 8
       }
 
