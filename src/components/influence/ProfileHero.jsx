@@ -508,18 +508,20 @@ export default function ProfileHero() {
           w = (canvas.width * h) / canvas.height
         }
 
-        // A block tagged data-pdf-newpage (e.g. the CREASUME wordmark) always
-        // starts on a fresh page — unless we're already at the top of one.
         const wantsNewPage = block.hasAttribute('data-pdf-newpage') && cursorY > contentTop + 0.5
-        // Otherwise, page-break only when it wouldn't fit above the footer.
+        // A data-pdf-bottom block (the CREASUME wordmark) is pinned to the very
+        // bottom of the page. If it doesn't fit in the space left, start a fresh
+        // page and pin it to the bottom of that.
+        const pinBottom = block.hasAttribute('data-pdf-bottom')
         if (wantsNewPage || cursorY + h > contentBottom) {
           pdf.addPage()
           paintPage()
           cursorY = contentTop
         }
 
+        const drawY = pinBottom ? (contentBottom - h) : cursorY
         const imgX = margin + (contentW - w) / 2
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.94), 'JPEG', imgX, cursorY, w, h)
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.94), 'JPEG', imgX, drawY, w, h)
 
         // Make tagged elements (data-pdf-link) CLICKABLE: the page is a flat
         // image, so we overlay an invisible jsPDF link annotation at each one's
@@ -532,7 +534,7 @@ export default function ProfileHero() {
           const r = node.getBoundingClientRect()
           pdf.link(
             imgX + (r.left - blockRect.left) * sc,
-            cursorY + (r.top - blockRect.top) * sc,
+            drawY + (r.top - blockRect.top) * sc,
             r.width * sc,
             r.height * sc,
             { url }

@@ -100,12 +100,14 @@ const TILE_ICONS = {
   score: (<img src="/creasume-c.png" alt="" width="22" height="22" style={{ display: 'block', objectFit: 'contain' }} />),
 }
 
-// `newPage` tags a block so the exporter starts it on a fresh PDF page.
-function Block({ children, style, newPage }) {
+// `newPage` starts the block on a fresh PDF page. `bottom` pins it to the
+// BOTTOM of the page (used for the CREASUME wordmark).
+function Block({ children, style, newPage, bottom }) {
   return (
     <section
       data-pdf-block
       {...(newPage ? { 'data-pdf-newpage': '1' } : {})}
+      {...(bottom ? { 'data-pdf-bottom': '1' } : {})}
       style={{ padding: '18px 34px', ...style }}
     >
       {children}
@@ -566,9 +568,8 @@ export default function CardPdfDocument({ data, cardUrl }) {
 
 
       {/* ============ CREASUME WORDMARK ============ */}
-      {/* Flows right after the last section (no forced new page), so it sits
-          just below the content instead of being stranded on its own page. */}
-      <Block style={{ paddingTop: 10, paddingBottom: 24 }}>
+      {/* `bottom` pins it to the very bottom of the last page. */}
+      <Block bottom style={{ paddingTop: 10, paddingBottom: 10 }}>
         <div style={{
           textAlign: 'center', fontSize: 118, fontWeight: 600, whiteSpace: 'nowrap',
           letterSpacing: '0.04em', lineHeight: 1, color: BG,
