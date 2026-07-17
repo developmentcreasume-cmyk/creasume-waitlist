@@ -13,11 +13,13 @@ import { goToPath } from '../../router.js'
 import EditProfileView from './EditProfileView.jsx'
 import ReferAndEarn from './ReferAndEarn.jsx'
 import UpgradeModal from './UpgradeModal.jsx'
+import { OPEN_BILLING_EVENT } from './upgradePrompt.js'
 import SyncProgressBar from '../../shared/SyncProgressBar.jsx'
 import DashboardTour from './DashboardTour.jsx'
 import {
   fetchPublic,
   fetchMe,
+  refreshStats,
   fetchDashboardStats,
   fetchMyInquiries,
   updateProfile,
@@ -1173,11 +1175,18 @@ export default function InfluenceDashboard({ username }) {
     if (typeof window === 'undefined') return ''
     return new URLSearchParams(window.location.search).get('tab') || ''
   })
+  // Which Settings sub-tab to open. Also driven by the upgrade modal: when the
+  // creator is ALREADY on the dashboard the route doesn't change, so navigating
+  // to ?view=settings&tab=billing would never remount anything and the view
+  // wouldn't switch. The modal fires `creasume:open-billing` instead and we flip
+  // the view here directly.
+  const [settingsTab, setSettingsTab] = useState(initialTab)
   const [mobileNav, setMobileNav] = useState(false) // mobile menu open/closed
   // Bumped by the mobile top-bar "Save" button to trigger EditProfileView's save
   // (the save logic lives in that child, so we signal it via a counter prop).
   const [editSaveSignal, setEditSaveSignal] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
   const [me, setMe] = useState(null)        // GET /creator/me → the signed-in account
   // What the signed-in creator's PLAN unlocks (from GET /creator/me). Drives the
@@ -1290,6 +1299,23 @@ export default function InfluenceDashboard({ username }) {
 
   useEffect(() => { load() }, [load])
 
+  // "Refresh Stats": actually re-pull LIVE data from Instagram (POST
+  // /creator/refresh), THEN reload the dashboard. A plain load() only re-reads
+  // the already-cached numbers, so followers/name never updated.
+  const refresh = useCallback(async () => {
+    if (refreshing || loading) return
+    setRefreshing(true)
+    setError('')
+    try {
+      await refreshStats()
+    } catch (e) {
+      setError(e.message || 'Could not refresh from Instagram.')
+    } finally {
+      setRefreshing(false)
+    }
+    await load() // pull the freshly-synced numbers into the UI
+  }, [refreshing, loading, load])
+
   // Surface Instagram/Facebook connect outcomes that the OAuth callback passes
   // back as query params (e.g. the "this Instagram is already linked to another
   // account" guard), then strip them so a refresh doesn't repeat the message.
@@ -1310,6 +1336,18 @@ export default function InfluenceDashboard({ username }) {
       const qs = p.toString()
       window.history.replaceState({}, '', window.location.pathname + (qs ? `?${qs}` : ''))
     }
+  }, [])
+
+  // The upgrade modal's "See plans & upgrade" button — jump straight to
+  // Settings → Plan & Billing, wherever the creator currently is.
+  useEffect(() => {
+    const onOpenBilling = () => {
+      setSettingsTab('billing')
+      setView('settings')
+      window.scrollTo({ top: 0 })
+    }
+    window.addEventListener(OPEN_BILLING_EVENT, onOpenBilling)
+    return () => window.removeEventListener(OPEN_BILLING_EVENT, onOpenBilling)
   }, [])
 
   // Drop ?view= / ?tab= from the address bar once they've been consumed (the
@@ -1658,7 +1696,10 @@ export default function InfluenceDashboard({ username }) {
             </div>
           </aside>
 
-          {view === 'settings' ? <SettingsView creator={creator} initialTab={initialTab} /> : view === 'refer' ? <div className="px-5 sm:px-8 md:px-24 py-10"><ReferAndEarn /></div> : view === 'edit' ? <EditProfileView creator={creator} username={handle} features={features} plan={myPlan} onSaved={load} saveSignal={editSaveSignal} /> : (
+          {/* `key` forces a remount when the target tab changes, so SettingsView
+              picks up the new initialTab (e.g. jumping straight to billing from
+              the upgrade modal while Settings is already open). */}
+          {view === 'settings' ? <SettingsView key={settingsTab || 'account'} creator={creator} initialTab={settingsTab} /> : view === 'refer' ? <div className="px-5 sm:px-8 md:px-24 py-10"><ReferAndEarn /></div> : view === 'edit' ? <EditProfileView creator={creator} username={handle} features={features} plan={myPlan} onSaved={load} saveSignal={editSaveSignal} /> : (
           <>
           {/* Header band */}
           <header
@@ -1706,12 +1747,12 @@ export default function InfluenceDashboard({ username }) {
               <button
                 ref={refreshRef}
                 type="button"
-                onClick={load}
+                onClick={refresh}
                 className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium hover:bg-white/5 transition-colors disabled:opacity-50"
-                disabled={loading}
+                disabled={loading || refreshing}
                 style={{ fontFamily: FONT, color: '#fff', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.14)' }}
               >
-                {ICONS.refresh} {loading ? 'Refreshing…' : 'Refresh Stats'}
+                {ICONS.refresh} {refreshing ? 'Refreshing…' : 'Refresh Stats'}
               </button>
               {creator?.facebookConnected ? (
                 <span

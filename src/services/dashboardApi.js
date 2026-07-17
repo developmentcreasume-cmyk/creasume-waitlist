@@ -242,6 +242,10 @@ export async function fetchPublic(username) {
 
 // ---- Creator (private) ----
 export const fetchMe = () => dapi.get('/creator/me')
+// Re-pull LIVE Instagram data (followers, media, reach, bio, demographics…) and
+// persist it, so the dashboard/card reflect the latest numbers. This is what the
+// "Refresh Stats" button calls — a plain reload only re-reads the cached data.
+export const refreshStats = () => dapi.post('/creator/refresh')
 // Set or change the account password (signed in). { currentPassword?, newPassword }
 export const setPassword = (body) => dapi.post('/auth/set-password', body)
 export const fetchDashboardStats = () => dapi.get('/creator/dashboard-stats')
