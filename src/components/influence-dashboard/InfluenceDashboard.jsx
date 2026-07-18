@@ -1948,9 +1948,6 @@ export default function InfluenceDashboard({ username }) {
                 /* The inquiries are real and still arriving — this plan just
                    can't read them. Never say "none" when there are some. */
                 <div className="rounded-xl grid place-items-center px-6 py-10 text-center" style={{ fontFamily: FONT, background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.25)' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="1.8" strokeLinecap="round" className="mb-2.5">
-                    <rect x="4" y="10.5" width="16" height="10" rx="2" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
-                  </svg>
                   <div className="text-white font-semibold text-[15px] mb-1">
                     {inquiryCount > 0
                       ? `${inquiryCount} brand ${inquiryCount === 1 ? 'inquiry is' : 'inquiries are'} waiting`
