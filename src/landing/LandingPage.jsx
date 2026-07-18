@@ -131,9 +131,9 @@ export default function LandingPage() {
           { id: 'pricing', label: 'Pricing', href: '#/pricing' },
           { id: 'dashboard', label: 'Dashboard', href: '#apply' },
           { id: 'how-it-works', label: 'How it Works', href: '#/how-it-works' },
-          loggedIn
-            ? { id: 'signin', label: 'My Dashboard', href: dashHref }
-            : { id: 'signin', label: 'Sign In', href: '/login' },
+          // Logged out → "Sign In". Logged in → no extra nav item (the
+          // "Go to Dashboard" CTA already handles it).
+          ...(loggedIn ? [] : [{ id: 'signin', label: 'Sign In', href: '/login' }]),
         ]}
         cta={loggedIn
           ? { label: 'Go to Dashboard', href: dashHref }
