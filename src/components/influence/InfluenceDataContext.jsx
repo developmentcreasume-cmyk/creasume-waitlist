@@ -2,7 +2,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { CREATOR } from './influenceData.js'
 import { fetchInfluenceData, mapInfluenceData } from '../../services/influenceApi.js'
-import { isLoggedIn, getStoredUsername } from '../../services/dashboardApi.js'
 
 // Real data only — no demo placeholders. Every section starts EMPTY and is
 // filled by mapInfluenceData() once the backend returns the creator; sections
@@ -16,16 +15,18 @@ const DEFAULTS = {
   FEATURED: {}, THEME: null, FEATURES: {},
 }
 
-// Is the person viewing this card its OWNER? True inside the dashboard Edit
-// Profile preview iframe (?preview), or when a signed-in creator's stored
-// username matches the card's username. Owner-only so the "Upgrade to unlock"
-// teasers never show to public visitors. Cache-safe (computed client-side).
-function detectOwner(cardUsername) {
+// Are we in the OWNER-PREVIEW context — i.e. the creator previewing their own
+// card from the dashboard? This is what gates the "Upgrade to unlock" teasers.
+// It is triggered ONLY by a URL flag:
+//   • ?preview → the Edit-Profile live-preview iframe
+//   • ?owner   → the dashboard "View Live Profile" link
+// It is deliberately NOT inferred from being logged in, so opening the plain
+// SHAREABLE link (even as the owner) shows the clean PUBLIC card with NO locks —
+// exactly what a brand sees.
+function detectOwner() {
   if (typeof window === 'undefined') return false
-  if (new URLSearchParams(window.location.search).has('preview')) return true
-  const uname = (getStoredUsername() || '').toLowerCase()
-  const card = (cardUsername || '').toLowerCase()
-  return isLoggedIn() && !!uname && uname === card
+  const p = new URLSearchParams(window.location.search)
+  return p.has('preview') || p.has('owner')
 }
 
 const InfluenceContext = createContext({ ...DEFAULTS, ready: false })
@@ -142,7 +143,7 @@ export function InfluenceDataProvider({ children }) {
     return next
   }, [value, preview])
 
-  const IS_OWNER = detectOwner(merged?.CREATOR?.username)
+  const IS_OWNER = detectOwner()
 
   return <InfluenceContext.Provider value={{ ...merged, ready, notFound, IS_OWNER }}>{children}</InfluenceContext.Provider>
 }

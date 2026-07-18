@@ -134,15 +134,8 @@ export function clearReferralCode() {
   try { localStorage.removeItem(REFERRAL_KEY) } catch { /* storage unavailable */ }
 }
 
-// The signed-in creator's Refer & Earn panel data (code, link, coupons, friends,
-// cash earnings + payout history).
+// The signed-in creator's Refer & Earn panel data (code, link, coupons, friends).
 export const fetchReferrals = () => dapi.get('/creator/referrals')
-
-// Save where referral payouts should be sent (UPI or bank).
-export const savePayoutDetails = (body) => dapi.put('/creator/payout-details', body)
-
-// Request a withdrawal of the available referral earnings balance.
-export const requestPayout = () => dapi.post('/creator/payout', {})
 
 // Password reset. forgotPassword always resolves (the backend never reveals
 // whether the email exists). resetPassword logs the creator in on success.

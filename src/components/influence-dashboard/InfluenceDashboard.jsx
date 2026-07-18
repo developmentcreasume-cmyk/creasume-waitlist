@@ -1791,7 +1791,7 @@ export default function InfluenceDashboard({ username }) {
               )}
               <a
                 ref={viewProfileRef}
-                href={`/${cardPath}`}
+                href={`/${cardPath}?owner=1`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium hover:bg-white/5 transition-colors no-underline"
