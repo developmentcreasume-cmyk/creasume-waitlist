@@ -662,33 +662,71 @@ function Toggle({ on, onClick, label }) {
 // clear upgrade path instead of a 402 from the API when they try to save.
 // `feature` opens the shared upgrade modal (same prompt any blocked API call
 // raises), so the whole dashboard nudges upgrades the same way.
-function PlanLock({ title, blurb, plan, feature }) {
+//
+// `preview` (optional) is a rendered copy of the real editor filled with sample
+// data. It sits BEHIND the lock, blurred and non-interactive, so the creator
+// sees the shape of what they'd unlock (the same "blurred content behind a lock"
+// treatment the public Influence Card uses — see LockedFeature.jsx) without
+// being able to read or touch it.
+function PlanLock({ title, blurb, plan, feature, preview }) {
   return (
-    <div className="max-w-lg mx-auto text-center py-16 px-6">
+    <div
+      className="relative rounded-2xl overflow-hidden"
+      style={{ minHeight: 420, maxHeight: 620, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.015)' }}
+    >
+      {/* Blurred, non-interactive sample of the real editor. aria-hidden +
+          pointer-events-none so screen readers and clicks ignore it entirely. */}
+      {preview && (
+        <div
+          className="pointer-events-none select-none pt-8 px-1"
+          style={{ filter: 'blur(7px)', opacity: 0.45 }}
+          aria-hidden="true"
+        >
+          {preview}
+        </div>
+      )}
+
+      {/* Lock overlay — sits on top of the blurred preview. */}
       <div
-        className="mx-auto mb-5 grid place-items-center rounded-2xl"
-        style={{ width: 56, height: 56, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.35)' }}
+        className="absolute inset-0 flex flex-col items-center justify-center text-center px-6"
+        style={{ background: 'rgba(8,9,20,0.55)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="1.8" strokeLinecap="round">
-          <rect x="4" y="10.5" width="16" height="10" rx="2" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
-        </svg>
+        <div
+          className="mb-5 grid place-items-center rounded-2xl"
+          style={{ width: 56, height: 56, background: 'rgba(139,92,246,0.16)', border: '1px solid rgba(139,92,246,0.4)' }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth="1.8" strokeLinecap="round">
+            <rect x="4" y="10.5" width="16" height="10" rx="2" /><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+          </svg>
+        </div>
+        <h3 className="text-white font-semibold text-[20px] mb-2" style={{ fontFamily: FONT }}>{title}</h3>
+        <p className="text-white/60 text-[14px] mb-6 max-w-md" style={{ fontFamily: FONT }}>{blurb}</p>
+        <p className="text-white/40 text-[12px] mb-5" style={{ fontFamily: FONT }}>
+          You're on the {plan?.name || 'Free'} plan.
+        </p>
+        <button
+          type="button"
+          onClick={() => showUpgrade(feature)}
+          className="inline-block rounded-xl px-6 py-3 font-semibold text-[14px] transition-transform hover:scale-[1.02]"
+          style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg, #C9C4F0 0%, #A79FE6 100%)' }}
+        >
+          Upgrade to unlock
+        </button>
       </div>
-      <h3 className="text-white font-semibold text-[20px] mb-2" style={{ fontFamily: FONT }}>{title}</h3>
-      <p className="text-white/55 text-[14px] mb-6" style={{ fontFamily: FONT }}>{blurb}</p>
-      <p className="text-white/35 text-[12px] mb-5" style={{ fontFamily: FONT }}>
-        You're on the {plan?.name || 'Free'} plan.
-      </p>
-      <button
-        type="button"
-        onClick={() => showUpgrade(feature)}
-        className="inline-block rounded-xl px-6 py-3 font-semibold text-[14px] transition-transform hover:scale-[1.02]"
-        style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg, #C9C4F0 0%, #A79FE6 100%)' }}
-      >
-        Upgrade to unlock
-      </button>
     </div>
   )
 }
+
+// Sample data used only to render the blurred preview behind the plan locks —
+// never saved, never sent anywhere. The setters are no-ops (the preview is
+// non-interactive), so these render as a static, realistic-looking editor.
+const PREVIEW_PKGS = [
+  { id: 'pv-starter', _id: null, tier: 'Starter', price: '5000', deliverables: '1 Reel, 2 Stories', revisions: '1', isPopular: false },
+  { id: 'pv-core', _id: null, tier: 'Core', price: '12000', deliverables: '2 Reels, 3 Stories, 1 Post', revisions: '2', isPopular: true },
+  { id: 'pv-campaign', _id: null, tier: 'Campaign', price: '30000', deliverables: '4 Reels, 6 Stories, 2 Posts', revisions: '3', isPopular: false },
+]
+const PREVIEW_THEME = { primary: '#7C5CFF', secondary: '#C04DCC', bg: 'mesh', font: 'outfit' }
+const noop = () => {}
 
 function PackagesPanel({ pkgs, setPkgs, onRemove, onSave }) {
   const update = (id, k, v) => setPkgs((p) => p.map((x) => (x.id === id ? { ...x, [k]: v } : x)))
@@ -1266,6 +1304,7 @@ export default function EditProfileView({ creator = {}, username = '', features 
                     feature="packagesSection"
                     title="Packages & Pricing is a paid feature"
                     blurb="Show brands exactly what you offer and what it costs, right on your card. Upgrade to add your packages and rates."
+                    preview={<PackagesPanel pkgs={PREVIEW_PKGS} setPkgs={noop} onRemove={noop} onSave={noop} />}
                   />
             )}
             {/* (6) Full Design Control — paid unlock. Free stays on the default theme. */}
@@ -1277,6 +1316,7 @@ export default function EditProfileView({ creator = {}, username = '', features 
                     feature="fullDesignControl"
                     title="Design control is a paid feature"
                     blurb="Pick your own accent colours, gradients and fonts to make the card yours. Free cards use the default theme."
+                    preview={<DesignPanel theme={PREVIEW_THEME} setTheme={noop} />}
                   />
             )}
           </div>
