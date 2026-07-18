@@ -106,7 +106,7 @@ export default function ReferAndEarn() {
           Refer friends, earn {rewardPct}% commission
         </h1>
         <p className="text-white/70 max-w-md text-[15px]" style={{ fontFamily: FONT }}>
-          Share your link. Your friend gets <b className="text-white">{discPct}% off</b> their Creasume plan, and once they subscribe you earn a <b className="text-white">{rewardPct}%-off coupon</b> for your own plan — used automatically at checkout. No limit.
+          Share your link. A new user gets <b className="text-white">{discPct}% off</b> their Creasume plan. Once they subscribe, you earn <b className="text-white">{rewardPct}% commission</b> in your wallet, ready to withdraw.
         </p>
       </div>
 
@@ -126,27 +126,31 @@ export default function ReferAndEarn() {
         <StatCard value={subscribed} label="Friends subscribed" accent="#F472B6" />
       </div>
 
-      {/* Coupons you can use */}
-      {(referrerCoupons > 0 || welcomeCoupons > 0) && (
-        <div className="rounded-2xl p-5 mb-6" style={{ background: 'rgba(77,224,176,0.06)', border: '1px solid rgba(77,224,176,0.22)' }}>
-          <h3 className="text-white text-[15px] font-semibold mb-1" style={{ fontFamily: FONT }}>Your discount coupons</h3>
-          <p className="text-white/60 text-[13px] mb-3" style={{ fontFamily: FONT }}>
-            Applied automatically at checkout — the best one is used first.
-          </p>
-          <div className="flex flex-wrap gap-2.5">
-            {referrerCoupons > 0 && (
-              <span className="text-[13px] font-semibold px-3 py-1.5 rounded-lg" style={{ fontFamily: FONT, color: '#06210f', background: 'linear-gradient(180deg, #6FE8B0 0%, #3FCB92 100%)' }}>
-                {referrerCoupons} × {rewardPct}% off (referral reward)
-              </span>
-            )}
-            {welcomeCoupons > 0 && (
-              <span className="text-[13px] font-semibold px-3 py-1.5 rounded-lg" style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg, #C9C4F0 0%, #A79FE6 100%)' }}>
-                {welcomeCoupons} × {discPct}% off (welcome)
-              </span>
-            )}
+      {/* Commission wallet */}
+      <div className="rounded-2xl p-5 mb-6" style={{ background: 'rgba(77,224,176,0.06)', border: '1px solid rgba(77,224,176,0.22)' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+          <div>
+            <p className="text-white/55 text-[12px] mb-1" style={{ fontFamily: FONT }}>Commission wallet</p>
+            <h3 className="text-white text-[28px] font-bold leading-none" style={{ fontFamily: FONT }}>{money(walletBalance)}</h3>
+            <p className="text-white/50 text-[12px] mt-2" style={{ fontFamily: FONT }}>
+              {money(pendingBalance)} pending · {money(totalEarned)} earned overall
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={withdraw}
+            disabled={withdrawing || walletBalance < minimumWithdrawal}
+            className="rounded-lg px-5 py-2.5 text-[14px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ fontFamily: FONT, color: '#06210f', background: 'linear-gradient(180deg, #6FE8B0 0%, #3FCB92 100%)' }}
+          >
+            {withdrawing ? 'Submitting…' : 'Withdraw balance'}
+          </button>
         </div>
-      )}
+        <p className="text-white/40 text-[12px] mt-3" style={{ fontFamily: FONT }}>
+          Minimum withdrawal: {money(minimumWithdrawal)}. Commission becomes available after the referred subscription is confirmed.
+        </p>
+        {withdrawMessage && <p className="text-[13px] mt-2" style={{ fontFamily: FONT, color: '#C9C4F0' }}>{withdrawMessage}</p>}
+      </div>
 
       {/* Invite link */}
       <div className="rounded-2xl p-5 mb-6" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.10)' }}>
@@ -196,7 +200,7 @@ export default function ReferAndEarn() {
         <h3 className="text-white text-[15px] font-semibold mb-4" style={{ fontFamily: FONT }}>People you've invited</h3>
         {(!data.friends || data.friends.length === 0) ? (
           <p className="text-white/45 text-[14px] py-6 text-center" style={{ fontFamily: FONT }}>
-            No one yet — share your link to start earning coupons.
+            No one yet — share your link to start earning commission.
           </p>
         ) : (
           <ul className="flex flex-col gap-2.5">
