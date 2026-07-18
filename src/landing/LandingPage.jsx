@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { motion, MotionConfig, useScroll } from 'framer-motion'
 import { goToPath } from '../router.js'
+import { isLoggedIn, getStoredUsername, dashboardBase } from '../services/dashboardApi.js'
 import { fadeUp, outlineDraw, staggerParent } from '../motion-variants.js'
 import { CountUp, Typewriter } from '../anim.jsx'
 import SensesSection from '../SensesSection.jsx'
@@ -86,6 +87,15 @@ function BrandChip() {
 export default function LandingPage() {
   const isMobile = useIsMobile()
 
+  // If a token is saved ("Remember me"), the visitor is already signed in — send
+  // them to their dashboard instead of asking them to sign in / sign up again.
+  // Falls back to /connect when we don't yet have a username (e.g. account made
+  // but Instagram not linked). Logged-out visitors keep the Start Now → signup
+  // flow unchanged.
+  const loggedIn = isLoggedIn()
+  const dashHref = loggedIn ? (getStoredUsername() ? dashboardBase(getStoredUsername()) : '/connect') : '/signup'
+  const primaryLabel = loggedIn ? 'Go to Dashboard' : 'Start Now'
+
   // Founding Creator perks: cards unstack from a centre pile, scrubbed by scroll.
   const perksHeadingRef = useRef(null)
   const { scrollYProgress: perksProgress } = useScroll({
@@ -121,9 +131,13 @@ export default function LandingPage() {
           { id: 'pricing', label: 'Pricing', href: '#/pricing' },
           { id: 'dashboard', label: 'Dashboard', href: '#apply' },
           { id: 'how-it-works', label: 'How it Works', href: '#/how-it-works' },
-          { id: 'signin', label: 'Sign In', href: '/login' },
+          loggedIn
+            ? { id: 'signin', label: 'My Dashboard', href: dashHref }
+            : { id: 'signin', label: 'Sign In', href: '/login' },
         ]}
-        cta={{ label: 'Get Your Free Resume', href: '/signup' }}
+        cta={loggedIn
+          ? { label: 'Go to Dashboard', href: dashHref }
+          : { label: 'Get Your Free Resume', href: '/signup' }}
         ctaVariant="gradient"
       />
 
@@ -190,14 +204,14 @@ export default function LandingPage() {
             </motion.p>
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row sm:flex-nowrap gap-6 sm:gap-8 relative z-10">
               <motion.a
-                href="/signup"
-                onClick={(e) => { e.preventDefault(); goToPath('/signup') }}
+                href={dashHref}
+                onClick={(e) => { e.preventDefault(); goToPath(dashHref) }}
                 className="hover-shine no-underline cursor-pointer rounded-full flex items-center justify-center shrink-0 whitespace-nowrap w-full sm:w-[260px]"
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 style={{ height: '59px', fontWeight: 600, fontSize: 'clamp(16px, 4.5vw, 22px)', fontFamily: "'Gelion', 'Outfit', sans-serif", background: 'linear-gradient(180deg, #5D65DC 0%, #9CA2E1 100%)', color: '#0B0B27' }}
               >
-                Start Now
+                {primaryLabel}
               </motion.a>
               <motion.a
                 href="/browse"
@@ -405,8 +419,8 @@ export default function LandingPage() {
 
           {/* Start Now CTA + security trust */}
           <div className="mt-24 md:mt-36 text-center relative z-10">
-            <a href="/signup" onClick={(e) => { e.preventDefault(); goToPath('/signup') }} className="hover-shine inline-flex items-center justify-center rounded-full px-12 h-11 font-semibold text-white mb-16" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}>
-              Start Now
+            <a href={dashHref} onClick={(e) => { e.preventDefault(); goToPath(dashHref) }} className="hover-shine inline-flex items-center justify-center rounded-full px-12 h-11 font-semibold text-white mb-16" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}>
+              {primaryLabel}
             </a>
             <p className="text-2xl md:text-3xl font-bold text-white mb-6">
               <svg aria-hidden="true" className="inline-block mr-3 align-middle" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -452,9 +466,9 @@ export default function LandingPage() {
         <FeatureCards isMobile={isMobile} />
 
         <div className="text-center mt-12 md:mt-16 relative z-10">
-          <a href="/signup" onClick={(e) => { e.preventDefault(); goToPath('/signup') }} className="inline-flex items-center gap-3 rounded-full px-8 h-[52px] font-medium shine-border" style={{ backgroundColor: 'rgba(11,11,39,0.4)', fontSize: '14px', letterSpacing: '0.08em' }}>
+          <a href={dashHref} onClick={(e) => { e.preventDefault(); goToPath(dashHref) }} className="inline-flex items-center gap-3 rounded-full px-8 h-[52px] font-medium shine-border" style={{ backgroundColor: 'rgba(11,11,39,0.4)', fontSize: '14px', letterSpacing: '0.08em' }}>
             <span style={{ background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              START YOUR CREATOR CAREER NOW
+              {loggedIn ? 'GO TO YOUR DASHBOARD' : 'START YOUR CREATOR CAREER NOW'}
             </span>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#E432A5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
           </a>
@@ -482,15 +496,15 @@ export default function LandingPage() {
           Your next brand deal starts here
         </motion.h2>
         <motion.a
-          href="/signup" onClick={(e) => { e.preventDefault(); goToPath('/signup') }} className="hover-shine inline-flex items-center justify-center rounded-full px-10 h-[54px] font-semibold text-white" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}
+          href={dashHref} onClick={(e) => { e.preventDefault(); goToPath(dashHref) }} className="hover-shine inline-flex items-center justify-center rounded-full px-10 h-[54px] font-semibold text-white" style={{ background: 'linear-gradient(180deg, #2116B9 0%, #1a1f72 100%)', fontSize: '18px', fontFamily: "'Gelion', 'Outfit', sans-serif" }}
           initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 }}
         >
-          Start Now
+          {primaryLabel}
         </motion.a>
       </section>
 
       {/* ============ PRICING ============ */}
-      <Pricing onGetStarted={() => goToPath('/signup')} />
+      <Pricing onGetStarted={() => goToPath(dashHref)} />
 
       {/* ============ FOUNDING CREATOR PERKS ============ */}
       <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-12 md:py-24 overflow-hidden">
