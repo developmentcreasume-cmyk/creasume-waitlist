@@ -1476,6 +1476,15 @@ export default function InfluenceDashboard({ username }) {
   const recentInquiries = inquiries.slice(0, 4)
   const navItems = NAV
 
+  // Benchmark rewards come from partner brands and are redeemed on their sites.
+  // Accept these aliases while the backend reward contract is being rolled out.
+  const benchmarkReward = stats?.benchmark || null
+  const benchmarkBrand = benchmarkReward?.brandName || benchmarkReward?.brand || 'Partner brand'
+  const benchmarkWebsiteRaw = benchmarkReward?.brandWebsite || benchmarkReward?.redemptionUrl || benchmarkReward?.websiteUrl || ''
+  const benchmarkWebsite = benchmarkWebsiteRaw && /^https?:\/\//i.test(benchmarkWebsiteRaw)
+    ? benchmarkWebsiteRaw
+    : benchmarkWebsiteRaw ? `https://${benchmarkWebsiteRaw}` : ''
+
   const tourSteps = [
     { ref: editNavRef, title: 'Customize Your Profile', desc: 'Add your custom packages, previous collaborations, and personal branding.' },
     { ref: refreshRef, title: 'Real-time Analytics', desc: 'Sync your latest Instagram metrics with one click to keep your card up-to-date.' },
@@ -1809,9 +1818,9 @@ export default function InfluenceDashboard({ username }) {
               </div>
             )}
 
-            {/* Benchmark reward — appears on the main dashboard once an admin has
-                approved the creator's 500-Creasume-Score-benchmark coupon. */}
-            {stats?.benchmark?.rewarded && stats.benchmark.couponCode && (
+            {/* Partner-brand reward — appears after an admin approves the
+                creator's 500-Creasume-Score benchmark coupon. */}
+            {benchmarkReward?.rewarded && benchmarkReward.couponCode && (
               <div
                 className="rounded-2xl px-7 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                 style={{ background: 'linear-gradient(120% 120% at 0% 0%, #1c3a2e 0%, #0d2a1f 55%, #0a1f18 100%)', border: '1px solid rgba(77,224,176,0.4)' }}
@@ -1821,21 +1830,34 @@ export default function InfluenceDashboard({ username }) {
                     ⚡ Benchmark reward unlocked
                   </div>
                   <div className="text-white/60 text-base" style={{ fontFamily: FONT }}>
-                    You hit the 500 Creasume Score benchmark. Here's your {stats.benchmark.discountPercent}%-off coupon.
+                    You hit the 500 Creasume Score benchmark. Use this {benchmarkReward.discountPercent ? `${benchmarkReward.discountPercent}%-off ` : ''}{benchmarkBrand} coupon on the brand&apos;s website.
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard?.writeText(stats.benchmark.couponCode).catch(() => {})
-                    setBenchCopied(true)
-                    setTimeout(() => setBenchCopied(false), 1600)
-                  }}
-                  className="font-bold tracking-wider px-5 py-3 rounded-xl text-[16px] whitespace-nowrap self-start sm:self-auto"
-                  style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg,#7BF0C4 0%,#4DE0B0 100%)' }}
-                >
-                  {benchCopied ? 'Copied!' : stats.benchmark.couponCode}
-                </button>
+                <div className="flex flex-col sm:items-end gap-2 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard?.writeText(benchmarkReward.couponCode).catch(() => {})
+                      setBenchCopied(true)
+                      setTimeout(() => setBenchCopied(false), 1600)
+                    }}
+                    className="font-bold tracking-wider px-5 py-3 rounded-xl text-[16px] whitespace-nowrap"
+                    style={{ fontFamily: FONT, color: '#0B0B27', background: 'linear-gradient(180deg,#7BF0C4 0%,#4DE0B0 100%)' }}
+                  >
+                    {benchCopied ? 'Copied!' : benchmarkReward.couponCode}
+                  </button>
+                  {benchmarkWebsite && (
+                    <a
+                      href={benchmarkWebsite}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] font-semibold no-underline hover:underline"
+                      style={{ fontFamily: FONT, color: '#7BF0C4' }}
+                    >
+                      Redeem on {benchmarkBrand} website ↗
+                    </a>
+                  )}
+                </div>
               </div>
             )}
 

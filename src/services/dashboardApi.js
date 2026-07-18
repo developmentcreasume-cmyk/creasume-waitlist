@@ -134,8 +134,9 @@ export function clearReferralCode() {
   try { localStorage.removeItem(REFERRAL_KEY) } catch { /* storage unavailable */ }
 }
 
-// The signed-in creator's Refer & Earn panel data (code, link, coupons, friends).
+// The signed-in creator's Refer & Earn panel data (code, link, wallet, friends).
 export const fetchReferrals = () => dapi.get('/creator/referrals')
+export const requestReferralWithdrawal = (body) => dapi.post('/creator/referrals/withdraw', body)
 
 // Password reset. forgotPassword always resolves (the backend never reveals
 // whether the email exists). resetPassword logs the creator in on success.

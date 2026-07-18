@@ -3,7 +3,7 @@
 // every friend who buys a plan, plus a 20% welcome coupon if they were referred),
 // who they've invited, and one-tap copy / share. Data: GET /creator/referrals.
 import { useEffect, useState } from 'react'
-import { fetchReferrals } from '../../services/dashboardApi.js'
+import { fetchReferrals, requestReferralWithdrawal } from '../../services/dashboardApi.js'
 
 const FONT = "'Outfit', sans-serif"
 
@@ -24,6 +24,8 @@ export default function ReferAndEarn() {
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
   const [copied, setCopied] = useState('')
+  const [withdrawing, setWithdrawing] = useState(false)
+  const [withdrawMessage, setWithdrawMessage] = useState('')
 
   useEffect(() => {
     let alive = true
@@ -67,11 +69,31 @@ export default function ReferAndEarn() {
     return <p className="text-white/60 text-[14px] py-16 text-center" style={{ fontFamily: FONT }}>{err || 'No referral data.'}</p>
   }
 
-  const discPct = data.discountPercent      // friend's welcome coupon (20%)
-  const rewardPct = data.referrerPercent     // referrer's reward coupon (40%)
-  const referrerCoupons = data.referrerCredits || 0
-  const welcomeCoupons = data.welcomeCredits || 0
+  const discPct = data.discountPercent ?? 20
+  const rewardPct = data.referrerPercent ?? data.commissionPercent ?? 40
+  const walletBalance = Number(data.walletBalance ?? data.commissionBalance ?? data.wallet?.availableBalance ?? 0)
+  const pendingBalance = Number(data.pendingCommission ?? data.wallet?.pendingBalance ?? 0)
+  const totalEarned = Number(data.totalCommissionEarned ?? data.wallet?.totalEarned ?? 0)
+  const currency = data.currency || data.wallet?.currency || 'INR'
+  const minimumWithdrawal = Number(data.minimumWithdrawal ?? data.wallet?.minimumWithdrawal ?? 500)
   const subscribed = data.friends?.filter((f) => f.redeemed).length || 0
+  const money = (amount) => new Intl.NumberFormat('en-IN', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount || 0)
+
+  const withdraw = async () => {
+    if (walletBalance < minimumWithdrawal || withdrawing) return
+    setWithdrawing(true)
+    setWithdrawMessage('')
+    try {
+      const res = await requestReferralWithdrawal({ amount: walletBalance })
+      setWithdrawMessage(res.message || 'Withdrawal request submitted successfully.')
+      const refreshed = await fetchReferrals()
+      setData(refreshed.referral)
+    } catch (e) {
+      setWithdrawMessage(e.message || 'Could not submit the withdrawal request.')
+    } finally {
+      setWithdrawing(false)
+    }
+  }
 
   return (
     <div className="max-w-3xl mx-auto py-2">
@@ -81,7 +103,7 @@ export default function ReferAndEarn() {
         style={{ background: 'radial-gradient(120% 120% at 0% 0%, #2a3a8f 0%, #16205e 45%, #0a0f30 100%)' }}
       >
         <h1 className="font-semibold mb-2" style={{ fontFamily: FONT, fontSize: 'clamp(24px, 3.4vw, 34px)', color: '#fff' }}>
-          Refer friends, get {rewardPct}% off
+          Refer friends, earn {rewardPct}% commission
         </h1>
         <p className="text-white/70 max-w-md text-[15px]" style={{ fontFamily: FONT }}>
           Share your link. Your friend gets <b className="text-white">{discPct}% off</b> their Creasume plan, and once they subscribe you earn a <b className="text-white">{rewardPct}%-off coupon</b> for your own plan — used automatically at checkout. No limit.
@@ -100,7 +122,7 @@ export default function ReferAndEarn() {
       {/* Stats */}
       <div className="flex flex-wrap gap-3 mb-4">
         <StatCard value={data.referralCount} label="Friends referred" accent="#C9C4F0" />
-        <StatCard value={referrerCoupons} label={`${rewardPct}%-off coupons ready`} accent="#4DE0B0" />
+        <StatCard value={money(walletBalance)} label="Available to withdraw" accent="#4DE0B0" />
         <StatCard value={subscribed} label="Friends subscribed" accent="#F472B6" />
       </div>
 
