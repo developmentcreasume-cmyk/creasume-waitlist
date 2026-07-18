@@ -4,6 +4,15 @@ import { motion, useMotionValue, animate } from 'framer-motion'
 import { fadeUp, staggerParent } from '../../motion-variants.js'
 import { FONT, MONO } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
+import LockedFeature from './LockedFeature.jsx'
+
+// Sample cards shown (blurred) behind the "Upgrade to unlock" overlay when a
+// free-plan OWNER views their own card — so they see what Packages would look like.
+const LOCKED_PREVIEW = [
+  { tier: 'STARTER', price: '₹5,000', sub: 'per deliverable', features: ['1 Reel', '1 Story', 'Link in bio'], popular: false },
+  { tier: 'CORE', price: '₹12,000', sub: 'per campaign', features: ['2 Reels', '3 Stories', '1 Post'], popular: true },
+  { tier: 'CAMPAIGN', price: '₹30,000', sub: 'full package', features: ['4 Reels', '6 Stories', '2 Posts'], popular: false },
+]
 
 // Smooth-scroll the page to an absolute Y over `duration` ms. Lenis owns the
 // scroll (and its CSS disables native smooth scroll), and its scrollTo({duration})
@@ -88,11 +97,14 @@ function PackageCard({ p, i, isPopular, showCta, noId = false, carousel = false 
 }
 
 export default function Packages() {
-  const { PACKAGES, PACKAGES_ACTIVE = true } = useInfluence()
+  const { PACKAGES, PACKAGES_ACTIVE = true, FEATURES = {}, IS_OWNER } = useInfluence()
   const n = PACKAGES.length
   // Admin turned the section off (or there are simply no packages) → render
   // nothing for the cards/heading. The CTA banner + flight live elsewhere.
   const showPackages = PACKAGES_ACTIVE && n > 0
+  // The creator's PLAN locks the Packages section (free plan). Show an owner-only
+  // "Upgrade to unlock" teaser in its place; public visitors still see nothing.
+  const showLockedPackages = IS_OWNER && FEATURES.packagesSection === false && !showPackages
   const loop = n > 1
   const STEP = CAROUSEL_CARD + CAROUSEL_GAP
   // Mobile carousel: start on the "Most Popular" package (front/center).
@@ -358,6 +370,26 @@ export default function Packages() {
         <h2 className="text-5xl md:text-6xl font-medium mb-3" style={{ fontFamily: FONT }}>Collaboration Packages</h2>
         <p className="text-white/45 text-sm" style={{ fontFamily: MONO }}>Standard services. Exact quotes provided after alignment.</p>
       </div>
+      )}
+
+      {/* Owner-only locked teaser (free plan) — replaces the packages grid. */}
+      {showLockedPackages && (
+        <div className="max-w-[1180px] mx-auto">
+          <div className="text-center mb-8 md:mb-10">
+            <h2 className="text-5xl md:text-6xl font-medium mb-3" style={{ fontFamily: FONT }}>Collaboration Packages</h2>
+          </div>
+          <LockedFeature
+            title="Packages & Pricing"
+            note="Show brands your rates and deliverables right on your card. Available on paid plans."
+            minHeight={300}
+          >
+            <div className="flex justify-center items-stretch gap-5 flex-wrap px-4 py-6">
+              {LOCKED_PREVIEW.map((p, i) => (
+                <PackageCard key={p.tier} p={p} i={i} isPopular={p.popular} showCta noId />
+              ))}
+            </div>
+          </LockedFeature>
+        </div>
       )}
 
       {showPackages && (<>

@@ -16,16 +16,34 @@ const TOKEN_KEY = 'creasume_token'
 const USERNAME_KEY = 'creasume_username'
 
 // ---- Auth token (set by /auth-success after Instagram login) ----
+// "Remember me" decides WHERE the token lives:
+//   • remember = true  → localStorage: survives closing the browser, so the
+//     creator stays signed in for the full 30 days of the JWT (see
+//     backend/utils/generateToken.js) without logging in again.
+//   • remember = false → sessionStorage: cleared when the tab/browser closes,
+//     so they sign in fresh next session.
+// getToken() reads whichever one holds it (localStorage first), and clearAuth()
+// wipes both so a sign-out can never leave a stale token behind.
 export function getToken() {
-  try { return localStorage.getItem(TOKEN_KEY) || '' } catch { return '' }
+  try { return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || '' } catch { return '' }
 }
-export function setToken(token) {
-  try { localStorage.setItem(TOKEN_KEY, token) } catch { /* storage unavailable */ }
+export function setToken(token, remember = true) {
+  try {
+    if (remember) {
+      localStorage.setItem(TOKEN_KEY, token)
+      sessionStorage.removeItem(TOKEN_KEY)
+    } else {
+      sessionStorage.setItem(TOKEN_KEY, token)
+      localStorage.removeItem(TOKEN_KEY)
+    }
+  } catch { /* storage unavailable */ }
 }
 export function clearAuth() {
   try {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USERNAME_KEY)
+    sessionStorage.removeItem(TOKEN_KEY)
+    sessionStorage.removeItem(USERNAME_KEY)
   } catch { /* storage unavailable */ }
 }
 export function setStoredUsername(username) {
@@ -60,7 +78,7 @@ export function facebookLoginUrl() {
 // ---- Email / password account auth (backend routes/authAccount.js) ----
 // Create/authenticate a creator account and store the JWT. The creator then
 // connects Instagram from the Connect page (see connectInstagramUrl).
-async function postAuth(path, body) {
+async function postAuth(path, body, remember = true) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -68,12 +86,14 @@ async function postAuth(path, body) {
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok || !data.success) throw new Error(data.error || 'Something went wrong')
-  if (data.token) setToken(data.token)
+  if (data.token) setToken(data.token, remember)
   if (data.creator?.username) setStoredUsername(data.creator.username)
   return data
 }
 export const registerAccount = (body) => postAuth('/auth/register', { ...body, referralCode: getReferralCode() })
-export const loginAccount = (body) => postAuth('/auth/login', body)
+// `remember` (from the "Remember for 30 days" checkbox) controls whether the
+// token persists across browser restarts — see setToken above.
+export const loginAccount = ({ remember = true, ...body }) => postAuth('/auth/login', body, remember)
 
 // Phone OTP via the MSG91 widget: the widget already verified the OTP and gave
 // us an access token; the backend confirms it and returns { token, creator }.
@@ -114,8 +134,15 @@ export function clearReferralCode() {
   try { localStorage.removeItem(REFERRAL_KEY) } catch { /* storage unavailable */ }
 }
 
-// The signed-in creator's Refer & Earn panel data (code, link, coupons, friends).
+// The signed-in creator's Refer & Earn panel data (code, link, coupons, friends,
+// cash earnings + payout history).
 export const fetchReferrals = () => dapi.get('/creator/referrals')
+
+// Save where referral payouts should be sent (UPI or bank).
+export const savePayoutDetails = (body) => dapi.put('/creator/payout-details', body)
+
+// Request a withdrawal of the available referral earnings balance.
+export const requestPayout = () => dapi.post('/creator/payout', {})
 
 // Password reset. forgotPassword always resolves (the backend never reveals
 // whether the email exists). resetPassword logs the creator in on success.

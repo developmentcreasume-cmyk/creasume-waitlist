@@ -761,7 +761,7 @@ export default function ProfileHero() {
               </motion.a>
               {/* (20) Auto-Generated Media Kit — a paid unlock. Hidden entirely
                   on the Free plan (its contents are governed by the kit* flags). */}
-              {data?.FEATURES?.mediaKit && (
+              {data?.FEATURES?.mediaKit ? (
                 <motion.button
                   custom={5}
                   variants={flipIn}
@@ -776,7 +776,24 @@ export default function ProfileHero() {
                   </svg>
                   {pdfing ? 'Preparing…' : 'Download PDF'}
                 </motion.button>
-              )}
+              ) : data?.IS_OWNER ? (
+                /* Owner on a plan without the media kit → locked teaser → /pricing. */
+                <motion.button
+                  custom={5}
+                  variants={flipIn}
+                  type="button"
+                  onClick={() => goToPath('/pricing')}
+                  title="Media-kit PDF — available on paid plans"
+                  className="inline-flex items-center whitespace-nowrap gap-2.5 rounded-full text-white/70 font-semibold text-sm md:text-base px-4 md:px-7 py-3 md:py-3.5 transition-colors hover:bg-white/5"
+                  style={{ fontFamily: FONT, border: '1px dashed rgba(255,255,255,0.25)', transformOrigin: 'center' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="4" y="11" width="16" height="9" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                  </svg>
+                  Download PDF
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#C6F24E', color: '#000' }}>Upgrade</span>
+                </motion.button>
+              ) : null}
             </motion.div>
 
             {/* Creasume Score badge — MOBILE ONLY (on desktop the score is a tile

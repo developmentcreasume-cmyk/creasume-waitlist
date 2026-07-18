@@ -164,7 +164,7 @@ export default function Login() {
       } else {
         // Existing account → straight to their own dashboard if Instagram is
         // already linked, otherwise send them to connect it.
-        const data = await loginAccount({ email: form.email, password: form.password })
+        const data = await loginAccount({ email: form.email, password: form.password, remember: form.remember })
         routeAfterAuth(data)
       }
     } catch (e2) {

@@ -1,10 +1,13 @@
 // Refer & Earn — the creator's referral panel inside the dashboard. Shows their
-// unique invite link, how many 50%-off coupons they hold, who they've invited,
-// and one-tap copy / share. Data comes from GET /creator/referrals.
+// unique invite link, their cash earnings (a commission on every friend who buys
+// a plan), a withdraw/payout flow, who they've invited, and one-tap copy / share.
+// Data comes from GET /creator/referrals.
 import { useEffect, useState } from 'react'
-import { fetchReferrals } from '../../services/dashboardApi.js'
+import { fetchReferrals, savePayoutDetails, requestPayout } from '../../services/dashboardApi.js'
 
 const FONT = "'Outfit', sans-serif"
+
+const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`
 
 function StatCard({ value, label, accent }) {
   return (
@@ -24,14 +27,35 @@ export default function ReferAndEarn() {
   const [err, setErr] = useState('')
   const [copied, setCopied] = useState('')
 
-  useEffect(() => {
-    let alive = true
+  // Payout-details form state.
+  const [method, setMethod] = useState('upi')
+  const [form, setForm] = useState({ upiId: '', accountName: '', accountNumber: '', ifsc: '', bankName: '' })
+  const [savingDetails, setSavingDetails] = useState(false)
+  const [detailsMsg, setDetailsMsg] = useState(null) // { text, error }
+  const [requesting, setRequesting] = useState(false)
+  const [payoutMsg, setPayoutMsg] = useState(null) // { text, error }
+
+  const load = () => {
     fetchReferrals()
-      .then((res) => { if (alive) setData(res.referral) })
-      .catch((e) => { if (alive) setErr(e.message || 'Could not load your referrals.') })
-      .finally(() => { if (alive) setLoading(false) })
-    return () => { alive = false }
-  }, [])
+      .then((res) => {
+        setData(res.referral)
+        const d = res.referral?.earnings?.details
+        if (d) {
+          if (d.method) setMethod(d.method)
+          setForm({
+            upiId: d.upiId || '',
+            accountName: d.accountName || '',
+            accountNumber: d.accountNumber || '',
+            ifsc: d.ifsc || '',
+            bankName: d.bankName || '',
+          })
+        }
+      })
+      .catch((e) => setErr(e.message || 'Could not load your referrals.'))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [])
 
   const copy = async (text, which) => {
     try {
@@ -45,13 +69,45 @@ export default function ReferAndEarn() {
     if (!data?.link) return
     const shareData = {
       title: 'Join me on Creasume',
-      text: `Build your verified creator media kit on Creasume — use my link and we both get ${data.discountPercent}% off.`,
+      text: `Build your verified creator media kit on Creasume — use my link and get ${data.discountPercent}% off your plan.`,
       url: data.link,
     }
     try {
       if (navigator.share) await navigator.share(shareData)
       else copy(data.link, 'link')
     } catch { /* user cancelled the share sheet */ }
+  }
+
+  async function onSaveDetails(e) {
+    e.preventDefault()
+    setSavingDetails(true)
+    setDetailsMsg(null)
+    try {
+      const body = method === 'upi'
+        ? { method, upiId: form.upiId }
+        : { method, accountName: form.accountName, accountNumber: form.accountNumber, ifsc: form.ifsc, bankName: form.bankName }
+      await savePayoutDetails(body)
+      setDetailsMsg({ text: 'Payout details saved.' })
+      load()
+    } catch (e2) {
+      setDetailsMsg({ text: e2.message || 'Could not save.', error: true })
+    } finally {
+      setSavingDetails(false)
+    }
+  }
+
+  async function onRequestPayout() {
+    setRequesting(true)
+    setPayoutMsg(null)
+    try {
+      const res = await requestPayout()
+      setPayoutMsg({ text: `Payout of ${inr(res.payout.amountInr)} requested — you'll be paid soon.` })
+      load()
+    } catch (e2) {
+      setPayoutMsg({ text: e2.message || 'Could not request payout.', error: true })
+    } finally {
+      setRequesting(false)
+    }
   }
 
   if (loading) {
@@ -66,7 +122,13 @@ export default function ReferAndEarn() {
     return <p className="text-white/60 text-[14px] py-16 text-center" style={{ fontFamily: FONT }}>{err || 'No referral data.'}</p>
   }
 
-  const pct = data.discountPercent
+  const discPct = data.discountPercent
+  const commPct = data.commissionPercent
+  const e = data.earnings || {}
+  const hasDetails = Boolean(e.details?.method)
+
+  const badgeColor = (status) =>
+    status === 'paid' ? '#4DE0B0' : status === 'rejected' ? '#F87171' : '#FBBF24'
 
   return (
     <div className="max-w-3xl mx-auto py-2">
@@ -76,10 +138,10 @@ export default function ReferAndEarn() {
         style={{ background: 'radial-gradient(120% 120% at 0% 0%, #2a3a8f 0%, #16205e 45%, #0a0f30 100%)' }}
       >
         <h1 className="font-semibold mb-2" style={{ fontFamily: FONT, fontSize: 'clamp(24px, 3.4vw, 34px)', color: '#fff' }}>
-          Give {pct}%, get {pct}%
+          Refer friends, earn {commPct}% cash
         </h1>
         <p className="text-white/70 max-w-md text-[15px]" style={{ fontFamily: FONT }}>
-          Share your link. When a creator signs up through it, <b className="text-white">you both</b> get {pct}% off your Creasume plan. There's no limit — every friend is another coupon.
+          Share your link. Your friend gets <b className="text-white">{discPct}% off</b> their Creasume plan, and when they pay you earn a <b className="text-white">{commPct}% commission</b> — real money you can withdraw. No limit on how much you earn.
         </p>
       </div>
 
@@ -92,11 +154,125 @@ export default function ReferAndEarn() {
         </div>
       )}
 
-      {/* Stats */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <StatCard value={data.referralCount} label="Friends referred" accent="#C9C4F0" />
-        <StatCard value={data.credits} label={`Coupons ready (${pct}% off each)`} accent="#4DE0B0" />
-        <StatCard value={data.friends?.filter((f) => f.redeemed).length || 0} label="Friends subscribed" accent="#F472B6" />
+      {/* Earnings */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        <StatCard value={inr(e.availableInr)} label="Available to withdraw" accent="#4DE0B0" />
+        <StatCard value={inr(e.earnedInr)} label="Total earned" accent="#C9C4F0" />
+        <StatCard value={inr(e.paidInr)} label="Paid out" accent="#89DFEC" />
+      </div>
+
+      {/* Withdraw box */}
+      <div className="rounded-2xl p-5 mb-6" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.10)' }}>
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+          <div>
+            <h3 className="text-white text-[15px] font-semibold" style={{ fontFamily: FONT }}>Withdraw your earnings</h3>
+            <p className="text-white/45 text-[13px]" style={{ fontFamily: FONT }}>
+              Minimum {inr(e.minPayoutInr)}. {e.pendingInr > 0 ? `${inr(e.pendingInr)} is in a pending request.` : ''}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onRequestPayout}
+            disabled={!e.canRequest || requesting}
+            className="rounded-lg px-5 py-2.5 text-[14px] font-semibold whitespace-nowrap transition-transform enabled:hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ fontFamily: FONT, color: '#06210f', background: 'linear-gradient(180deg, #6FE8B0 0%, #3FCB92 100%)' }}
+          >
+            {requesting ? 'Requesting…' : `Withdraw ${inr(e.availableInr)}`}
+          </button>
+        </div>
+        {!hasDetails && (
+          <p className="text-[13px]" style={{ fontFamily: FONT, color: '#FBBF24' }}>Add your payout details below before you can withdraw.</p>
+        )}
+        {!e.canRequest && hasDetails && data.enabled && (
+          <p className="text-white/45 text-[13px]" style={{ fontFamily: FONT }}>
+            You need at least {inr(e.minPayoutInr)} available to withdraw.
+          </p>
+        )}
+        {payoutMsg && (
+          <p className="text-[13px] mt-2" style={{ fontFamily: FONT, color: payoutMsg.error ? '#F87171' : '#4DE0B0' }}>{payoutMsg.text}</p>
+        )}
+
+        {/* Payout details form */}
+        <form onSubmit={onSaveDetails} className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="flex gap-2 mb-3">
+            {['upi', 'bank'].map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMethod(m)}
+                className="rounded-lg px-3.5 py-1.5 text-[13px] font-semibold"
+                style={{
+                  fontFamily: FONT,
+                  color: method === m ? '#0B0B27' : '#fff',
+                  background: method === m ? 'linear-gradient(180deg, #C9C4F0 0%, #A79FE6 100%)' : 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                }}
+              >
+                {m === 'upi' ? 'UPI' : 'Bank transfer'}
+              </button>
+            ))}
+          </div>
+
+          {method === 'upi' ? (
+            <input
+              value={form.upiId}
+              onChange={(ev) => setForm({ ...form, upiId: ev.target.value })}
+              placeholder="yourname@bank"
+              className="w-full rounded-lg px-3.5 py-2.5 text-[14px] text-white/90 outline-none"
+              style={{ fontFamily: FONT, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.14)' }}
+            />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {[
+                { k: 'accountName', ph: 'Account holder name' },
+                { k: 'accountNumber', ph: 'Account number' },
+                { k: 'ifsc', ph: 'IFSC code' },
+                { k: 'bankName', ph: 'Bank name (optional)' },
+              ].map(({ k, ph }) => (
+                <input
+                  key={k}
+                  value={form[k]}
+                  onChange={(ev) => setForm({ ...form, [k]: ev.target.value })}
+                  placeholder={ph}
+                  className="w-full rounded-lg px-3.5 py-2.5 text-[14px] text-white/90 outline-none"
+                  style={{ fontFamily: FONT, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.14)' }}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={savingDetails}
+              className="rounded-lg px-4 py-2 text-[14px] font-semibold disabled:opacity-50"
+              style={{ fontFamily: FONT, color: '#fff', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.16)' }}
+            >
+              {savingDetails ? 'Saving…' : hasDetails ? 'Update payout details' : 'Save payout details'}
+            </button>
+            {detailsMsg && (
+              <span className="text-[13px]" style={{ fontFamily: FONT, color: detailsMsg.error ? '#F87171' : '#4DE0B0' }}>{detailsMsg.text}</span>
+            )}
+          </div>
+        </form>
+
+        {/* Payout history */}
+        {e.history?.length > 0 && (
+          <div className="mt-5 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <h4 className="text-white/70 text-[13px] font-semibold mb-2.5" style={{ fontFamily: FONT }}>Withdrawal history</h4>
+            <ul className="flex flex-col gap-2">
+              {e.history.map((p) => (
+                <li key={p.id} className="flex items-center justify-between gap-3 text-[13px]" style={{ fontFamily: FONT }}>
+                  <span className="text-white/80">{inr(p.amountInr)} <span className="text-white/40">· {p.method.toUpperCase()}</span></span>
+                  <span className="flex items-center gap-2">
+                    <span className="text-white/35">{p.requestedAt ? new Date(p.requestedAt).toLocaleDateString() : ''}</span>
+                    <span className="font-semibold px-2 py-0.5 rounded-full capitalize" style={{ color: badgeColor(p.status), background: 'rgba(255,255,255,0.06)' }}>{p.status}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Invite link */}
@@ -106,7 +282,7 @@ export default function ReferAndEarn() {
           <input
             readOnly
             value={data.link}
-            onFocus={(e) => e.target.select()}
+            onFocus={(ev) => ev.target.select()}
             className="flex-1 rounded-lg px-3.5 py-2.5 text-[14px] text-white/90 outline-none"
             style={{ fontFamily: FONT, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.14)' }}
           />
@@ -147,7 +323,7 @@ export default function ReferAndEarn() {
         <h3 className="text-white text-[15px] font-semibold mb-4" style={{ fontFamily: FONT }}>People you've invited</h3>
         {(!data.friends || data.friends.length === 0) ? (
           <p className="text-white/45 text-[14px] py-6 text-center" style={{ fontFamily: FONT }}>
-            No one yet — share your link to start earning coupons.
+            No one yet — share your link to start earning.
           </p>
         ) : (
           <ul className="flex flex-col gap-2.5">
@@ -165,16 +341,21 @@ export default function ReferAndEarn() {
                     {f.joinedAt ? new Date(f.joinedAt).toLocaleDateString() : ''}
                   </div>
                 </div>
-                <span
-                  className="text-[12px] font-semibold px-2.5 py-1 rounded-full shrink-0"
-                  style={{
-                    fontFamily: FONT,
-                    color: f.redeemed ? '#4DE0B0' : '#C9C4F0',
-                    background: f.redeemed ? 'rgba(77,224,176,0.12)' : 'rgba(155,147,232,0.12)',
-                  }}
-                >
-                  {f.redeemed ? 'Subscribed' : 'Joined'}
-                </span>
+                {f.redeemed && f.commissionInr > 0 ? (
+                  <span
+                    className="text-[12px] font-semibold px-2.5 py-1 rounded-full shrink-0"
+                    style={{ fontFamily: FONT, color: '#4DE0B0', background: 'rgba(77,224,176,0.12)' }}
+                  >
+                    +{inr(f.commissionInr)}
+                  </span>
+                ) : (
+                  <span
+                    className="text-[12px] font-semibold px-2.5 py-1 rounded-full shrink-0"
+                    style={{ fontFamily: FONT, color: f.redeemed ? '#4DE0B0' : '#C9C4F0', background: f.redeemed ? 'rgba(77,224,176,0.12)' : 'rgba(155,147,232,0.12)' }}
+                  >
+                    {f.redeemed ? 'Subscribed' : 'Joined'}
+                  </span>
+                )}
               </li>
             ))}
           </ul>

@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { CREATOR } from './influenceData.js'
 import { fetchInfluenceData, mapInfluenceData } from '../../services/influenceApi.js'
+import { isLoggedIn, getStoredUsername } from '../../services/dashboardApi.js'
 
 // Real data only — no demo placeholders. Every section starts EMPTY and is
 // filled by mapInfluenceData() once the backend returns the creator; sections
@@ -12,7 +13,19 @@ const DEFAULTS = {
   GROWTH: [], MONTHS: [], ENGAGEMENT_BARS: [], AGE_GROUPS: [], TOP_LOCATIONS: [],
   TOP_COUNTRIES: [], GENDER_SPLIT: null, SOCIALS: [], CAMPAIGNS: [],
   BRAND_SUMMARY: [], BRAND_DEALS: [], PACKAGES: [], PHOTOS: [], TOP_POSTS: [],
-  FEATURED: {}, THEME: null,
+  FEATURED: {}, THEME: null, FEATURES: {},
+}
+
+// Is the person viewing this card its OWNER? True inside the dashboard Edit
+// Profile preview iframe (?preview), or when a signed-in creator's stored
+// username matches the card's username. Owner-only so the "Upgrade to unlock"
+// teasers never show to public visitors. Cache-safe (computed client-side).
+function detectOwner(cardUsername) {
+  if (typeof window === 'undefined') return false
+  if (new URLSearchParams(window.location.search).has('preview')) return true
+  const uname = (getStoredUsername() || '').toLowerCase()
+  const card = (cardUsername || '').toLowerCase()
+  return isLoggedIn() && !!uname && uname === card
 }
 
 const InfluenceContext = createContext({ ...DEFAULTS, ready: false })
@@ -129,5 +142,7 @@ export function InfluenceDataProvider({ children }) {
     return next
   }, [value, preview])
 
-  return <InfluenceContext.Provider value={{ ...merged, ready, notFound }}>{children}</InfluenceContext.Provider>
+  const IS_OWNER = detectOwner(merged?.CREATOR?.username)
+
+  return <InfluenceContext.Provider value={{ ...merged, ready, notFound, IS_OWNER }}>{children}</InfluenceContext.Provider>
 }

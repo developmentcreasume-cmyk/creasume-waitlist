@@ -123,7 +123,7 @@ export default function LandingPage() {
           { id: 'how-it-works', label: 'How it Works', href: '#/how-it-works' },
           { id: 'signin', label: 'Sign In', href: '/login' },
         ]}
-        cta={{ label: 'Get Your Free Resume', href: '#apply' }}
+        cta={{ label: 'Get Your Free Resume', href: '/signup' }}
         ctaVariant="gradient"
       />
 
@@ -452,7 +452,7 @@ export default function LandingPage() {
         <FeatureCards isMobile={isMobile} />
 
         <div className="text-center mt-12 md:mt-16 relative z-10">
-          <a href="#apply" className="inline-flex items-center gap-3 rounded-full px-8 h-[52px] font-medium shine-border" style={{ backgroundColor: 'rgba(11,11,39,0.4)', fontSize: '14px', letterSpacing: '0.08em' }}>
+          <a href="/signup" onClick={(e) => { e.preventDefault(); goToPath('/signup') }} className="inline-flex items-center gap-3 rounded-full px-8 h-[52px] font-medium shine-border" style={{ backgroundColor: 'rgba(11,11,39,0.4)', fontSize: '14px', letterSpacing: '0.08em' }}>
             <span style={{ background: 'linear-gradient(90deg, #A35CE1 0%, #C04DCC 50%, #E731A2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
               START YOUR CREATOR CAREER NOW
             </span>
@@ -490,7 +490,7 @@ export default function LandingPage() {
       </section>
 
       {/* ============ PRICING ============ */}
-      <Pricing onGetStarted={() => { window.location.hash = '#apply' }} />
+      <Pricing onGetStarted={() => goToPath('/signup')} />
 
       {/* ============ FOUNDING CREATOR PERKS ============ */}
       <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-12 md:py-24 overflow-hidden">

@@ -680,17 +680,27 @@ export default function LiveAnalytics() {
 
           {/* Audience Insights + Top Locations / gender — combined card.
               Hidden entirely when no demographics are available (under 100
-              followers, or Instagram hasn't returned them yet). */}
-          {(AGE_GROUPS.length > 0 || TOP_LOCATIONS.length > 0 || TOP_COUNTRIES.length > 0 || GENDER_SPLIT) && (
+              followers, or Instagram hasn't returned them yet). The inner grid
+              collapses to a single column when only one of the two sub-cards
+              (age vs. location/gender) has data, so no empty half is left. */}
+          {(() => {
+            const showAge = AGE_GROUPS.length > 0
+            const showRight = TOP_LOCATIONS.length > 0 || TOP_COUNTRIES.length > 0 || !!GENDER_SPLIT
+            if (!showAge && !showRight) return null
+            const twoUp = showAge && showRight
+            return (
           <motion.div
-            className="lg:col-span-2 rounded-2xl p-5 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10"
+            className={`lg:col-span-2 rounded-2xl p-5 md:p-6 grid grid-cols-1 gap-6 md:gap-10 ${twoUp ? 'md:grid-cols-2' : ''}`}
             style={PANEL}
             initial={{ opacity: 0, y: 60 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 1.1, ease: 'easeOut' }}
           >
-            {/* Left sub-card: Audience Insights — age distribution */}
+            {/* Left sub-card: Audience Insights — age distribution.
+                Hidden when Instagram returned no age breakdown, so the header
+                never shows above an empty card. */}
+            {AGE_GROUPS.length > 0 && (
             <div className="rounded-2xl p-5 md:p-6" style={SUBCARD}>
             <div className="text-white font-semibold text-base mb-4" style={{ fontFamily: FONT }}>Audience Insights</div>
             <div className="text-[10px] tracking-widest text-white mb-4" style={{ fontFamily: MONO }}>AGE DISTRIBUTION</div>
@@ -715,8 +725,11 @@ export default function LiveAnalytics() {
               ))}
             </div>
             </div>
+            )}
 
-            {/* Right sub-card: Top Cities / Top Countries (flags) + gender split */}
+            {/* Right sub-card: Top Cities / Top Countries (flags) + gender split.
+                Hidden when none of the location/gender data arrived. */}
+            {(TOP_LOCATIONS.length > 0 || TOP_COUNTRIES.length > 0 || GENDER_SPLIT) && (
             <div className="relative overflow-hidden flex flex-col gap-6 rounded-2xl py-6 pl-4 pr-6 md:py-7 md:pl-5 md:pr-7 w-full max-w-md mx-auto" style={SUBCARD}>
               {/* Faint glowing purple dots — subtle "global reach" hint */}
               <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
@@ -731,11 +744,17 @@ export default function LiveAnalytics() {
                 ))}
               </div>
 
-              {/* Two columns with a thin vertical divider */}
-              <div className="relative z-10 grid grid-cols-2 gap-x-6 md:gap-x-10">
+              {/* Two columns with a thin vertical divider. When only one of
+                  cities/countries is present it becomes a single centred column
+                  and the divider is dropped. */}
+              {(TOP_LOCATIONS.length > 0 || TOP_COUNTRIES.length > 0) && (
+              <div className={`relative z-10 grid gap-x-6 md:gap-x-10 ${TOP_LOCATIONS.length > 0 && TOP_COUNTRIES.length > 0 ? 'grid-cols-2' : 'grid-cols-1 place-items-center'}`}>
+                {TOP_LOCATIONS.length > 0 && TOP_COUNTRIES.length > 0 && (
                 <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2" style={{ background: 'rgba(255,255,255,0.09)' }} />
+                )}
 
                 {/* Top Cities — plain text rows */}
+                {TOP_LOCATIONS.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 text-white font-semibold text-base mb-4 md:mb-6" style={{ fontFamily: FONT }}>
                     <span aria-hidden="true">📍</span> Top Cities
@@ -755,8 +774,10 @@ export default function LiveAnalytics() {
                     })}
                   </div>
                 </div>
+                )}
 
                 {/* Top Countries — small flag before each name */}
+                {TOP_COUNTRIES.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 whitespace-nowrap text-white font-semibold text-base mb-4 md:mb-6" style={{ fontFamily: FONT }}>
                     <span aria-hidden="true">🌍</span> Top Countries
@@ -777,7 +798,9 @@ export default function LiveAnalytics() {
                     ))}
                   </div>
                 </div>
+                )}
               </div>
+              )}
               {GENDER_SPLIT && (
               <div className="relative z-10 mt-auto">
                 <div className="flex items-center justify-center gap-2 text-white font-semibold text-base mb-3" style={{ fontFamily: FONT }}>
@@ -803,8 +826,10 @@ export default function LiveAnalytics() {
               </div>
               )}
             </div>
+            )}
           </motion.div>
-          )}
+            )
+          })()}
         </div>
       </div>
     </section>
