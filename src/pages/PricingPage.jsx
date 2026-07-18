@@ -1,7 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import SiteNav from '../components/SiteNav.jsx'
 import FooterCard from '../components/FooterCard.jsx'
+import { goToPath } from '../router.js'
+import { isLoggedIn, fetchPlans, buyPlan, getStoredUsername, dashboardBase } from '../services/dashboardApi.js'
 
 // Standalone "Look at our Plans" pricing page. Renders the full feature
 // comparison matrix (three tiers × many rows, grouped into sections) from the
@@ -101,6 +103,51 @@ function Cell({ value }) {
 export default function PricingPage() {
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
+  // Real DB plans (with their ids + prices) so "Choose This Plan" can start a
+  // real Razorpay checkout. /billing/plans is public, so this works logged out too.
+  const [dbPlans, setDbPlans] = useState([])
+  const [busy, setBusy] = useState('')
+  const [notice, setNotice] = useState('')
+  const loggedIn = isLoggedIn()
+
+  useEffect(() => {
+    fetchPlans().then((r) => setDbPlans(r.plans || [])).catch(() => {})
+  }, [])
+
+  // Match a pricing column (Free / ₹299 / ₹499) to a real DB plan by price.
+  const dbPlanFor = (col) => {
+    if (col.key === 'free') return dbPlans.find((p) => p.pricePaise === 0) || null
+    const inr = Number(String(col.name).replace(/[^\d]/g, '')) // "₹299" → 299
+    return dbPlans.find((p) => Math.round(p.priceInr) === inr) || null
+  }
+
+  const goDashboard = () => goToPath(getStoredUsername() ? dashboardBase(getStoredUsername()) : '/connect')
+
+  // Choose This Plan:
+  //   • Not logged in → send to Sign Up (they can pay once they have an account).
+  //   • Free plan → go to the dashboard (nothing to pay).
+  //   • Paid plan → open Razorpay checkout; the webhook applies the plan.
+  const choose = async (col) => {
+    const plan = dbPlanFor(col)
+
+    if (!loggedIn) { goToPath('/signup'); return }
+    if (col.key === 'free' || (plan && plan.pricePaise === 0)) { goDashboard(); return }
+    if (!plan) { setNotice('That plan isn’t available to buy right now.'); return }
+
+    setBusy(col.key); setNotice('')
+    try {
+      await buyPlan(plan.id)
+      // Access is granted by the Razorpay webhook — send them to the dashboard,
+      // which polls billing status and reflects the new plan once it lands.
+      setNotice('Payment received — activating your plan…')
+      setTimeout(goDashboard, 1400)
+    } catch (e) {
+      setNotice(e.message || 'Checkout was closed.')
+    } finally {
+      setBusy('')
+    }
+  }
+
   // Shared grid template: feature label column + three plan columns.
   // minmax(0,…) lets each column size purely by its fr ratio instead of its
   // content's min-width — so every row (short label or long) shares the SAME
@@ -128,6 +175,15 @@ export default function PricingPage() {
       />
 
       <SiteNav active="pricing" />
+
+      {/* Checkout status / errors (Razorpay open, payment received, closed…) */}
+      {notice && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[92%] max-w-[520px]">
+          <div className="rounded-xl px-4 py-3 text-center text-[14px] font-medium text-white" style={{ fontFamily: FONT, background: 'rgba(124,92,255,0.16)', border: '1px solid rgba(124,92,255,0.5)', backdropFilter: 'blur(8px)' }}>
+            {notice}
+          </div>
+        </div>
+      )}
 
       {/* ============ HERO ============ */}
       <section className="relative z-10 px-6 sm:px-12 md:px-20 pt-6 md:pt-12 pb-10 md:pb-16 text-center">
@@ -189,10 +245,12 @@ export default function PricingPage() {
                 </div>
                 <button
                   type="button"
-                  className="mt-2 sm:mt-4 w-full rounded-lg py-1.5 sm:py-2.5 px-1 text-[9px] leading-tight sm:text-[13px] font-semibold bg-white text-black hover:bg-white/90 transition-colors"
+                  onClick={() => choose(plan)}
+                  disabled={busy === plan.key}
+                  className="mt-2 sm:mt-4 w-full rounded-lg py-1.5 sm:py-2.5 px-1 text-[9px] leading-tight sm:text-[13px] font-semibold bg-white text-black hover:bg-white/90 transition-colors disabled:opacity-60"
                   style={{ fontFamily: FONT }}
                 >
-                  Choose This Plan
+                  {busy === plan.key ? 'Opening…' : 'Choose This Plan'}
                 </button>
               </div>
             ))}

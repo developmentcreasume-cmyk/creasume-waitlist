@@ -97,9 +97,9 @@ export default function UpgradeModal() {
   //     where the dashboard mounts fresh and reads ?view/?tab.
   const goToBilling = () => {
     setOpen(false)
-    openBilling()
-    const handle = dashboardUsername()
-    if (handle) goToPath(`${dashboardBase(handle)}?view=settings&tab=billing`)
+    // Send them to the Pricing page to pick a plan (logged in → Choose This Plan
+    // opens Razorpay right there). Falls back to the in-dashboard billing tab.
+    goToPath('/pricing')
   }
 
   return (
