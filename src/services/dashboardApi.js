@@ -180,6 +180,14 @@ export const dashboardBase = (username) => `/${encodeURIComponent(username)}/das
 export const inquiriesPath = (username) => `${dashboardBase(username)}/inquiries`
 export const inquiryDetailPath = (username, id) => `${dashboardBase(username)}/inquiries/${id}`
 
+// Deep-link to the signed-in creator's Plan & Billing tab (the dashboard reads
+// ?view=settings&tab=billing). Used by the card's "Upgrade to unlock" CTAs.
+// Falls back to the public /pricing page if we don't know the username.
+export function billingUrl() {
+  const u = getStoredUsername()
+  return u ? `${dashboardBase(u)}?view=settings&tab=billing` : '/pricing'
+}
+
 function authHeaders() {
   const token = getToken()
   return token ? { Authorization: `Bearer ${token}` } : {}

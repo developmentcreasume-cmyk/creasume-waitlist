@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useInView, useReducedMotion } from 'framer-mot
 import { FONT, MONO, LABEL_GRADIENT } from './influenceData.js'
 import { useInfluence } from './InfluenceDataContext.jsx'
 import { shortenLocation } from '../../services/influenceApi.js'
+import { billingUrl } from '../../services/dashboardApi.js'
 import { goToPath } from '../../router.js'
 import { RollUp } from '../../anim.jsx'
 
@@ -777,12 +778,13 @@ export default function ProfileHero() {
                   {pdfing ? 'Preparing…' : 'Download PDF'}
                 </motion.button>
               ) : data?.IS_OWNER ? (
-                /* Owner on a plan without the media kit → locked teaser → /pricing. */
+                /* Owner on a plan without the media kit → locked teaser → dashboard
+                   Plan & Billing tab. */
                 <motion.button
                   custom={5}
                   variants={flipIn}
                   type="button"
-                  onClick={() => goToPath('/pricing')}
+                  onClick={() => goToPath(billingUrl())}
                   title="Media-kit PDF — available on paid plans"
                   className="inline-flex items-center whitespace-nowrap gap-2.5 rounded-full text-white/70 font-semibold text-sm md:text-base px-4 md:px-7 py-3 md:py-3.5 transition-colors hover:bg-white/5"
                   style={{ fontFamily: FONT, border: '1px dashed rgba(255,255,255,0.25)', transformOrigin: 'center' }}
@@ -791,7 +793,7 @@ export default function ProfileHero() {
                     <rect x="4" y="11" width="16" height="9" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" />
                   </svg>
                   Download PDF
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#C6F24E', color: '#000' }}>Upgrade</span>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}>Upgrade</span>
                 </motion.button>
               ) : null}
             </motion.div>

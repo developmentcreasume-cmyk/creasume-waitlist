@@ -1,11 +1,12 @@
 import { goToPath } from '../../router.js'
+import { billingUrl } from '../../services/dashboardApi.js'
 
 // "Upgrade to unlock" overlay shown ONLY to the card owner (free/starter plans)
 // where a premium section would normally sit. Renders a blurred placeholder
 // (children) behind a lock + CTA. Public visitors never see this — the caller
-// gates on IS_OWNER before rendering it. Clicking the CTA goes to /pricing.
+// gates on IS_OWNER before rendering it. The CTA deep-links to the owner's
+// dashboard Plan & Billing tab.
 
-const GREEN = '#C6F24E'
 const FONT = "'Outfit', sans-serif"
 
 export default function LockedFeature({ title = 'Premium feature', note, children, minHeight = 170, className = '' }) {
@@ -36,9 +37,9 @@ export default function LockedFeature({ title = 'Premium feature', note, childre
         </div>
         <button
           type="button"
-          onClick={() => goToPath('/pricing')}
-          className="rounded-full px-5 py-2 text-[13px] font-bold text-black transition-transform hover:scale-[1.03]"
-          style={{ fontFamily: FONT, background: GREEN }}
+          onClick={() => goToPath(billingUrl())}
+          className="rounded-full px-5 py-2 text-[13px] font-bold text-white transition-transform hover:scale-[1.03]"
+          style={{ fontFamily: FONT, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))' }}
         >
           Upgrade to unlock
         </button>
