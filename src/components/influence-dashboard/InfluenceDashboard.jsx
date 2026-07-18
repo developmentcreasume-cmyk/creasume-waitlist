@@ -1505,6 +1505,25 @@ export default function InfluenceDashboard({ username }) {
       )}
       {showTour && view === 'dashboard' && <DashboardTour steps={tourSteps} onDone={finishTour} />}
 
+      {/* Persistent "How to use" button — re-launches the guided tour any time,
+          so anyone can re-learn the platform (the tour otherwise only auto-shows
+          once). Hidden while the tour is running, and on the Edit view (which has
+          its own "How to use" button for its own tour). */}
+      {!showTour && view !== 'edit' && (
+        <button
+          type="button"
+          onClick={() => { setView('dashboard'); setShowTour(true) }}
+          aria-label="How to use — replay the guided tour"
+          className="fixed bottom-5 right-5 z-40 inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-[13px] font-semibold text-white shadow-lg transition-transform hover:scale-[1.04]"
+          style={{ fontFamily: FONT, background: 'var(--theme-grad, linear-gradient(90deg,#7C5CFF,#C04DCC))', boxShadow: '0 10px 26px rgba(124,92,255,0.4)' }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="9.5" /><path d="M9.5 9.2a2.6 2.6 0 1 1 3.6 2.4c-.8.4-1.1.9-1.1 1.7" /><circle cx="12" cy="16.6" r="0.6" fill="currentColor" stroke="none" />
+          </svg>
+          How to use
+        </button>
+      )}
+
       {/* Plan-gate prompt. Mounted once here so ANY 402 raised anywhere in the
           dashboard (packages, collab-logo cap, design control, inquiries…) pops
           the upgrade modal — see the 402 handler in services/dashboardApi.js. */}
