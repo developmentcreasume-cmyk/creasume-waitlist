@@ -17,6 +17,7 @@ const Login = lazy(() => import('./pages/Login.jsx'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'))
 const ConnectInstagram = lazy(() => import('./pages/ConnectInstagram.jsx'))
+const InstagramLookup = lazy(() => import('./pages/InstagramLookup.jsx'))
 const InfluenceCard = lazy(() => import('./pages/InfluenceCard.jsx'))
 const InfluenceDashboard = lazy(() => import('./components/influence-dashboard/InfluenceDashboard.jsx'))
 const InfluenceInquiries = lazy(() => import('./components/influence-dashboard/InfluenceInquiries.jsx'))
@@ -136,6 +137,7 @@ function pickRoute(route) {
   if (route === '/forgot-password') return <ForgotPassword />
   if (route === '/reset-password') return <ResetPassword />
   if (route === '/connect') return <ConnectInstagram />
+  if (route === '/instagram-lookup') return <InstagramLookup />
 
   // Instagram login redirect target — stores the token, then forwards to the
   // creator's dashboard. Query string lives in window.location.search.

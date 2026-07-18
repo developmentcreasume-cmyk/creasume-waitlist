@@ -12,7 +12,7 @@ export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 // page (`/`), the legal pages, and the app routes are reserved and return no
 // creator. The SPA rewrite in vercel.json makes these deep links / refreshes
 // serve index.html.
-const RESERVED_PATHS = ['privacy-policy', 'terms', 'contact', 'pricing', 'how-it-works', 'influence', 'dashboard', 'waitlist', 'auth-success', 'dev-login', 'preview', 'landing', 'browse']
+const RESERVED_PATHS = ['privacy-policy', 'terms', 'contact', 'pricing', 'how-it-works', 'influence', 'dashboard', 'waitlist', 'auth-success', 'dev-login', 'preview', 'landing', 'browse', 'instagram-lookup']
 
 // Public creator directory for the "Discover Top Creators" browse page.
 export async function fetchCreators() {
@@ -170,6 +170,20 @@ function lookupToApiShape(d) {
   }
 }
 
+function sampleLookupProfile(username) {
+  return {
+    username,
+    fullName: username.split(/[._]/).filter(Boolean).map((part) => part[0]?.toUpperCase() + part.slice(1)).join(' ') || 'Sample Creator',
+    bio: 'Public Instagram details are unavailable. This Influence Card is using sample preview data.',
+    followers: 24800,
+    following: 640,
+    posts: 186,
+    engagementRateEstimate: 4.8,
+    recentPosts: [],
+    isSampleFallback: true,
+  }
+}
+
 // GET /public/:username → the raw backend payload, or null if there's no
 // configured creator, the request fails, or the creator isn't found.
 //
@@ -180,13 +194,17 @@ export async function fetchInfluenceData() {
   if (typeof window !== 'undefined') {
     const lookup = new URLSearchParams(window.location.search).get('lookup')
     if (lookup) {
-      const res = await fetch(
-        `${API_BASE}/public/lookup/${encodeURIComponent(lookup.replace(/^@/, ''))}`,
-        { cache: 'no-store' },
-      )
-      const data = await res.json().catch(() => null)
-      if (!data?.success || !data.data) return null
-      return lookupToApiShape(data.data)
+      const username = lookup.replace(/^@/, '')
+      try {
+        const res = await fetch(
+          `${API_BASE}/public/lookup/${encodeURIComponent(username)}`,
+          { cache: 'no-store' },
+        )
+        const data = await res.json().catch(() => null)
+        return lookupToApiShape(data?.success && data.data ? data.data : sampleLookupProfile(username))
+      } catch {
+        return lookupToApiShape(sampleLookupProfile(username))
+      }
     }
   }
 
