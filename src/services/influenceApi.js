@@ -140,11 +140,12 @@ function lookupToApiShape(d) {
       username: d.username,
       name: d.fullName || d.username,
       bio: d.bio || '',
+      niche: d.category || '',
       profilePicture: d.profilePicture || '',
-      // Preview: show the founding badge + verified tick as a sample of the
-      // full card. (Real cards derive these from the creator's admin flags.)
-      isVerified: true,
-      isFoundingCreator: true,
+      // Verification is public profile data. Founding Creator is a Creasume
+      // membership status and must never be invented for an arbitrary lookup.
+      isVerified: Boolean(d.isVerified),
+      isFoundingCreator: false,
       // Preview mode: no publicId (this isn't a saved Creasume creator).
     },
     stats: {
@@ -167,6 +168,8 @@ function lookupToApiShape(d) {
     packagesActive: true,
     growth,
     isLookupPreview: true,
+    lookupSource: d.source || 'sample-fallback',
+    isSampleFallback: Boolean(d.isSampleFallback),
   }
 }
 
