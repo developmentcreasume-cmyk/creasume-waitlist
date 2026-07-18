@@ -451,6 +451,11 @@ export function mapInfluenceData(api, d) {
     ...d.CREATOR,
     name: c.name || c.username || d.CREATOR.name,
     username: c.username || d.CREATOR.username,
+    // Real tagline only. The sample default (d.CREATOR.tagline) is an
+    // OWNER-facing dashboard line ("Here's what's happening…") and must never
+    // leak onto a public card — so if the creator hasn't set one, leave it
+    // blank and ProfileHero collapses the subtitle instead of showing it.
+    tagline: c.tagline || '',
     bio: c.bio || d.CREATOR.bio,
     niche: c.niche || d.CREATOR.niche,
     // Admin-managed badges. A Founding Creator is always verified.

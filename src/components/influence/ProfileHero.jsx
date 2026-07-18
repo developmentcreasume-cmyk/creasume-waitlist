@@ -691,17 +691,21 @@ export default function ProfileHero() {
                 </span>
               )}
             </motion.div>
-            <motion.p
-              custom={1}
-              variants={textFade}
-              initial="hidden"
-              whileInView="show"
-              viewport={viewport}
-              className="text-white text-sm md:text-base mb-8 md:mb-10"
-              style={{ fontFamily: FONT, fontWeight: 300 }}
-            >
-              {CREATOR.tagline}
-            </motion.p>
+            {CREATOR.tagline ? (
+              <motion.p
+                custom={1}
+                variants={textFade}
+                initial="hidden"
+                whileInView="show"
+                viewport={viewport}
+                className="text-white text-sm md:text-base mb-8 md:mb-10"
+                style={{ fontFamily: FONT, fontWeight: 300 }}
+              >
+                {CREATOR.tagline}
+              </motion.p>
+            ) : (
+              <div className="mb-8 md:mb-10" />
+            )}
 
             {/* Headline stat pills — flip in on a horizontal axis. Two per row
                 (2×2) on small screens; a single flex row on large screens. */}
