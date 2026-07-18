@@ -151,7 +151,17 @@ export default function TopPosts() {
             className={`block no-underline relative rounded-2xl overflow-hidden shrink-0 h-[clamp(150px,27svh,290px)] md:h-[78%] transition-transform hover:scale-[1.02] ${post.permalink ? 'cursor-pointer' : ''}`}
             style={{ aspectRatio: '4/5', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}
           >
-            <img src={post.photo} alt="Featured post" className="w-full h-full object-cover" />
+            <img
+              src={post.photo}
+              alt="Featured post"
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+              onError={(event) => {
+                const image = event.currentTarget
+                if (post.photoFallback && image.src !== post.photoFallback) image.src = post.photoFallback
+                else image.style.visibility = 'hidden'
+              }}
+            />
           </motion.a>
         </AnimatePresence>
       </div>

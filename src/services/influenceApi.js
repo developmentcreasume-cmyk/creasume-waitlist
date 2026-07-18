@@ -44,6 +44,15 @@ export function formatCount(n) {
   return String(num)
 }
 
+// Instagram CDN URLs are short-lived and often reject browser hotlinks. In
+// lookup-preview mode, fetch/cache the public image through wsrv.nl and retain
+// the original Instagram URL as a final fallback.
+function lookupImageUrl(url, width = 900, height = 0) {
+  if (!url) return ''
+  const size = `&w=${width}${height ? `&h=${height}&fit=cover` : ''}`
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}${size}&output=webp&q=85`
+}
+
 // Convert the /public/lookup payload (real public IG data for ANY username, no
 // login) into the same `api` shape mapInfluenceData() consumes, so the full
 // Influence Card renders with the FETCHED public data. Only the fields Instagram
@@ -54,8 +63,9 @@ function lookupToApiShape(d) {
     id: p.id,
     caption: p.caption || '',
     media_type: p.isVideo ? 'VIDEO' : 'IMAGE',
-    media_url: p.thumbnail,
-    thumbnail_url: p.thumbnail,
+    media_url: lookupImageUrl(p.thumbnail),
+    thumbnail_url: lookupImageUrl(p.thumbnail),
+    raw_media_url: p.thumbnail,
     permalink: p.permalink,
     like_count: p.likes || 0,
     comments_count: p.comments || 0,
@@ -486,9 +496,11 @@ export function mapInfluenceData(api, d) {
     // hotlink-blocked and expires); ProfileHero falls back to the initial if
     // even the proxy can't serve it. Keyed by the opaque publicId (falling back
     // to username) so the request doesn't leak the @handle and still resolves.
-    avatar: c.profilePicture && (c.publicId || c.username)
-      ? `${API_BASE}/public/avatar/${encodeURIComponent(c.publicId || c.username)}`
-      : '',
+    avatar: api.isLookupPreview
+      ? lookupImageUrl(c.profilePicture, 400, 400)
+      : c.profilePicture && (c.publicId || c.username)
+        ? `${API_BASE}/public/avatar/${encodeURIComponent(c.publicId || c.username)}`
+        : '',
     // Raw Instagram CDN URL — used as a fallback if the proxy isn't deployed yet
     // (ProfileHero tries it with referrerPolicy=no-referrer before the initial).
     avatarRaw: c.profilePicture || '',
@@ -742,6 +754,7 @@ export function mapInfluenceData(api, d) {
         )
         .map((m) => ({
           photo: postImg(m),
+          photoFallback: m.raw_media_url || '',
           permalink: m.permalink,
           caption: m.caption,
           type: m.media_type === 'VIDEO' ? 'REEL' : 'POST',
@@ -750,6 +763,7 @@ export function mapInfluenceData(api, d) {
   if (ranked.length) {
     TOP_POSTS = ranked.slice(0, 3).map((p) => ({
       photo: p.photo,
+      photoFallback: p.photoFallback || '',
       permalink: p.permalink || '',
       caption: p.caption ? p.caption.slice(0, 60) : 'Top post',
       type: p.type,
