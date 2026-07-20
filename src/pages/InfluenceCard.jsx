@@ -12,18 +12,20 @@ import SyncProgressBar from '../shared/SyncProgressBar.jsx'
 import { isLoggedIn, getStoredUsername, dashboardBase } from '../services/dashboardApi.js'
 import { goToPath } from '../router.js'
 
-// Floating "Dashboard" button — shown ONLY on the signed-in creator's OWN card
-// (their stored username matches the card's username in the URL), so browsing
-// another creator's card never shows a stray Dashboard button. Hidden from
-// logged-out visitors entirely.
+// Floating "Dashboard" button — shown ONLY when the creator is inspecting their
+// own card FROM the dashboard, i.e. the URL carries ?owner=1 ("View Live
+// Profile") or ?preview (the Edit-Profile iframe). The plain shareable link is
+// what brands and visitors open, so it must stay clean — no Dashboard button —
+// even when the owner themselves opens it. Same rule as the "Upgrade to
+// unlock" overlays, so owner-only chrome appears in exactly one place.
 function DashboardFab() {
   const uname = getStoredUsername()
   if (!isLoggedIn() || !uname) return null
+  if (typeof window === 'undefined') return null
+  const q = new URLSearchParams(window.location.search)
+  if (!q.has('owner') && !q.has('preview')) return null
   // First path segment is the card's username (/<username>/<publicId>).
-  const seg =
-    typeof window !== 'undefined'
-      ? decodeURIComponent((window.location.pathname.split('/').filter(Boolean)[0] || ''))
-      : ''
+  const seg = decodeURIComponent(window.location.pathname.split('/').filter(Boolean)[0] || '')
   if (seg.toLowerCase() !== uname.toLowerCase()) return null
   return (
     <button
