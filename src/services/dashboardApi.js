@@ -330,10 +330,26 @@ export async function buyPlan(planId, referralCode = '') {
       description: `${res.plan.name} — ₹${res.plan.priceInr}`,
       prefill: res.prefill || {},
       theme: { color: '#7C5CFF' },
-      // Access is granted by the Razorpay WEBHOOK (source of truth), not here.
-      // On checkout success we just resolve; the UI then re-fetches
-      // /billing/status (the webhook flips the plan to active server-side).
-      handler: () => resolve({ pending: true }),
+      // On success, confirm the payment with our backend right away so the plan
+      // applies IMMEDIATELY (POST /billing/verify checks Razorpay's signature and
+      // runs the same grantAccess the webhook does). The webhook stays the source
+      // of truth for renewals/failures and for when the browser closes mid-pay;
+      // grantAccess is idempotent, so whichever lands second is a no-op.
+      handler: async (resp) => {
+        try {
+          await dapi.post('/billing/verify', {
+            razorpay_order_id: resp?.razorpay_order_id,
+            razorpay_subscription_id: resp?.razorpay_subscription_id || res.subscriptionId,
+            razorpay_payment_id: resp?.razorpay_payment_id,
+            razorpay_signature: resp?.razorpay_signature,
+          })
+          resolve({ applied: true })
+        } catch {
+          // Payment DID succeed — only our instant-apply call failed. The webhook
+          // will still activate the plan, so don't show this as a payment error.
+          resolve({ applied: false, pending: true })
+        }
+      },
       modal: { ondismiss: () => reject(new Error('Checkout closed before payment.')) },
     }
     const options = res.type === 'subscription'

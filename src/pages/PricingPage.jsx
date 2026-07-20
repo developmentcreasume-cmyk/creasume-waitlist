@@ -14,9 +14,12 @@ const FONT = "'Outfit', sans-serif"
 
 // Three plan columns. `price` is the headline; `unit` is the small suffix.
 const PLANS = [
-  { key: 'free', name: 'Free', price: '0', unit: '/Lifetime', highlight: false },
-  { key: 'pro', name: '₹299', unit: '/Month', highlight: false },
-  { key: 'premium', name: '₹499', unit: '/Month', highlight: false },
+  // `slug` ties each column to a REAL backend plan (backend/models/Plan.js).
+  // Matching on the displayed price string was brittle — if the copy ever drifts
+  // from the DB price, no plan matches and checkout can't start. The slug is stable.
+  { key: 'free', slug: 'free', name: 'Free', price: '0', unit: '/Lifetime', highlight: false },
+  { key: 'pro', slug: 'starter', name: '₹299', unit: '/Month', highlight: false },
+  { key: 'premium', slug: 'core', name: '₹499', unit: '/Month', highlight: false },
 ]
 
 // Feature matrix. Each row has the label and a value per plan in [free, pro,
@@ -114,11 +117,15 @@ export default function PricingPage() {
     fetchPlans().then((r) => setDbPlans(r.plans || [])).catch(() => {})
   }, [])
 
-  // Match a pricing column (Free / ₹299 / ₹499) to a real DB plan by price.
-  const dbPlanFor = (col) => {
-    if (col.key === 'free') return dbPlans.find((p) => p.pricePaise === 0) || null
+  // Match a pricing column to a real DB plan: by slug first (stable), then by
+  // the displayed price as a fallback if the slugs were ever renamed.
+  const matchPlan = (list, col) => {
+    if (!list || !list.length) return null
+    const bySlug = list.find((p) => p.slug === col.slug)
+    if (bySlug) return bySlug
+    if (col.key === 'free') return list.find((p) => p.pricePaise === 0) || null
     const inr = Number(String(col.name).replace(/[^\d]/g, '')) // "₹299" → 299
-    return dbPlans.find((p) => Math.round(p.priceInr) === inr) || null
+    return list.find((p) => Math.round(p.priceInr) === inr) || null
   }
 
   const goDashboard = () => goToPath(getStoredUsername() ? dashboardBase(getStoredUsername()) : '/connect')
@@ -128,18 +135,32 @@ export default function PricingPage() {
   //   • Free plan → go to the dashboard (nothing to pay).
   //   • Paid plan → open Razorpay checkout; the webhook applies the plan.
   const choose = async (col) => {
-    const plan = dbPlanFor(col)
-
     if (!loggedIn) { goToPath('/signup'); return }
-    if (col.key === 'free' || (plan && plan.pricePaise === 0)) { goDashboard(); return }
-    if (!plan) { setNotice('That plan isn’t available to buy right now.'); return }
+    // Free has nothing to pay — straight to the dashboard.
+    if (col.key === 'free') { goDashboard(); return }
 
     setBusy(col.key); setNotice('')
     try {
-      await buyPlan(plan.id)
-      // Access is granted by the Razorpay webhook — send them to the dashboard,
-      // which polls billing status and reflects the new plan once it lands.
-      setNotice('Payment received — activating your plan…')
+      // The plans list may not have loaded yet (slow network, or the first fetch
+      // failed). Fetch it on demand rather than refusing to open checkout.
+      let list = dbPlans
+      if (!list.length) {
+        const r = await fetchPlans().catch(() => null)
+        list = (r && r.plans) || []
+        if (list.length) setDbPlans(list)
+      }
+
+      const plan = matchPlan(list, col)
+      if (!plan) throw new Error('That plan isn’t available to buy right now.')
+      if (plan.pricePaise === 0) { goDashboard(); return }
+
+      const result = await buyPlan(plan.id)
+      // /billing/verify applied it already; the webhook is the backstop.
+      setNotice(
+        result && result.applied
+          ? 'Payment successful — your plan is active.'
+          : 'Payment received — activating your plan…'
+      )
       setTimeout(goDashboard, 1400)
     } catch (e) {
       setNotice(e.message || 'Checkout was closed.')
