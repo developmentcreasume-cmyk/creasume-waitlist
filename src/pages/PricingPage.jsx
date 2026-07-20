@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import SiteNav from '../components/SiteNav.jsx'
 import FooterCard from '../components/FooterCard.jsx'
 import { goToPath } from '../router.js'
-import { isLoggedIn, fetchPlans, buyPlan, getStoredUsername, dashboardBase } from '../services/dashboardApi.js'
+import { isLoggedIn, fetchPlans, buyPlan, getStoredUsername, setStoredUsername, fetchMe, dashboardBase } from '../services/dashboardApi.js'
 
 // Standalone "Look at our Plans" pricing page. Renders the full feature
 // comparison matrix (three tiers × many rows, grouped into sections) from the
@@ -130,10 +130,29 @@ export default function PricingPage() {
 
   const goDashboard = () => goToPath(getStoredUsername() ? dashboardBase(getStoredUsername()) : '/connect')
 
+  // Same, but for AFTER a successful payment: someone who just paid must land on
+  // their dashboard, so if the username isn't in storage yet we ask the backend
+  // for it instead of dumping them on /connect. Falls back to goDashboard() if
+  // that lookup fails, so a paid user is never left stranded on this page.
+  const goDashboardAfterPay = async () => {
+    if (getStoredUsername()) { goDashboard(); return }
+    try {
+      const me = await fetchMe()
+      const username = me?.creator?.username || me?.username
+      if (username) {
+        setStoredUsername(username)
+        goToPath(dashboardBase(username))
+        return
+      }
+    } catch { /* fall through */ }
+    goDashboard()
+  }
+
   // Choose This Plan:
   //   • Not logged in → send to Sign Up (they can pay once they have an account).
   //   • Free plan → go to the dashboard (nothing to pay).
-  //   • Paid plan → open Razorpay checkout; the webhook applies the plan.
+  //   • Paid plan → open Razorpay checkout; /billing/verify applies the plan on
+  //     success (webhook is the backstop), then we send them to the dashboard.
   const choose = async (col) => {
     if (!loggedIn) { goToPath('/signup'); return }
     // Free has nothing to pay — straight to the dashboard.
@@ -161,7 +180,8 @@ export default function PricingPage() {
           ? 'Payment successful — your plan is active.'
           : 'Payment received — activating your plan…'
       )
-      setTimeout(goDashboard, 1400)
+      // Brief pause so they actually see the confirmation, then to the dashboard.
+      setTimeout(goDashboardAfterPay, 1200)
     } catch (e) {
       setNotice(e.message || 'Checkout was closed.')
     } finally {
