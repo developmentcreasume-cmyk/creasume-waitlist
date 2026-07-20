@@ -286,19 +286,6 @@ export default function Login() {
             )}
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-              {isSignup && (
-                <div>
-                  <label className="block text-white text-[13px] font-medium mb-2" style={{ fontFamily: FONT }}>Full Name</label>
-                  <input
-                    type="text"
-                    value={form.name}
-                    onChange={(e) => set('name', e.target.value)}
-                    placeholder="Enter your name"
-                    className="w-full rounded-lg px-4 py-3 text-[15px] text-white outline-none transition-colors focus:border-white/40 placeholder:text-white/35"
-                    style={{ fontFamily: FONT, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.14)' }}
-                  />
-                </div>
-              )}
               {method === 'email' ? (
                 <>
                   <div>

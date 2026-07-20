@@ -1,7 +1,8 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, MotionConfig, useScroll } from 'framer-motion'
 import { goToPath } from '../router.js'
 import { isLoggedIn, getStoredUsername, dashboardBase } from '../services/dashboardApi.js'
+import { fetchLandingContent } from '../services/influenceApi.js'
 import { fadeUp, outlineDraw, staggerParent } from '../motion-variants.js'
 import { CountUp, Typewriter } from '../anim.jsx'
 import SensesSection from '../SensesSection.jsx'
@@ -61,17 +62,18 @@ function Marquee({ children, duration = 22, className = '', reverse = false, rep
   )
 }
 
-// Spotify-style placeholder brand chip (repeated in the trust marquee).
+const BRAND_CHIP_CLASS = 'flex items-center gap-4 rounded-2xl px-9 py-6 mx-3 shrink-0'
+const BRAND_CHIP_STYLE = {
+  width: '270px',
+  background: 'linear-gradient(135deg, rgba(20,40,30,0.9) 0%, rgba(10,16,30,0.9) 100%)',
+  border: '1px solid rgba(255,255,255,0.08)',
+}
+
+// Spotify-style placeholder chip — shown only until an admin adds real brands
+// (Admin → Landing page → Brands).
 function BrandChip() {
   return (
-    <div
-      className="flex items-center gap-4 rounded-2xl px-9 py-6 mx-3 shrink-0"
-      style={{
-        width: '270px',
-        background: 'linear-gradient(135deg, rgba(20,40,30,0.9) 0%, rgba(10,16,30,0.9) 100%)',
-        border: '1px solid rgba(255,255,255,0.08)',
-      }}
-    >
+    <div className={BRAND_CHIP_CLASS} style={BRAND_CHIP_STYLE}>
       <span className="flex items-center justify-center w-12 h-12 rounded-full shrink-0" style={{ background: '#1DB954' }}>
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="11" fill="#1DB954" />
@@ -81,6 +83,41 @@ function BrandChip() {
       </span>
       <span className="text-white font-semibold text-2xl" style={{ fontFamily: "'Outfit', sans-serif" }}>Spotify</span>
     </div>
+  )
+}
+
+// A real admin-added brand. Becomes a link when a website was supplied; the
+// logo falls back to the brand's initial so a missing image never breaks it.
+function RealBrandChip({ brand }) {
+  const initial = (brand.name || '?').trim().charAt(0).toUpperCase()
+  const inner = (
+    <>
+      {brand.imageUrl ? (
+        <img
+          src={brand.imageUrl}
+          alt={brand.name}
+          className="w-12 h-12 rounded-full shrink-0 object-contain"
+          style={{ background: 'rgba(255,255,255,0.06)' }}
+        />
+      ) : (
+        <span
+          className="grid place-items-center w-12 h-12 rounded-full shrink-0 text-white font-bold text-xl"
+          style={{ background: 'rgba(255,255,255,0.14)' }}
+        >
+          {initial}
+        </span>
+      )}
+      <span className="text-white font-semibold text-2xl truncate" style={{ fontFamily: "'Outfit', sans-serif" }}>
+        {brand.name}
+      </span>
+    </>
+  )
+  return brand.website ? (
+    <a href={brand.website} target="_blank" rel="noreferrer" className={`${BRAND_CHIP_CLASS} no-underline`} style={BRAND_CHIP_STYLE}>
+      {inner}
+    </a>
+  ) : (
+    <div className={BRAND_CHIP_CLASS} style={BRAND_CHIP_STYLE}>{inner}</div>
   )
 }
 
@@ -95,6 +132,17 @@ export default function LandingPage() {
   const loggedIn = isLoggedIn()
   const dashHref = loggedIn ? (getStoredUsername() ? dashboardBase(getStoredUsername()) : '/connect') : '/signup'
   const primaryLabel = loggedIn ? 'Go to Dashboard' : 'Start Now'
+
+  // The PRICING cards are a buying intent, not a "get to my dashboard" intent —
+  // so they don't reuse dashHref. Logged out → sign up first; logged in → the
+  // pricing page, where "Choose This Plan" opens Razorpay.
+  const pricingHref = loggedIn ? '/pricing' : '/signup'
+
+  // Testimonials + brand logos managed from Admin → Landing page. Both lists
+  // start empty and fall back to placeholder cards, so a slow or failed fetch
+  // just leaves the page looking exactly as it did before.
+  const [landing, setLanding] = useState({ testimonials: [], brands: [] })
+  useEffect(() => { fetchLandingContent().then(setLanding) }, [])
 
   // Founding Creator perks: cards unstack from a centre pile, scrubbed by scroll.
   const perksHeadingRef = useRef(null)
@@ -338,7 +386,7 @@ export default function LandingPage() {
       </section>
 
       {/* ============ TESTIMONIALS ============ */}
-      <Testimonials />
+      <Testimonials items={landing.testimonials} />
 
       {/* ============ CONSENT BADGE ============ */}
       <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-10 md:py-16 text-center">
@@ -481,8 +529,12 @@ export default function LandingPage() {
           <h2 className="text-3xl md:text-5xl font-bold mb-3">Brands that Trust Creasume</h2>
           <p className="text-white/60 text-sm md:text-base">Discover brands that trust Creasume for getting their collaborations</p>
         </div>
-        <Marquee duration={22}>
-          {Array.from({ length: 6 }).map((_, i) => <BrandChip key={i} />)}
+        {/* `repeat` tiles each marquee half until it's wider than the screen —
+            needed when only a couple of brands are configured, or the loop gaps. */}
+        <Marquee duration={22} repeat={landing.brands.length ? Math.max(1, Math.ceil(6 / landing.brands.length)) : 2}>
+          {landing.brands.length
+            ? landing.brands.map((b) => <RealBrandChip key={b._id} brand={b} />)
+            : Array.from({ length: 6 }).map((_, i) => <BrandChip key={i} />)}
         </Marquee>
       </section>
 
@@ -504,7 +556,7 @@ export default function LandingPage() {
       </section>
 
       {/* ============ PRICING ============ */}
-      <Pricing onGetStarted={() => goToPath(dashHref)} />
+      <Pricing onGetStarted={() => goToPath(pricingHref)} />
 
       {/* ============ FOUNDING CREATOR PERKS ============ */}
       <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-12 md:py-24 overflow-hidden">

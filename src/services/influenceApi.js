@@ -14,6 +14,20 @@ export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 // serve index.html.
 const RESERVED_PATHS = ['privacy-policy', 'terms', 'contact', 'pricing', 'how-it-works', 'influence', 'dashboard', 'waitlist', 'auth-success', 'dev-login', 'preview', 'landing', 'browse', 'instagram-lookup']
 
+// Admin-managed landing page content (Admin → Landing page): the creator
+// testimonials and the brand logos. Returns empty lists on ANY failure so the
+// landing page just keeps its placeholder cards instead of erroring.
+export async function fetchLandingContent() {
+  try {
+    const res = await fetch(`${API_BASE}/public/landing`)
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || data.success === false) return { testimonials: [], brands: [] }
+    return { testimonials: data.testimonials || [], brands: data.brands || [] }
+  } catch {
+    return { testimonials: [], brands: [] }
+  }
+}
+
 // Public creator directory for the "Discover Top Creators" browse page.
 export async function fetchCreators() {
   const res = await fetch(`${API_BASE}/public/creators`)
