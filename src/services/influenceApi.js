@@ -251,12 +251,17 @@ export async function fetchInfluenceData() {
 }
 
 // Bearer header carrying the signed-in creator's token, but ONLY when the card
-// is rendered in the dashboard preview iframe (same-origin, so localStorage is
-// shared with the dashboard). Empty for a normal public card view.
+// is opened by its owner from the dashboard — either the Edit-Profile preview
+// iframe (`?preview=…`) or "View Live Profile" (`?owner=1`). Both are
+// same-origin, so localStorage is shared with the dashboard. The token is what
+// makes the backend grant isOwner, which serves un-gated analytics (real reach
+// / views / growth) even on the free plan. A normal public card view stays
+// token-less, so visitors keep the plan-gated behaviour.
 function previewAuthHeader() {
   try {
     if (typeof window === 'undefined') return {}
-    if (!new URLSearchParams(window.location.search).has('preview')) return {}
+    const p = new URLSearchParams(window.location.search)
+    if (!p.has('preview') && !p.has('owner')) return {}
     const t = localStorage.getItem('creasume_token')
     return t ? { Authorization: `Bearer ${t}` } : {}
   } catch { return {} }
