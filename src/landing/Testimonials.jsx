@@ -66,20 +66,22 @@ function TestimonialCard({ item }) {
   )
 }
 
+// A scrolling marquee only reads correctly when the cards overflow the screen —
+// its track slides -50%, so each half must already be wider than the viewport.
+// Below this many, the loop would show each card several times over with an
+// obvious gap, so we lay them out centred and static instead: add one
+// testimonial and exactly one card appears, add two and two appear.
+const MARQUEE_MIN = 5
+
 export default function Testimonials({ items = [] }) {
   const hasReal = items.length > 0
-  // The marquee slides its track -50%, so each half must hold the same content.
-  // With only one or two real testimonials a single pass is too narrow to fill
-  // a wide screen, which shows as a gap in the loop — repeat until it's wide.
-  const reps = hasReal ? Math.max(1, Math.ceil(6 / items.length)) : 1
-  const cards = hasReal
-    ? Array.from({ length: reps }).flatMap(() => items)
-    : SLOTS
+  const useMarquee = !hasReal || items.length >= MARQUEE_MIN
+  const cards = hasReal ? items : SLOTS
 
   const half = (hidden) => (
     <div className="flex shrink-0" aria-hidden={hidden}>
       {cards.map((it, i) =>
-        hasReal ? <TestimonialCard key={`${it._id || i}-${i}`} item={it} /> : <PlaceholderCard key={i} />
+        hasReal ? <TestimonialCard key={it._id || i} item={it} /> : <PlaceholderCard key={i} />
       )}
     </div>
   )
@@ -94,24 +96,37 @@ export default function Testimonials({ items = [] }) {
         </p>
       </div>
 
-      {/* Auto-scrolling marquee: two identical halves + CSS slide loop. Pauses on
-          hover (lp-marquee-group). Edge fade masks the in/out so cards don't pop. */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-80px' }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="lp-marquee-group flex w-full overflow-hidden"
-        style={{
-          WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%)',
-          maskImage: 'linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%)',
-        }}
-      >
-        <div className="lp-marquee" style={{ animationDuration: '40s' }}>
-          {half(undefined)}
-          {half(true)}
-        </div>
-      </motion.div>
+      {useMarquee ? (
+        /* Auto-scrolling marquee: two identical halves + CSS slide loop. Pauses on
+           hover (lp-marquee-group). Edge fade masks the in/out so cards don't pop. */
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="lp-marquee-group flex w-full overflow-hidden"
+          style={{
+            WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%)',
+            maskImage: 'linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%)',
+          }}
+        >
+          <div className="lp-marquee" style={{ animationDuration: '40s' }}>
+            {half(undefined)}
+            {half(true)}
+          </div>
+        </motion.div>
+      ) : (
+        /* Just a few testimonials — show each exactly once, centred. */
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="flex flex-wrap justify-center gap-y-6 px-6"
+        >
+          {items.map((it, i) => <TestimonialCard key={it._id || i} item={it} />)}
+        </motion.div>
+      )}
     </section>
   )
 }

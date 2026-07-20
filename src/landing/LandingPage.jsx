@@ -529,13 +529,22 @@ export default function LandingPage() {
           <h2 className="text-3xl md:text-5xl font-bold mb-3">Brands that Trust Creasume</h2>
           <p className="text-white/60 text-sm md:text-base">Discover brands that trust Creasume for getting their collaborations</p>
         </div>
-        {/* `repeat` tiles each marquee half until it's wider than the screen —
-            needed when only a couple of brands are configured, or the loop gaps. */}
-        <Marquee duration={22} repeat={landing.brands.length ? Math.max(1, Math.ceil(6 / landing.brands.length)) : 2}>
-          {landing.brands.length
-            ? landing.brands.map((b) => <RealBrandChip key={b._id} brand={b} />)
-            : Array.from({ length: 6 }).map((_, i) => <BrandChip key={i} />)}
-        </Marquee>
+        {/* Same rule as the testimonials: scroll only once there are enough chips
+            to overflow the screen. Below that, show each brand exactly once,
+            centred — one brand added means one chip, not a repeating loop. */}
+        {!landing.brands.length ? (
+          <Marquee duration={22}>
+            {Array.from({ length: 6 }).map((_, i) => <BrandChip key={i} />)}
+          </Marquee>
+        ) : landing.brands.length >= 6 ? (
+          <Marquee duration={22} repeat={1}>
+            {landing.brands.map((b) => <RealBrandChip key={b._id} brand={b} />)}
+          </Marquee>
+        ) : (
+          <div className="flex flex-wrap justify-center gap-y-6 px-8">
+            {landing.brands.map((b) => <RealBrandChip key={b._id} brand={b} />)}
+          </div>
+        )}
       </section>
 
       {/* ============ YOUR NEXT BRAND DEAL ============ */}
