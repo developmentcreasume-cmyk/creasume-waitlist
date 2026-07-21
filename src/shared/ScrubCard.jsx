@@ -50,13 +50,9 @@ export function ScrubCard({ progress, start, length = 0.30, stackedX, stackedY, 
       <motion.div
         className="rounded-2xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
         variants={{
-          rest: { scale: 1, boxShadow: '0 0 0 0 rgba(93,101,220,0), 0 0 0 0 rgba(93,101,220,0)' },
-          hover: {
-            scale: 1.05,
-            // Bright edge ring + soft outer bloom = a glowing border on hover.
-            boxShadow:
-              '0 0 0 1px rgba(156,162,225,0.9), 0 0 18px 1px rgba(93,101,220,0.6), 0 0 44px 6px rgba(93,101,220,0.35)',
-          },
+          // No glowing border/bloom — just a subtle zoom on hover.
+          rest: { scale: 1 },
+          hover: { scale: 1.05 },
         }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
         style={{

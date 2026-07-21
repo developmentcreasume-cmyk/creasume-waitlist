@@ -9,7 +9,7 @@ import FooterCard from '../components/FooterCard.jsx'
 // The form posts each message to a Google Sheet (Apps Script web app).
 
 const FONT = "'Outfit', sans-serif"
-const CONTACT_EMAIL = 'contact@sanatcreatives.com'
+const CONTACT_EMAIL = 'core.creasume@gmail.com'
 
 const lineInput =
   'contact-field w-full bg-transparent text-white text-[15px] outline-none placeholder:text-white/35 border-b border-white/25 focus:border-white/60 transition-colors pb-2'

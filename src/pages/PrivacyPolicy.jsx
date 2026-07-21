@@ -50,7 +50,7 @@ const SECTIONS = [
   {
     heading: '8. Grievance Redressal',
     paragraphs: [
-      'If you have any concern about your data, you may contact our Grievance Officer at support@creasume.com. We will respond within a reasonable time.',
+      'If you have any concern about your data, you may contact our Grievance Officer at core.creasume@gmail.com. We will respond within a reasonable time.',
     ],
   },
   {
@@ -61,7 +61,7 @@ const SECTIONS = [
   },
   {
     heading: '10. Contact Us',
-    paragraphs: ['For any questions about this Policy, contact us at support@creasume.com.'],
+    paragraphs: ['For any questions about this Policy, contact us at core.creasume@gmail.com.'],
   },
 ]
 

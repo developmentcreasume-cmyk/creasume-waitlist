@@ -69,7 +69,7 @@ const SECTIONS = [
   },
   {
     heading: '12. Contact Us',
-    paragraphs: ['For any questions about these Terms, contact us at support@creasume.com.'],
+    paragraphs: ['For any questions about these Terms, contact us at core.creasume@gmail.com.'],
   },
 ]
 

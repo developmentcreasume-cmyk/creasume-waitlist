@@ -51,12 +51,12 @@ function Footer() {
         <div>
           <h4 className="font-semibold text-2xl mb-6">Work with Us</h4>
           <ul className="space-y-4 text-sm md:text-lg text-white">
-            <li><a href="mailto:partnerships@creasume.com" className="hover:text-white transition break-words">partnerships@creasume.com</a></li>
+            <li><a href="mailto:core.creasume@gmail.com" className="hover:text-white transition break-words">core.creasume@gmail.com</a></li>
           </ul>
           <h4 className="font-semibold text-2xl mt-8 mb-6">Contact Us</h4>
           <ul className="space-y-4 text-sm md:text-lg text-white">
             <li><a href="#/contact" className="hover:text-white transition">Send us a message</a></li>
-            <li><a href="mailto:support@creasume.com" className="hover:text-white transition break-words">support@creasume.com</a></li>
+            <li><a href="mailto:core.creasume@gmail.com" className="hover:text-white transition break-words">core.creasume@gmail.com</a></li>
           </ul>
         </div>
         <div className="text-right md:text-left">
