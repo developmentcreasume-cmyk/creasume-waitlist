@@ -26,14 +26,23 @@
 function doPost(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('Waitlist response') || ss.getSheetByName('Sheet1') || ss.getSheets()[0];
+    var sheet = ss.getSheetByName('Waitlist (response) linked');
+    if (!sheet) {
+      throw new Error('Sheet tab "Waitlist (response) linked" was not found.');
+    }
+
+    var headers = ['Timestamp', 'Name', 'Email', 'Instagram', 'Send?', 'Phone', 'Followers', 'Posts'];
+    if (sheet.getLastRow() === 0) {
+      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      sheet.setFrozenRows(1);
+    }
 
     var data = {};
     if (e && e.postData && e.postData.contents) {
       data = JSON.parse(e.postData.contents);
     }
 
-    sheet.appendRow([
+    var row = [
       new Date(),
       data.name || '',
       data.email || '',
@@ -42,7 +51,12 @@ function doPost(e) {
       data.phone || '',
       data.followers || '',
       data.posts || '',
-    ]);
+    ];
+
+    // Keep the newest submission directly below the header row.
+    sheet.insertRowAfter(1);
+    sheet.getRange(2, 1, 1, row.length).setValues([row]);
+    sheet.getRange(2, 5).insertCheckboxes().setValue(false);
 
     return ContentService
       .createTextOutput(JSON.stringify({ ok: true }))
@@ -60,7 +74,7 @@ function doGet() {
 }
 
 function sendEmails() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Waitlist response"); // adjust sheet name
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Waitlist (response) linked");
   const data = sheet.getDataRange().getValues();
 
   for (let i = 1; i < data.length; i++) {

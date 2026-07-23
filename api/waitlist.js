@@ -1,16 +1,10 @@
-import process from 'node:process'
-
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const WAITLIST_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzoFsnidF5uEzdTRf6g86w8rWv0we-KLNHkEVdDezA33hLH11C8AjRUJtVL8L75r6JYww/exec'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
     return res.status(405).json({ ok: false, error: 'Method not allowed.' })
-  }
-
-  const endpoint = process.env.SHEET_ENDPOINT || process.env.VITE_SHEET_ENDPOINT
-  if (!endpoint) {
-    return res.status(500).json({ ok: false, error: 'Waitlist endpoint is not configured.' })
   }
 
   try {
@@ -28,7 +22,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Name, valid email, and Instagram handle are required.' })
     }
 
-    const googleResponse = await fetch(endpoint, {
+    const googleResponse = await fetch(WAITLIST_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(payload),
