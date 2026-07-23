@@ -13,6 +13,7 @@ import { FeatureCards } from './shared/FeatureCards.jsx'
 import { JoinedProof } from './shared/JoinedProof.jsx'
 import ScrollCue from './shared/ScrollCue.jsx'
 import Seo from './shared/Seo.jsx'
+import { submitWaitlist } from './services/waitlistApi.js'
 import './App.css'
 
 function App() {
@@ -56,18 +57,6 @@ function App() {
       return
     }
 
-    const endpoint = import.meta.env.VITE_SHEET_ENDPOINT
-    // Without an endpoint the row goes nowhere — but a `no-cors` POST to a bad
-    // URL still resolves opaquely, which would falsely look like success. Guard
-    // it so the form reports an error instead of silently dropping the signup.
-    if (!endpoint) {
-      console.error(
-        'VITE_SHEET_ENDPOINT is not set — the waitlist form has no Google Sheet endpoint to post to. Add it to a .env file (see .env.example).',
-      )
-      setStatus('error')
-      return
-    }
-
     setStatus('sending')
 
     // Best-effort enrichment: look up the handle's public follower + post count
@@ -90,15 +79,7 @@ function App() {
     }
 
     try {
-      await fetch(endpoint, {
-        method: 'POST',
-        // Apps Script web apps don't return CORS headers, so a normal `cors`
-        // fetch rejects even when the row is written. `no-cors` lets the POST
-        // go through (text/plain keeps it a simple request, no preflight).
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ name, email, handle, followers, posts }),
-      })
+      await submitWaitlist({ name, email, handle, followers, posts })
       setStatus('success')
       setFormData({ name: '', email: '', handle: '' })
     } catch {

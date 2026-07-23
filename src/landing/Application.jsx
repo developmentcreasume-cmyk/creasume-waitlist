@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { JoinedProof } from '../shared/JoinedProof.jsx'
+import { submitWaitlist } from '../services/waitlistApi.js'
 
 // Founding Creator application form. Posts the same way the waitlist form does
 // (no-cors POST to the Google Sheet endpoint), with an added phone field.
@@ -32,13 +33,6 @@ export default function Application() {
       return
     }
 
-    const endpoint = import.meta.env.VITE_SHEET_ENDPOINT
-    if (!endpoint) {
-      console.error('VITE_SHEET_ENDPOINT is not set — the application form has no Google Sheet endpoint to post to.')
-      setStatus('error')
-      return
-    }
-
     setStatus('sending')
 
     // Optional follower/post enrichment (never blocks the signup).
@@ -58,12 +52,7 @@ export default function Application() {
     }
 
     try {
-      await fetch(endpoint, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ name, email, phone, handle, followers, posts }),
-      })
+      await submitWaitlist({ name, email, phone, handle, followers, posts })
       setStatus('success')
       setFormData({ name: '', email: '', phone: '', handle: '' })
     } catch {
