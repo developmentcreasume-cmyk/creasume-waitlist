@@ -71,6 +71,7 @@ function PrivacyPolicy() {
       title="Privacy Policy"
       intro="This Privacy Policy explains how Creasume (“we”, “us”, or “the Platform”) collects, uses, and protects information when you use our website and services. By using the Platform, you agree to this Policy."
       sections={SECTIONS}
+      path="/privacy-policy"
     />
   )
 }

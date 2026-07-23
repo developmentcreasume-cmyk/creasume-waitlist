@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import SiteNav from '../components/SiteNav.jsx'
 import FooterCard from '../components/FooterCard.jsx'
+import Seo from '../shared/Seo.jsx'
 
 // Standalone "Contact Us" page. Reuses the new site shell — starfield
 // background + glassy pill nav (matching Pricing / How it works) — with the
@@ -61,6 +62,11 @@ export default function ContactUs() {
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-clip bg-black text-white">
+      <Seo
+        title="Contact Creasume — Support & Partnerships"
+        description="Get in touch with the Creasume team. Questions about your creator card, plans, partnerships or support — reach us at core.creasume@gmail.com."
+        path="/contact"
+      />
       <div className="starfield" />
 
       {/* Decorative accent — top-right corner */}

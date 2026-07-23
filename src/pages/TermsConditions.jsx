@@ -79,6 +79,7 @@ function TermsConditions() {
       title="Terms and Conditions"
       intro="These Terms and Conditions (“Terms”) govern your use of Creasume (“the Platform”). By accessing or using the Platform, you agree to these Terms. If you do not agree, please do not use the Platform."
       sections={SECTIONS}
+      path="/terms"
     />
   )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import SiteNav from '../components/SiteNav.jsx'
 import Footer from '../components/Footer.jsx'
+import Seo from '../shared/Seo.jsx'
 import { goToPath } from '../router.js'
 import { fetchCreators, formatCount } from '../services/influenceApi.js'
 
@@ -145,6 +146,11 @@ export default function BrowseCreators() {
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-clip bg-black text-white">
+      <Seo
+        title="Browse Creators — Verified Instagram Media Kits | Creasume"
+        description="Discover verified creators on Creasume. Browse real Instagram media kits with live follower stats, niches and collaboration packages — and connect with the right creator for your brand."
+        path="/browse"
+      />
       <div className="starfield" />
       <SiteNav active="browse" />
 

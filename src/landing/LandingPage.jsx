@@ -14,6 +14,7 @@ import { ScrubCard } from '../shared/ScrubCard.jsx'
 import { PERKS } from '../shared/perks.jsx'
 import { FeatureCards } from '../shared/FeatureCards.jsx'
 import ScrollCue from '../shared/ScrollCue.jsx'
+import Seo from '../shared/Seo.jsx'
 import Testimonials from './Testimonials.jsx'
 import Pricing from './Pricing.jsx'
 import Application from './Application.jsx'
@@ -144,6 +145,18 @@ export default function LandingPage() {
   const [landing, setLanding] = useState({ testimonials: [], brands: [] })
   useEffect(() => { fetchLandingContent().then(setLanding) }, [])
 
+  // Arrived from a footer section link on another page (e.g. /landing#testimonial,
+  // set by FooterCard.goToLandingSection). Scroll to that section once it has
+  // laid out — the small delay lets the below-the-fold sections mount first.
+  useEffect(() => {
+    const id = window.location.hash.replace(/^#/, '')
+    if (!id) return
+    const t = setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 350)
+    return () => clearTimeout(t)
+  }, [])
+
   // Founding Creator perks: cards unstack from a centre pile, scrubbed by scroll.
   const perksHeadingRef = useRef(null)
   const { scrollYProgress: perksProgress } = useScroll({
@@ -154,6 +167,19 @@ export default function LandingPage() {
   return (
     <MotionConfig reducedMotion="user">
     <div className="relative min-h-screen flex flex-col overflow-x-clip bg-black text-white">
+      <Seo
+        title="Creasume — Verified Creator Media Kits & Influence Cards"
+        description="Turn your real Instagram stats into a verified creator media kit — a shareable Influence Card that brands trust. Connect Instagram, go live in minutes, and start closing brand deals."
+        path="/landing"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: 'Creasume',
+          url: 'https://creasume.com',
+          logo: 'https://creasume.com/creasumelogo.png',
+          description: 'Creasume turns creators’ real Instagram stats into verified, shareable media kits (Influence Cards) that brands trust.',
+        }}
+      />
       {/* "Scroll down for more" hint on the hero (fades out once they scroll) */}
       <ScrollCue />
 
@@ -386,7 +412,10 @@ export default function LandingPage() {
       </section>
 
       {/* ============ TESTIMONIALS ============ */}
-      <Testimonials items={landing.testimonials} />
+      {/* id anchors the footer's "Testimonial" link (see FooterCard). */}
+      <div id="testimonial" className="scroll-mt-24">
+        <Testimonials items={landing.testimonials} />
+      </div>
 
       {/* ============ CONSENT BADGE ============ */}
       <section className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-10 md:py-16 text-center">
@@ -485,10 +514,13 @@ export default function LandingPage() {
       </section>
 
       {/* ============ MADE FOR NEXT GENERATION ============ */}
-      <SensesSection />
+      {/* id anchors the footer's "Insights" link (see FooterCard). */}
+      <div id="insights" className="scroll-mt-24">
+        <SensesSection />
+      </div>
 
         {/* ============ BUILT FOR EMERGING CREATORS ============ */}
-      <section id="vision" className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-12 md:py-24 overflow-hidden">
+      <section id="vision" className="relative z-10 px-8 sm:px-12 md:px-20 lg:px-28 py-12 md:py-24 overflow-hidden scroll-mt-24">
         <img src="/Ellipse%20883.png" alt="" aria-hidden="true" className="absolute pointer-events-none select-none" style={{ left: '-10px', top: '35%', transform: 'translateY(-50%)', height: '500px', width: '230px', opacity: 0.8, zIndex: 0 }} />
 
         <motion.div className="text-center mb-10 md:mb-16" variants={staggerParent} initial="hidden" whileInView="show" viewport={{ once: true, margin: '-80px' }}>
@@ -524,7 +556,8 @@ export default function LandingPage() {
       </section>
 
       {/* ============ BRANDS THAT TRUST CREASUME ============ */}
-      <section className="relative z-10 py-12 md:py-20 overflow-hidden">
+      {/* id anchors the footer's "Achievements" link (see FooterCard). */}
+      <section id="achievements" className="relative z-10 py-12 md:py-20 overflow-hidden scroll-mt-24">
         <div className="text-center mb-10 md:mb-14 px-8">
           <h2 className="text-3xl md:text-5xl font-bold mb-3">Brands that Trust Creasume</h2>
           <p className="text-white/60 text-sm md:text-base">Discover brands that trust Creasume for getting their collaborations</p>

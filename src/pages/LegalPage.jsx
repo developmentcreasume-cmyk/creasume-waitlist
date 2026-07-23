@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import Footer from '../components/Footer.jsx'
 import SiteNav from '../components/SiteNav.jsx'
+import Seo from '../shared/Seo.jsx'
 
 // Nav links point back to the home route sections. Because the legal pages live
 // on hash routes (e.g. `#/privacy-policy`), a plain `#vision` link resets the
@@ -14,7 +15,7 @@ const NAV = [
 // Shared shell for the Privacy Policy and Terms pages: starfield background,
 // the site nav, a page title + intro, the rendered legal sections, and the
 // shared footer. `sections` is an array of { heading, paragraphs?, bullets? }.
-function LegalPage({ title, intro, sections }) {
+function LegalPage({ title, intro, sections, path }) {
   // The page is reached from the footer, so the window keeps its previous
   // scroll position. Jump to the top whenever the page opens (and when
   // switching between Privacy and Terms).
@@ -24,6 +25,10 @@ function LegalPage({ title, intro, sections }) {
 
   return (
     <div className="relative min-h-screen overflow-x-clip bg-black text-white">
+      {/* Was previously untitled — every legal page inherited the homepage's
+          <title>/description, so Privacy and Terms looked like duplicate
+          content to search engines. Give each its own tag, keyed off intro. */}
+      <Seo title={`${title} — Creasume`} description={intro} path={path} />
       {/* Starfield */}
       <div className="starfield" />
 

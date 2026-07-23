@@ -9,6 +9,7 @@ import WorkWithMe from '../components/influence/WorkWithMe.jsx'
 import PaperPlaneFlight from '../components/influence/PaperPlaneFlight.jsx'
 import { InfluenceDataProvider, useInfluence } from '../components/influence/InfluenceDataContext.jsx'
 import SyncProgressBar from '../shared/SyncProgressBar.jsx'
+import Seo from '../shared/Seo.jsx'
 import { isLoggedIn, getStoredUsername, dashboardBase } from '../services/dashboardApi.js'
 import { goToPath } from '../router.js'
 
@@ -74,6 +75,8 @@ function Loader() {
 function NotAvailable() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-black text-white px-6 text-center">
+      {/* A dead/private link shouldn't be indexed as a real page. */}
+      <Seo title="Card not available — Creasume" noindex />
       <img src="/loading.png" alt="" className="w-16 h-16 opacity-70 select-none" style={{ objectFit: 'contain' }} />
       <h1 className="text-2xl font-bold mt-2" style={{ fontFamily: "'Outfit', sans-serif" }}>This card isn&apos;t available</h1>
       <p className="text-white/55 text-sm max-w-sm" style={{ fontFamily: "'Outfit', sans-serif" }}>
@@ -85,7 +88,7 @@ function NotAvailable() {
 
 // Inner page — reads `ready` from the provider and waits for it before painting.
 function InfluenceCardInner() {
-  const { ready, notFound, THEME } = useInfluence()
+  const { ready, notFound, THEME, CREATOR } = useInfluence()
   if (!ready) return <Loader />
   if (notFound) return <NotAvailable />
   // Apply the creator's chosen palette + font + background as CSS variables /
@@ -136,9 +139,35 @@ function InfluenceCardInner() {
     // Default the card background to Solid Dark; Mesh (accent-tinted) only when chosen.
     background: THEME?.bg === 'mesh' ? meshBg : solidBg,
   }
+  // Per-creator SEO built from their live profile data, so each card ranks and
+  // shares with its own title/description instead of the generic site default.
+  const seoName = CREATOR?.name || 'Creator'
+  const seoNiche = (CREATOR?.niche || '').trim()
+  const seoBio = (CREATOR?.bio || '').trim()
+  const seoTitle = `${seoName}${seoNiche ? ` · ${seoNiche} Creator` : ''} — Media Kit | Creasume`
+  const seoDesc = seoBio
+    ? `${seoBio} — ${seoName}'s verified creator media kit on Creasume.`
+    : `${seoName}'s verified creator media kit${seoNiche ? ` in ${seoNiche}` : ''} — real Instagram stats, top posts and collaboration packages on Creasume.`
+
   return (
     <MotionConfig reducedMotion="user">
       <div id="influence-card-root" className="relative min-h-screen overflow-x-clip bg-black text-white" style={rootStyle}>
+        <Seo
+          title={seoTitle}
+          description={seoDesc}
+          image={CREATOR?.profilePicture || undefined}
+          jsonLd={{
+            '@context': 'https://schema.org',
+            '@type': 'ProfilePage',
+            mainEntity: {
+              '@type': 'Person',
+              name: seoName,
+              ...(CREATOR?.username ? { alternateName: `@${CREATOR.username}` } : {}),
+              ...(seoBio ? { description: seoBio } : {}),
+              ...(CREATOR?.profilePicture ? { image: CREATOR.profilePicture } : {}),
+            },
+          }}
+        />
         {/* Ambient brand background */}
         <div className="starfield" />
 

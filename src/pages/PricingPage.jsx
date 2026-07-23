@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import SiteNav from '../components/SiteNav.jsx'
 import FooterCard from '../components/FooterCard.jsx'
+import Seo from '../shared/Seo.jsx'
 import { goToPath } from '../router.js'
 import { isLoggedIn, fetchPlans, buyPlan, getStoredUsername, setStoredUsername, fetchMe, dashboardBase } from '../services/dashboardApi.js'
 
@@ -198,6 +199,11 @@ export default function PricingPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-clip text-white">
+      <Seo
+        title="Pricing — Creasume Creator Plans"
+        description="Simple plans for creators. Start free with a verified Influence Card, or upgrade for packages, custom branding, analytics and brand inquiries. Cancel anytime."
+        path="/pricing"
+      />
 
       {/* Decorative accent — top-right corner */}
       <img

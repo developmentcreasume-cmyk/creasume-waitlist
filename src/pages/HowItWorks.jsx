@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import FooterCard from '../components/FooterCard.jsx'
 import SiteNav from '../components/SiteNav.jsx'
+import Seo from '../shared/Seo.jsx'
 
 // Standalone "How It Works" page. Mirrors the landing's connect flow but as its
 // own route (/how-it-works): hero → consent badge → vertical "Steps to Connect"
@@ -85,6 +86,11 @@ export default function HowItWorks() {
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-clip bg-black text-white">
+      <Seo
+        title="How Creasume Works — Build Your Verified Creator Card"
+        description="Connect Instagram, auto-generate a verified media kit from your real stats, and share one professional link with brands. See how Creasume works in three steps."
+        path="/how-it-works"
+      />
       <div className="starfield" />
 
       <SiteNav active="how-it-works" />

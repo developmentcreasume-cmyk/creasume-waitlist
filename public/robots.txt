@@ -1,0 +1,17 @@
+# Creasume — crawl rules
+User-agent: *
+Allow: /
+
+# Private/auth flows — no SEO value, keep them out of the index.
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /connect
+Disallow: /auth-success
+Disallow: /dev-login
+Disallow: /dashboard
+Disallow: /*/dashboard
+Disallow: /preview
+
+Sitemap: https://creasume.com/sitemap.xml

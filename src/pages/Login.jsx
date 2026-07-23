@@ -8,8 +8,12 @@ import GoogleSignInButton from '../components/GoogleSignInButton.jsx'
 // India (91) when they enter a bare 10-digit number.
 const normalizePhoneInput = (raw) => {
   const digits = (raw || '').replace(/[^\d]/g, '')
-  return digits.length === 10 ? `91${digits}` : digits
+  if (digits.length === 10) return `91${digits}`
+  if (digits.length === 11 && digits.startsWith('0')) return `91${digits.slice(1)}`
+  return digits
 }
+
+const isValidPhone = (phone) => /^[1-9]\d{7,14}$/.test(phone)
 
 // Standalone auth page (/login) — a centered two-panel card: a blue "Get Started"
 // stepper panel on the left and the "Welcome" sign-in form on the right, over a
@@ -89,7 +93,7 @@ export default function Login() {
   const handleSendOtp = async () => {
     if (busy) return
     const identifier = normalizePhoneInput(phone)
-    if (identifier.length < 11) {
+    if (!isValidPhone(identifier)) {
       setErr('Enter a valid phone number with country code.')
       return
     }
@@ -113,7 +117,9 @@ export default function Login() {
     setErr('')
     setBusy(true)
     try {
-      await widgetRetryOtp(null)
+      // Force SMS for resend so a widget whose default is WhatsApp/voice still
+      // gives the user a predictable recovery path.
+      await widgetRetryOtp('11')
       setResendIn(30)
     } catch (e2) {
       setErr(e2.message || 'Could not resend OTP.')

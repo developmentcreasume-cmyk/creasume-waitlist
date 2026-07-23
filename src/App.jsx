@@ -12,6 +12,7 @@ import { PERKS } from './shared/perks.jsx'
 import { FeatureCards } from './shared/FeatureCards.jsx'
 import { JoinedProof } from './shared/JoinedProof.jsx'
 import ScrollCue from './shared/ScrollCue.jsx'
+import Seo from './shared/Seo.jsx'
 import './App.css'
 
 function App() {
@@ -110,6 +111,20 @@ function App() {
     <div className="relative min-h-screen flex flex-col overflow-x-clip bg-black text-white">
       {/* Starfield */}
       <div className="starfield" />
+
+      <Seo
+        title="Creasume — Verified Creator Media Kits & Influence Cards"
+        description="Creasume turns your real Instagram stats into a verified creator media kit — a shareable Influence Card that brands trust. Join the waitlist and reserve your creator identity."
+        path="/"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Organization',
+          name: 'Creasume',
+          url: 'https://creasume.com',
+          logo: 'https://creasume.com/creasumelogo.png',
+          description: 'Creasume turns creators’ real Instagram stats into verified, shareable media kits (Influence Cards) that brands trust.',
+        }}
+      />
 
       {/* "Scroll down for more" hint on the hero (fades out once they scroll) */}
       <ScrollCue />
