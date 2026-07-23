@@ -59,27 +59,8 @@ function App() {
 
     setStatus('sending')
 
-    // Best-effort enrichment: look up the handle's public follower + post count
-    // so the sheet row carries those too. Never blocks the signup — if the
-    // account isn't a discoverable Business/Creator account (or the lookup
-    // fails), we just submit with blank values.
-    let followers = ''
-    let posts = ''
-    const apiBase = import.meta.env.VITE_API_URL
-    if (apiBase) {
-      try {
-        const igHandle = handle.replace(/^@/, '')
-        const r = await fetch(`${apiBase}/public/ig-lookup/${encodeURIComponent(igHandle)}`)
-        const d = await r.json().catch(() => null)
-        if (d?.success && d.profile) {
-          followers = d.profile.followers ?? ''
-          posts = d.profile.posts ?? ''
-        }
-      } catch { /* enrichment is optional */ }
-    }
-
     try {
-      await submitWaitlist({ name, email, handle, followers, posts })
+      await submitWaitlist({ name, email, handle })
       setStatus('success')
       setFormData({ name: '', email: '', handle: '' })
     } catch {

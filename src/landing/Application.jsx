@@ -35,24 +35,8 @@ export default function Application() {
 
     setStatus('sending')
 
-    // Optional follower/post enrichment (never blocks the signup).
-    let followers = ''
-    let posts = ''
-    const apiBase = import.meta.env.VITE_API_URL
-    if (apiBase) {
-      try {
-        const igHandle = handle.replace(/^@/, '')
-        const r = await fetch(`${apiBase}/public/ig-lookup/${encodeURIComponent(igHandle)}`)
-        const d = await r.json().catch(() => null)
-        if (d?.success && d.profile) {
-          followers = d.profile.followers ?? ''
-          posts = d.profile.posts ?? ''
-        }
-      } catch { /* enrichment is optional */ }
-    }
-
     try {
-      await submitWaitlist({ name, email, phone, handle, followers, posts })
+      await submitWaitlist({ name, email, phone, handle })
       setStatus('success')
       setFormData({ name: '', email: '', phone: '', handle: '' })
     } catch {
