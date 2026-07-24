@@ -75,16 +75,40 @@ function App() {
       <div className="starfield" />
 
       <Seo
-        title="Creasume — Verified Creator Media Kits & Influence Cards"
-        description="Creasume turns your real Instagram stats into a verified creator media kit — a shareable Influence Card that brands trust. Join the waitlist and reserve your creator identity."
+        title="Creasume — Verified Dynamic Media Kits for Creators"
+        description="Create a verified dynamic media kit with live social insights, audience analytics, past work and transparent pricing. Find brand deals and grow with Creasume."
+        keywords="Creasume, media kit, dynamic media kit, verified media kit, creator media kit, influencer media kit, brand deals, creator marketplace, influencer marketing, UGC creators"
         path="/"
         jsonLd={{
           '@context': 'https://schema.org',
-          '@type': 'Organization',
-          name: 'Creasume',
-          url: 'https://creasume.com',
-          logo: 'https://creasume.com/creasumelogo.png',
-          description: 'Creasume turns creators’ real Instagram stats into verified, shareable media kits (Influence Cards) that brands trust.',
+          '@graph': [
+            {
+              '@type': 'Organization',
+              '@id': 'https://creasume.com/#organization',
+              name: 'Creasume',
+              url: 'https://creasume.com/',
+              logo: 'https://creasume.com/creasumelogo.png',
+              description: 'Creasume helps creators build verified dynamic media kits and connect with brands for paid collaborations.',
+            },
+            {
+              '@type': 'WebSite',
+              '@id': 'https://creasume.com/#website',
+              name: 'Creasume',
+              url: 'https://creasume.com/',
+              publisher: { '@id': 'https://creasume.com/#organization' },
+              inLanguage: 'en',
+            },
+            {
+              '@type': 'SoftwareApplication',
+              name: 'Creasume',
+              applicationCategory: 'BusinessApplication',
+              operatingSystem: 'Web',
+              url: 'https://creasume.com/',
+              description: 'A creator platform for verified dynamic media kits, live social analytics, portfolios, pricing and brand deals.',
+              offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+              provider: { '@id': 'https://creasume.com/#organization' },
+            },
+          ],
         }}
       />
 

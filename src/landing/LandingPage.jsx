@@ -142,7 +142,7 @@ export default function LandingPage() {
   // Testimonials + brand logos managed from Admin → Landing page. Both lists
   // start empty and fall back to placeholder cards, so a slow or failed fetch
   // just leaves the page looking exactly as it did before.
-  const [landing, setLanding] = useState({ testimonials: [], brands: [] })
+  const [landing, setLanding] = useState({ creators: [], testimonials: [], brands: [] })
   useEffect(() => { fetchLandingContent().then(setLanding) }, [])
 
   // Arrived from a footer section link on another page (e.g. /landing#testimonial,
@@ -168,8 +168,9 @@ export default function LandingPage() {
     <MotionConfig reducedMotion="user">
     <div className="relative min-h-screen flex flex-col overflow-x-clip bg-black text-white">
       <Seo
-        title="Creasume — Verified Creator Media Kits & Influence Cards"
-        description="Turn your real Instagram stats into a verified creator media kit — a shareable Influence Card that brands trust. Connect Instagram, go live in minutes, and start closing brand deals."
+        title="Verified Dynamic Media Kits & Brand Deals — Creasume"
+        description="Build a verified dynamic media kit with live social insights, audience analytics, past collaborations and transparent pricing. Connect with brands and close deals."
+        keywords="dynamic media kit, verified media kit, creator media kit, influencer media kit, brand deals, creator marketplace, Instagram analytics, influencer marketing"
         path="/landing"
         jsonLd={{
           '@context': 'https://schema.org',
@@ -177,7 +178,7 @@ export default function LandingPage() {
           name: 'Creasume',
           url: 'https://creasume.com',
           logo: 'https://creasume.com/creasumelogo.png',
-          description: 'Creasume turns creators’ real Instagram stats into verified, shareable media kits (Influence Cards) that brands trust.',
+          description: 'Creasume helps creators build verified dynamic media kits with live social insights and connect with brands for paid collaborations.',
         }}
       />
       {/* "Scroll down for more" hint on the hero (fades out once they scroll) */}
@@ -414,7 +415,7 @@ export default function LandingPage() {
       {/* ============ TESTIMONIALS ============ */}
       {/* id anchors the footer's "Testimonial" link (see FooterCard). */}
       <div id="testimonial" className="scroll-mt-24">
-        <Testimonials items={landing.testimonials} />
+        <Testimonials items={landing.creators} />
       </div>
 
       {/* ============ CONSENT BADGE ============ */}

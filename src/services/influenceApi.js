@@ -22,9 +22,62 @@ export async function fetchLandingContent() {
     const res = await fetch(`${API_BASE}/public/landing`)
     const data = await res.json().catch(() => ({}))
     if (!res.ok || data.success === false) return { testimonials: [], brands: [] }
-    return { testimonials: data.testimonials || [], brands: data.brands || [] }
+    // Landing creators are intentionally configured with only an Instagram
+    // username. Enrich those tiny admin records from the same public lookup
+    // used by /preview, so names, photos and stats never need to be copied into
+    // the admin panel. Keep accepting the old `testimonials` key while the
+    // backend/admin rollout moves to `creators`.
+    const records = data.creators || data.testimonials || []
+    const creators = await Promise.all(records.map(async (record) => {
+      const saved = typeof record === 'string' ? {} : record
+      const rawUsername = typeof record === 'string'
+        ? record
+        : (saved.username || saved.handle || '')
+      const username = String(rawUsername).trim().replace(/^@+/, '')
+      if (!username) return null
+
+      try {
+        const lookupRes = await fetch(
+          `${API_BASE}/public/lookup/${encodeURIComponent(username)}`,
+          { cache: 'no-store' },
+        )
+        const lookup = await lookupRes.json().catch(() => ({}))
+        const profile = lookup?.success && lookup.data ? lookup.data : {}
+        const followers = Number(profile.followers || 0)
+        const engagement = Number(profile.engagementRateEstimate || 0)
+        const score = Math.min(
+          98,
+          Math.max(42, Math.round(50 + engagement * 4 + Math.log10(followers + 1) * 6)),
+        )
+        return {
+          ...saved,
+          username,
+          name: profile.fullName || saved.name || username,
+          profilePicture: lookupImageUrl(profile.profilePicture || saved.profilePicture || saved.imageUrl || '', 600, 800),
+          followers,
+          score: Number(saved.score ?? profile.creasumeScore ?? score),
+          isFoundingCreator: saved.isFoundingCreator !== false,
+        }
+      } catch {
+        return {
+          ...saved,
+          username,
+          name: saved.name || username,
+          profilePicture: saved.profilePicture || saved.imageUrl || '',
+          followers: Number(saved.followers || 0),
+          score: Number(saved.score || 0),
+          isFoundingCreator: saved.isFoundingCreator !== false,
+        }
+      }
+    }))
+
+    return {
+      creators: creators.filter(Boolean),
+      testimonials: data.testimonials || [],
+      brands: data.brands || [],
+    }
   } catch {
-    return { testimonials: [], brands: [] }
+    return { creators: [], testimonials: [], brands: [] }
   }
 }
 

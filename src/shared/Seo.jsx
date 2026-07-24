@@ -33,7 +33,7 @@ function upsertLink(rel, href) {
   el.setAttribute('href', href)
 }
 
-export default function Seo({ title, description, path, image, jsonLd, noindex = false }) {
+export default function Seo({ title, description, keywords, path, image, jsonLd, noindex = false }) {
   // Serialise jsonLd for the dep array so a changed object re-runs the effect.
   const jsonLdKey = jsonLd ? JSON.stringify(jsonLd) : ''
 
@@ -48,6 +48,7 @@ export default function Seo({ title, description, path, image, jsonLd, noindex =
       upsertMeta('property', 'og:description', description)
       upsertMeta('name', 'twitter:description', description)
     }
+    if (keywords) upsertMeta('name', 'keywords', keywords)
 
     // Canonical + og:url. Default to the current path when none is passed.
     const rel = path || (typeof window !== 'undefined' ? window.location.pathname : '/')
@@ -62,7 +63,13 @@ export default function Seo({ title, description, path, image, jsonLd, noindex =
       upsertMeta('name', 'twitter:image', image)
     }
 
-    upsertMeta('name', 'robots', noindex ? 'noindex, nofollow' : 'index, follow')
+    upsertMeta(
+      'name',
+      'robots',
+      noindex
+        ? 'noindex, nofollow'
+        : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
+    )
 
     // Structured data (JSON-LD). One shared <script id="seo-jsonld"> we rewrite
     // per route, removed when a route has none.
@@ -78,7 +85,7 @@ export default function Seo({ title, description, path, image, jsonLd, noindex =
     } else if (script) {
       script.remove()
     }
-  }, [title, description, path, image, noindex, jsonLdKey])
+  }, [title, description, keywords, path, image, noindex, jsonLdKey])
 
   return null
 }

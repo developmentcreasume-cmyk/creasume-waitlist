@@ -1,104 +1,104 @@
 import { motion } from 'framer-motion'
+import { formatCount } from '../services/influenceApi.js'
+import { goToPath } from '../router.js'
 
-// "Hear from Our Influencers". Real testimonials come from the admin panel
-// (Admin → Landing page → Creator testimonials) and are passed in as `items`.
-// With none configured we render the original placeholder skeletons, so the
-// section never looks broken on a fresh install.
-const SLOTS = Array.from({ length: 6 })
-
-const CARD_CLASS = 'shrink-0 w-75 md:w-85 h-65 md:h-70 rounded-2xl p-7 mx-3 flex flex-col'
-const CARD_STYLE = {
-  background: 'linear-gradient(180deg, rgba(20,22,30,0.9) 0%, rgba(10,11,16,0.9) 100%)',
-  border: '1px solid rgba(255,255,255,0.08)',
-}
-
-// Not-yet-filled state: avatar dot + faint skeleton lines.
-function PlaceholderCard() {
-  return (
-    <div className={CARD_CLASS} style={CARD_STYLE}>
-      <div className="flex items-center gap-3 mb-6">
-        <span className="block w-12 h-12 rounded-full shrink-0" style={{ background: 'rgba(255,255,255,0.12)' }} />
-        <div className="flex flex-col gap-2">
-          <span className="block h-3 w-28 rounded-full" style={{ background: 'rgba(255,255,255,0.12)' }} />
-          <span className="block h-2.5 w-20 rounded-full" style={{ background: 'rgba(255,255,255,0.07)' }} />
-        </div>
-      </div>
-      <div className="flex flex-col gap-3">
-        {['100%', '92%', '96%', '70%'].map((w, i) => (
-          <span key={i} className="block h-2.5 rounded-full" style={{ width: w, background: 'rgba(255,255,255,0.07)' }} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// A real testimonial. Falls back to the creator's initial when no photo was
-// uploaded, so the avatar circle is never an empty/broken image.
-function TestimonialCard({ item }) {
-  const initial = (item.name || '?').trim().charAt(0).toUpperCase()
-  return (
-    <div className={CARD_CLASS} style={CARD_STYLE}>
-      <div className="flex items-center gap-3 mb-5">
-        {item.imageUrl ? (
-          <img
-            src={item.imageUrl}
-            alt={item.name}
-            className="w-12 h-12 rounded-full shrink-0 object-cover"
-            style={{ border: '1px solid rgba(255,255,255,0.12)' }}
-          />
-        ) : (
-          <span
-            className="grid place-items-center w-12 h-12 rounded-full shrink-0 font-semibold text-white"
-            style={{ background: 'rgba(255,255,255,0.14)' }}
-          >
-            {initial}
-          </span>
-        )}
-        <div className="flex flex-col min-w-0">
-          <span className="text-white font-semibold text-[15px] truncate">{item.name}</span>
-          {item.handle && <span className="text-white/50 text-[13px] truncate">{item.handle}</span>}
-        </div>
-      </div>
-      <p className="text-white/75 text-[14px] leading-relaxed overflow-hidden">
-        {item.quote}
-      </p>
-    </div>
-  )
-}
-
-// A scrolling marquee only reads correctly when the cards overflow the screen —
-// its track slides -50%, so each half must already be wider than the viewport.
-// Below this many, the loop would show each card several times over with an
-// obvious gap, so we lay them out centred and static instead: add one
-// testimonial and exactly one card appears, add two and two appear.
+const PLACEHOLDERS = Array.from({ length: 6 })
 const MARQUEE_MIN = 5
 
-export default function Testimonials({ items = [] }) {
-  const hasReal = items.length > 0
-  const useMarquee = !hasReal || items.length >= MARQUEE_MIN
-  const cards = hasReal ? items : SLOTS
+function CreatorPlaceholder() {
+  return (
+    <div className="shrink-0 w-63 md:w-72 h-105 md:h-120 rounded-3xl mx-3 overflow-hidden border border-white/8 bg-white/5 animate-pulse">
+      <div className="h-full bg-linear-to-b from-white/4 to-white/10" />
+    </div>
+  )
+}
 
-  const half = (hidden) => (
-    <div className="flex shrink-0" aria-hidden={hidden}>
-      {cards.map((it, i) =>
-        hasReal ? <TestimonialCard key={it._id || i} item={it} /> : <PlaceholderCard key={i} />
+function CreatorCard({ creator }) {
+  const username = creator.username || String(creator.handle || '').replace(/^@+/, '')
+  const name = creator.name || username
+  const score = Number.isFinite(Number(creator.score)) ? Math.round(Number(creator.score)) : null
+  const followers = formatCount(creator.followers)
+  const href = `/preview?lookup=${encodeURIComponent(username)}`
+
+  return (
+    <a
+      href={href}
+      onClick={(event) => {
+        event.preventDefault()
+        goToPath(href)
+      }}
+      aria-label={`Open ${name}'s Influence Card`}
+      className="group relative shrink-0 w-63 md:w-72 h-105 md:h-120 rounded-3xl mx-3 overflow-hidden border border-white/12 bg-[#12131a] text-white no-underline shadow-[0_18px_50px_rgba(0,0,0,.35)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#8d96ff]"
+    >
+      {creator.profilePicture ? (
+        <img
+          src={creator.profilePicture}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.035]"
+          style={{ imageRendering: 'auto' }}
+        />
+      ) : (
+        <div className="absolute inset-0 grid place-items-center bg-linear-to-br from-[#36377a] to-[#111225] text-7xl font-semibold text-white/70">
+          {name.charAt(0).toUpperCase()}
+        </div>
       )}
+
+      <div className="absolute inset-0 bg-linear-to-b from-black/55 via-transparent to-black/85" />
+
+      {creator.isFoundingCreator && (
+        <span className="absolute left-3 top-3 rounded-full border border-white/25 bg-black/45 px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.12em] backdrop-blur-md">
+          Founding Creator
+        </span>
+      )}
+
+      {score != null && (
+        <div className="absolute right-3 top-3 flex h-11 w-11 flex-col items-center justify-center rounded-full border border-white/25 bg-black/50 leading-none backdrop-blur-md">
+          <strong className="text-sm">{score}</strong>
+          <span className="mt-0.5 text-[7px] font-semibold uppercase tracking-[.08em] text-white/70">Score</span>
+        </div>
+      )}
+
+      <div className="absolute inset-x-0 bottom-0 p-5">
+        <p className="truncate text-xl font-bold">{name}</p>
+        <div className="mt-1 flex items-center gap-2 text-sm text-white/80">
+          <span className="truncate">@{username}</span>
+          {followers && (
+            <>
+              <span aria-hidden="true">•</span>
+              <span className="shrink-0">{followers} followers</span>
+            </>
+          )}
+        </div>
+      </div>
+    </a>
+  )
+}
+
+export default function Testimonials({ items = [] }) {
+  const hasCreators = items.length > 0
+  const cards = hasCreators ? items : PLACEHOLDERS
+  const useMarquee = !hasCreators || items.length >= MARQUEE_MIN
+
+  const row = (hidden) => (
+    <div className="flex shrink-0" aria-hidden={hidden}>
+      {cards.map((creator, index) => (
+        hasCreators
+          ? <CreatorCard key={creator._id || creator.username || index} creator={creator} />
+          : <CreatorPlaceholder key={index} />
+      ))}
     </div>
   )
 
   return (
-    <section className="relative z-10 py-16 md:py-24 overflow-hidden">
-      {/* Static heading + subtitle (centered, does not move). */}
-      <div className="text-center mb-12 md:mb-16 relative z-10 px-6">
-        <h2 className="text-4xl md:text-5xl font-bold mb-4">Hear from Our Influencers</h2>
-        <p className="text-white/60 text-base md:text-lg mx-auto max-w-2xl leading-relaxed">
-          Discover what our satisfied customers have to say about their experiences with our product/services.
+    <section className="relative z-10 overflow-hidden py-16 md:py-24">
+      <div className="relative z-10 mb-12 px-6 text-center md:mb-16">
+        <h2 className="mb-4 text-4xl font-bold md:text-5xl">Meet Our Founding Creators</h2>
+        <p className="mx-auto max-w-2xl text-base leading-relaxed text-white/60 md:text-lg">
+          Discover the creators building their professional identity with Creasume.
         </p>
       </div>
 
       {useMarquee ? (
-        /* Auto-scrolling marquee: two identical halves + CSS slide loop. Pauses on
-           hover (lp-marquee-group). Edge fade masks the in/out so cards don't pop. */
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -106,17 +106,16 @@ export default function Testimonials({ items = [] }) {
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="lp-marquee-group flex w-full overflow-hidden"
           style={{
-            WebkitMaskImage: 'linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%)',
-            maskImage: 'linear-gradient(90deg, transparent 0%, #000 8%, #000 92%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent)',
+            maskImage: 'linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent)',
           }}
         >
-          <div className="lp-marquee" style={{ animationDuration: '40s' }}>
-            {half(undefined)}
-            {half(true)}
+          <div className="lp-marquee" style={{ animationDuration: '44s' }}>
+            {row(undefined)}
+            {row(true)}
           </div>
         </motion.div>
       ) : (
-        /* Just a few testimonials — show each exactly once, centred. */
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -124,7 +123,9 @@ export default function Testimonials({ items = [] }) {
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="flex flex-wrap justify-center gap-y-6 px-6"
         >
-          {items.map((it, i) => <TestimonialCard key={it._id || i} item={it} />)}
+          {items.map((creator, index) => (
+            <CreatorCard key={creator._id || creator.username || index} creator={creator} />
+          ))}
         </motion.div>
       )}
     </section>
